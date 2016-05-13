@@ -485,6 +485,7 @@ Daniel: TODO
 \small
 \bibliography{nips_2016}
 \bibliographystyle{ieeetr}
+\normalsize
 
 \clearpage
 \appendix
@@ -505,8 +506,8 @@ In this appendix, we describe the following topics, with an emphasis on clarity 
 
 \subsection{Mathematical Assumptions}
 
-We borrow this example from~\cite{langevin_2011}. Our parameter is a two dimensional vector, denoted
-as $\theta = (\theta_1, \theta_2)$, where we have
+We borrow this example from~\cite{langevin_2011}. Our parameter is a 2-D vector $\theta =
+(\theta_1, \theta_2)$, where
 \begin{equation}
 \theta_1 \sim \mathcal{N}(0, \sigma_1^2) \quad \mbox{ and } \quad \theta_2 \sim \mathcal{N}(0, \sigma_2^2)
 \end{equation}
@@ -533,7 +534,7 @@ generated according to~(\ref{eq:x_points}), determine the posterior distribution
 as is typical with Bayesian analysis, we do not concern ourselves with the denominator of the
 original (non-log) posterior.} of $\theta$:
 \begin{equation}\label{eq:log_post}
-\log p(\theta \mid x_1,\ldots,x_n) = \log p(\theta) + \sum_{i=1}^N\log p(x_i \mid \theta).
+\log p(\theta \mid x_1,\ldots,x_N) = \log p(\theta) + \sum_{i=1}^N\log p(x_i \mid \theta).
 \end{equation}
 Alternatively, if there are too many data points, we may opt to instead pick a point estimate of
 $\theta$, generally the MAP estimate. (If $N$ is extremely large, it will cause the posterior to
@@ -541,86 +542,166 @@ peak sharply at its modes, reducing distribution estimates to point estimates.) 
 cases, we will need to take a \emph{minibatch estimate} of~(\ref{eq:log_post}). In that case, the
 literature generally uses
 \begin{equation}\label{eq:scaling_factor}
-\log p(\theta \mid x_1,\ldots,x_n) \approx \log p(\theta) + \frac{N}{n} \sum_{i=1}^n\log p(x_i \mid \theta).
+\log p(\theta \mid x_1,\ldots,x_N) \approx \log p(\theta) + \frac{N}{n} \sum_{i=1}^n\log p(x_i \mid \theta).
 \end{equation}
 where we only use $n \ll N$ samples, but we must scale up the likelihood contribution by $N/n$. If we
-didn't add this scaling factor, then the contribution of the likelihood terms would be weaker. We
-we will discuss this scaling factor in more detail later.
+didn't add this scaling factor, then the contribution of the likelihood terms would be weaker. There
+is another thing we need to consider about that, which is the \emph{temperature} of our
+distribution. In general, we will want to add $T > 1$ so that our posterior is
+$p(\theta)((\prod_{i=1}^n p(x_i\mid \theta))^{N/n})^{1/T}$, resulting in the log
+posterior of 
+\begin{equation}\label{eq:log_prior_temp}
+\log p(\theta \mid x_1,\ldots,x_N) \approx \log p(\theta) + \frac{1}{T}\frac{N}{n} \sum_{i=1}^n\log p(x_i \mid \theta).
+\end{equation}
+which has the extra $1/T$ to decrease the scale factor.  Equation~(\ref{eq:log_prior_temp}) is what
+we will be using for our experiments, because we need to consider warmer distributions.
+{\color{blue} Daniel: not totally confident on this but I'll try.}
 
 Finally, recall earlier that we needed to define $\Delta$. In our context, $\Delta$ is:
 \begin{align}
 \Delta &= \log \left(\frac{f(\theta') q(\theta_t \mid \theta')}{f(\theta_t) q(\theta'\mid \theta_t)} \right) \\
 &= \log p(\theta') - \log p(\theta_t) + \sum_{i=1}^N(\log p(x_i \mid \theta') - \log p(x_i \mid \theta_t)) + \log\left(\frac{q(\theta_t \mid \theta')}{q(\theta' \mid \theta_t)}\right).
 \end{align}
+But again, with \emph{minibatches} of data, we usually do not sum over all $N$ terms and instead sum
+over $n$ terms, but with the extra $(1/T)(N/n)$ scaling factor, from
+Equation~(\ref{eq:log_prior_temp}). We generally denote that approximation as $\Delta'$ in the paper.
 
 \subsection{Experiment Observations}
 
-Figure~\ref{fig:contour} describes a contour plot of the posterior based on the points we have
-sampled. The goal is to get distributions that either cover this posterior well (i.e., identifying
-that there are two modes), or if the data is too large and we want MAP estimates, we wish to see the
-methods stay at one of the modes.
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=1\linewidth]{contour_v1}
+  \caption{The posterior distribution, from 50 to 100k samples, with temperature set at 1.}
+  \label{fig:contour1}
+\end{figure}
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=1\linewidth]{contour_v2}
+  \caption{The posterior distribution, with $N=10000$ but with temperature $T$ varying.}
+  \label{fig:contour2}
+\end{figure}
 
-In the following, we only consider random walk proposals, so the term in $\Delta$ containing the
-$q$s disappears.  Random walk proposals are bad, but since the proposal is poor, good performance
-can only be obtained with a strong MH test, hence why we can use this as a reasonable starting
-benchmark.
+In this experiment, we compare our method with the one from~\cite{cutting_mh_2014}, hereafter called
+the ``adaptive sampling approach''. We apply them to the Gaussian Mixture model previously
+discussed.
 
-We use the settings:
+Figure~\ref{fig:contour1} shows simulated contour plots of the posterior based on the $N$ data
+points, for varying $N$, with the temperature set at $T=1$. Note that because we're using all $N$
+points here, the scale factor $N/n=1$. As $N$ increases, the posterior converges to a multimodal
+distribution with modes at $(0,1)$ and $(1,-1)$. 
+
+Figure~\ref{fig:contour2} is similar, except this time we fix the number of samples at $N=10000$,
+but show how changing the temperature $T$ affects the distribution. A larger $T$ implies a flatter
+posterior, one that (weakly) peaks in between the two true modes.
+
+Our ultimate goal is to either (a) get a posterior distribution that covers the posterior well, or
+(b) to get samples that stay trapped at a mode, for a point estimate of $\theta$.  Whether our goal
+is (a) or (b) depends on our objectives and the context of the problem (e.g., big data usually
+implies (b) is OK even if it would not satisfy the average Bayesian).
+
+For both our method and the adaptive sampling method, we use random walk proposals. (Thus, the term
+in $\Delta$ containing the $q$s disappears.)  Random walk proposals are bad, but since the proposal
+is poor, good performance can only be obtained with a strong MH test, hence why we can use this as a
+reasonable starting benchmark.
+
+We test use the following settings:
 
 \begin{itemize}[noitemsep]
     \item We use $N=10000$ samples of $x_i$.
-    \item The covariance of the Gaussian random walk is ${\rm diag}(0.15, 0.15)$.
-    \item The mini-batch size is ...
-    \item (more settings) ...
-    \item For the adaptive sampling method, the tolerance for deciding on a test is ....
-    \item The number of iterations is .... One iteration involves one $\theta'$ proposal and a test
-    to accept/reject.
+    \item The covariance of the Gaussian random walk is ${\rm diag}(0.1, 0.1)$.
+    \item We use 10000 iterations. One iteration involves one $\theta'$ proposal and a test to
+    accept/reject.
+    \item The mini-batch size is set at 100, so it is one percent of the total data. For the
+    adaptive sampling approach, this is the amount that the minibatch size would keep increasing if
+    we needed more precision. Our approach, of courses, keeps the size fixed.
+    \item For adaptive sampling, the tolerance for deciding on a test is 0.05. The temperature for
+    that is also set at $T=1$ because that algorithm was not designed to deal with temperatures.
+    \item For our approach, to get an estimate of the standard deviation of $\Delta'$ (remember,
+    $\Delta'$ is a minibatch approximation of $\Delta$) we take five other minibatches (randomly
+    selected from the data) and take the standard deviation of those values.
 \end{itemize}
 
+For our approach, we run using three different temperature values, $T=1$, $T=10$, and $T=100$.
+
 Figure~\ref{fig:scatter} compares scatter plots of the ``Cutting the MH'' test (hereafter called
-``adaptive minibatch'') versus ``Our Method''.
-
-Figure~\ref{fig:cutting_mh} describes the histograms of the adaptive minibatch's batch sizes.
-
-Figure~\ref{fig:diagnostics} describes the histograms of various statistics for our method.
-
-\begin{figure}[ht]
-  \centering
-  \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
-  %\includegraphics[width=0.5\linewidth]{empty}
-  \caption{TODO contour plots}
-  \label{fig:contour}
-\end{figure}
+``adaptive minibatch'') versus ``Our Method'', where we use three different temperature settings.
+There doesn't seem to be too much noticeable difference in our method for the three different
+temperature setting values, but our approach is a lot different from the adaptive sampling method
+(this is because of rejection rates, more on that later).
 
 \begin{figure}[ht]
   \centering
-  \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
-  %\includegraphics[width=0.5\linewidth]{empty}
-  \caption{Scatter plots}
+  \includegraphics[width=1\linewidth]{scatter_v01}
+  \caption{Scatter plots of accepted $\theta$ for (in order) the adaptive sampling approach, and our
+  method (temperatures 1, 10, and 100).}
   \label{fig:scatter}
 \end{figure}
 
-\begin{figure}[ht]
-  \centering
-  \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
-  %\includegraphics[width=0.5\linewidth]{empty}
-  \caption{Diagnostic Plots 1 (e.g., histigrams of cutting MH)}
-  \label{fig:cutting_mh}
-\end{figure}
+Before taking a look at our approach, we first examine the adaptive sampling approach. \textbf{That
+approach rejected a lot of samples; out of 10000 iterations, it only accepted 773 times}.
+Figure~\ref{fig:mb_sizes} describes the histograms of the adaptive minibatch's batch sizes. (Note
+that the histogram y-axis values are different.) In many cases, using the initial batch size of 100
+sufficed to make an accept/reject decision, but sometimes, this method needed to use the entire 10k
+data set. Decreasing the tolerance (from its current 0.05 value) would have required larger
+minibatches. Incidentally, it makes sense that the method rejects a lot of samples, because the
+random walk proposal usually provides us with poor points.
 
 \begin{figure}[ht]
   \centering
-  \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
-  %\includegraphics[width=0.5\linewidth]{empty}
-  \caption{Diagnostic Plots 2 (sd, delta, etc)}
-  \label{fig:diagnostics}
+  \includegraphics[width=0.75\linewidth]{adaptive_sampling_sizes_v01.png}
+  \caption{Minibatch sizes for adaptive sampling when it was accepting or rejecting.}
+  \label{fig:mb_sizes}
 \end{figure}
 
+Now we analyze our approach in more detail. Our method accepts far more samples than the adaptive
+sampling method, \textbf{accepting 3285, 3318, and 3332 out of 10k}, for temperature values 1, 10,
+and 100, respectively.
 
+For diagnostics purposes, Figures~\ref{fig:diagnostics1},~\ref{fig:diagnostics2},
+and~\ref{fig:diagnostics3} express histograms (for all three temperature runs) of the $\Delta'$,
+${\rm std}(\Delta')$, and $X_{\rm corr}$ values, respectively.
+
+There are a few immediate observations. First, increasing the temperature size by a factor of 10
+will decrease $\Delta'$ by a factor of 10, which makes sense. That will also directly affect the
+standard deviation estimate of $\Delta'$. Our $X_{\rm corr}$ distribution is symmetric about zero,
+which is also expected (and it also exhibits a decrease in a factor of 10 for an increase
+in temperature).
 
 {\color{blue}
-Daniel: TODO FINISH
+One concern I have is that our $\Delta'$ values do not seem to be ``sufficiently negative''. If our
+$\Delta'$ values are negative (but large in absolute value) that means our MH test will reject more
+often. But then this raises another concern: didn't we say at one point that we \emph{should} be
+getting high acceptance rates, around 50 percent (in part because of the shape of the logistic
+function)? Doesn't that depend on the quality of the proposal distribution? If our method is
+designed to accept a lot regardless of the proposal distribution, I don't see how its performance
+can be considered equal to the adaptive sampling approach, or even a standard MH test. In fact, the
+best observation I can derive from this is that our approach and the adaptive sampling (or any
+standard MH test) will accept the high likelihood cases, but our case will accept the borderline
+ones more often.
 }
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=1\linewidth]{our_deltas_v01.png}
+  \caption{Our $\Delta'$ values for three different temperature values.}
+  \label{fig:diagnostics1}
+\end{figure}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=1\linewidth]{our_sds_v01.png}
+  \caption{Our ${\rm std}(\Delta')$ values for three different temperature values.}
+  \label{fig:diagnostics2}
+\end{figure}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=1\linewidth]{our_xcorrs_v01.png}
+  \caption{Our $X_{\rm corr}$ values for three different temperature values.}
+  \label{fig:diagnostics3}
+\end{figure}
+
+
 
 \section{Logistic Regression Experiment Details}
 
