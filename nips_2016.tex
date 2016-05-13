@@ -6,7 +6,6 @@
 
 \PassOptionsToPackage{numbers, compress}{natbib}
 \usepackage{nips_2016}
-
 % to compile a camera-ready version, add the [final] option, e.g.:
 %\usepackage[final]{nips_2016}
 
@@ -19,7 +18,7 @@
 \usepackage{nicefrac}       % compact symbols for 1/2, etc.
 \usepackage{microtype}      % microtypography
 
-\usepackage{amsmath,amsthm,color,graphicx,verbatim,listings}
+\usepackage{amsmath,amsthm,color,graphicx,verbatim,listings,enumitem}
 \graphicspath{{figures/}}
 
 \lstset{
@@ -36,40 +35,44 @@ framexleftmargin=20pt}
 
 % The \author macro works with any number of authors. There are two commands used to separate the
 % names and addresses of multiple authors: \And and \AND.
-%
 % Using \And between authors leaves it to LaTeX to determine where to break the lines. Using \AND
 % forces a line break at that point. So, if LaTeX puts 3 of 4 authors names on the first line, and
 % the last on the second line, try using \AND instead of \And before the third author name.
 
+%%  David S.~Hippocampus\thanks{Use footnote for providing further
+%%    information about author (webpage, alternative
+%%    address)---\emph{not} for acknowledging funding agencies.} \\
+%%  Department of Computer Science\\
+%%  Cranberry-Lemon University\\
+%%  Pittsburgh, PA 15213 \\
+%%  \texttt{hippo@cs.cranberry-lemon.edu} \\
+
+
 \author{
-  David S.~Hippocampus\thanks{Use footnote for providing further
-    information about author (webpage, alternative
-    address)---\emph{not} for acknowledging funding agencies.} \\
-  Department of Computer Science\\
-  Cranberry-Lemon University\\
-  Pittsburgh, PA 15213 \\
-  \texttt{hippo@cs.cranberry-lemon.edu} \\
-  %% examples of more authors
-  %% \And
-  %% Coauthor \\
-  %% Affiliation \\
-  %% Address \\
-  %% \texttt{email} \\
-  %% \AND
-  %% Coauthor \\
-  %% Affiliation \\
-  %% Address \\
-  %% \texttt{email} \\
-  %% \And
-  %% Coauthor \\
-  %% Affiliation \\
-  %% Address \\
-  %% \texttt{email} \\
-  %% \And
-  %% Coauthor \\
-  %% Affiliation \\
-  %% Address \\
-  %% \texttt{email} \\
+  John Canny \\
+  Department of Computer Science \\
+  University of California, Berkeley \\
+  \texttt{canny@berkeley.edu}
+  \And
+  Haoyu Chen \\
+  Department of Computer Science \\
+  University of California, Berkeley \\
+  \texttt{haoyuchen@berkeley.edu}
+  \And
+  Daniel Seita \\
+  Department of Computer Science \\
+  University of California, Berkeley \\
+  \texttt{seita@berkeley.edu}
+  \And
+  Xinlei Pan \\
+  Department of Bioengineering \\
+  University of California, Berkeley \\
+  \texttt{xinleipan@berkeley.edu}
+  \And 
+  Biye Jiang \\
+  Department of Computer Science \\
+  University of California, Berkeley \\
+  \texttt{bjiang@berkeley.edu}
 }
 
 \begin{document}
@@ -111,9 +114,7 @@ on i.i.d. data $\{x_i\}_{i=1}^n$ is the target distribution which one aims to ap
 sampling. This formula is problematic when $n$ is large (e.g., on the order of billions) because the
 likelihood must be evaluated based on each individual point.
 
-
-
-and~\cite{RobbinsMonro1951}.
+We can use stochasticity~\cite{RobbinsMonro1951}.
 
 In this paper, we resolve these challenges by proposing an MCMC algorithm for Bayesian parameter
 estimation in which proposals are fast and mini-batch based. Our M-H test acceptance probability is
@@ -154,9 +155,6 @@ depending on the problem), and far less than the full dataset.
 In this section, we review different results on improving MCMC methods with a focus on those dealing
 with mini-batches of large datasets. 
 
-Cutting the Metropolis-Hastings Budget paper \cite{ cutting_mh_2014} proposed that there is a bias-variance trade-off in standard MCMC methods. Bias occurs when sampling from the wrong distribution, however, bias usually decreases fast. Variance occurs when the number of sampling is not enough since we can collect only a limited number of samples in a given amount of time. The recently proposed Stochastic Gradient Langevin Dynamics (SGLD) \cite{langevin_2011} and Stochastic Gradient Fisher Scoring methods are biased because they omit the required Metropolis-Hastings tests.
-
-
 Hamiltonian Monte Carlo (HMC) methods attempt to simulate the ``physics'' of the
 system\footnote{Intuitively, we can think of a probability distribution as being a distribution over
 particles in the system, where particles are the values of random variables.} in order to generate
@@ -168,31 +166,40 @@ gradient computation based on all of the data per iteration. (This means the adv
 methods is that they generate high-quality proposals that mix well; their downside is that they are
 unsuitable for big data, which might involve Bayesian posterior inference over that data.)
 
-The Stochastic Gradient Hamiltonian Monte Carlo (SGHMC) method~
-\cite{sghmc_2014} tries to compromise
-by using a \emph{mini-batch version} of HMC, so each iteration, only the mini-batch is used to
-compute the gradient.  SGHMC also includes an extra friction term to counteract the effect of noise
-on the system (or gradient) that is added due to using only a small subset of data. (The ``naive''
-way of replacing the batch with the mini-batch \emph{without} friction means the system deviates
-from the target/desired distribution.) ~\cite{sghmc_2014} assumes the injected noise is Gaussian (we
-make a similar assumption) and appeals to the Central Limit Theorem and second-order Langevin
-dynamics\footnote{There is a class of MCMC method techniques called \emph{Langevin dynamics}~\cite{mcmc_hamiltonian_2010}. Those algorithms involve computing a gradient update for the parameter of interest $\theta$ and then using the updated $\theta$ as the next sample (i.e., this is like the proposal test). Moreover, by simulating the Hamiltonian dynamics of the system, there is no need for a rejection test. To converge to a \emph{full (posterior) distribution} of $\theta$ and not a single point (i.e., the MAP estimate of $\theta$, or the mode of the distribution) langevin dynamics adds Gaussian noise each iteration to cause the $\theta$ samples to ``jump around.'' The work of~\cite{langevin_2011} is closer to ours because it applies the normal Langevin dynamics algorithm with one difference: the gradient updates are based on a \emph{mini-batch} of the original data.} to show that SGHMC maintains the desired target distribution as the stationary
-distribution. Our methods are similar in that we use mini-batches of data, but the difference is
-that they focus on improving a particular flavor of MCMC, \emph{Hamiltonian} Monte Carlo (which uses Langevin dynamics to add noise), and they
-also try avoiding MH tests, while we are focused on improving \emph{general} MCMC by means of a \emph{more efficient} MH proposal. These are different ways of solving the same problem (i.e., the problem of using mini-batches of
-large data for MCMC).
+The Stochastic Gradient Hamiltonian Monte Carlo (SGHMC) method~ \cite{sghmc_2014} tries to
+compromise by using a \emph{mini-batch version} of HMC, so each iteration, only the mini-batch is
+used to compute the gradient.  SGHMC also includes an extra friction term to counteract the effect
+of noise on the system (or gradient) that is added due to using only a small subset of data. (The
+``naive'' way of replacing the batch with the mini-batch \emph{without} friction means the system
+deviates from the target/desired distribution.) ~\cite{sghmc_2014} assumes the injected noise is
+Gaussian (we make a similar assumption) and appeals to the Central Limit Theorem and second-order
+Langevin dynamics\footnote{There is a class of MCMC method techniques called \emph{Langevin
+dynamics}~\cite{mcmc_hamiltonian_2010}. Those algorithms involve computing a gradient update for the
+parameter of interest $\theta$ and then using the updated $\theta$ as the next sample (i.e., this is
+like the proposal test). Moreover, by simulating the Hamiltonian dynamics of the system, there is no
+need for a rejection test. To converge to a \emph{full (posterior) distribution} of $\theta$ and not
+a single point (i.e., the MAP estimate of $\theta$, or the mode of the distribution) langevin
+dynamics adds Gaussian noise each iteration to cause the $\theta$ samples to ``jump around.'' The
+work of~\cite{langevin_2011} is closer to ours because it applies the normal Langevin dynamics
+algorithm with one difference: the gradient updates are based on a \emph{mini-batch} of the original
+data.} to show that SGHMC maintains the desired target distribution as the stationary distribution.
+Our methods are similar in that we use mini-batches of data, but the difference is that they focus
+on improving a particular flavor of MCMC, \emph{Hamiltonian} Monte Carlo (which uses Langevin
+dynamics to add noise), and they also try avoiding MH tests, while we are focused on improving
+\emph{general} MCMC by means of a \emph{more efficient} MH proposal. These are different ways of
+solving the same problem (i.e., the problem of using mini-batches of large data for MCMC).
 
-The work of~\cite{cutting_mh_2014} also concerns speeding up MCMC 
-by using mini-batches of data. Their argument is that the standard MCMC algorithm for Bayesian
-posterior inference (i.e., to compute $p(\theta \mid x_1, \ldots, x_N)$ for i.i.d. data points) is
-unsuitable for large datasets because the likelihood computation requires the use of all points,
-$p(x_1, \ldots, x_n \mid \theta) = \prod_{i=1}^Np(x_i\mid \theta)$. Using all of this data just to
-decide whether the new sample $\theta$ should be accepted or rejected is computationally
-inefficient. In theory, given infinite time, using all the data points is fine because it results in
-an unbiased estimate of the target distribution and the variance of the resulting sampled values is
-low given enough time.\footnote{Note that~\cite{cutting_mh_2014} primarily use MCMC to estimate just
-the expectation of the target distribution, but their analysis should extend to other values of the
-target distribution for arbitrary input $\theta$. In other words, they use MCMC to estimate
+The work of~\cite{cutting_mh_2014} also concerns speeding up MCMC by using mini-batches of data.
+Their argument is that the standard MCMC algorithm for Bayesian posterior inference (i.e., to
+compute $p(\theta \mid x_1, \ldots, x_N)$ for i.i.d. data points) is unsuitable for large datasets
+because the likelihood computation requires the use of all points, $p(x_1, \ldots, x_n \mid \theta)
+= \prod_{i=1}^Np(x_i\mid \theta)$. Using all of this data just to decide whether the new sample
+$\theta$ should be accepted or rejected is computationally inefficient. In theory, given infinite
+time, using all the data points is fine because it results in an unbiased estimate of the target
+distribution and the variance of the resulting sampled values is low given enough
+time.\footnote{Note that~\cite{cutting_mh_2014} primarily use MCMC to estimate just the expectation
+of the target distribution, but their analysis should extend to other values of the target
+distribution for arbitrary input $\theta$. In other words, they use MCMC to estimate
 $\mathbb{E}[p(\theta \mid x_1, \ldots, x_N)]$, but we are mostly interested in $p(\theta \mid x_1,
 \ldots, x_N)$.} In reality, we have limited time. The key argument in~\cite{cutting_mh_2014} is that
 given a fixed budget, it may be better to use $n$ data points per iteration (where $n \ll N$), which
@@ -208,7 +215,8 @@ easily tell if $\theta'$ will be accepted/rejected if the mini-batch of data res
 drastically different from the likelihood of the current sample $\theta$.) If the hypothesis test is
 too uncertain, then we increase the mini-batch size and apply the test again, and we repeat this
 increment until we accept or reject $\theta'$ with high confidence (based on a Student-t
-distribution). The downside of this algorithm is the need to keep incrementing the mini-batch size in one iteration; in the worst case, they may not be able to tell with confidence to accept or
+distribution). The downside of this algorithm is the need to keep incrementing the mini-batch size
+in one iteration; in the worst case, they may not be able to tell with confidence to accept or
 reject until we get nearly all $N$ of the data points, which defeats the purpose of the algorithm.
 We propose our own algorithm that avoids this problem. {\color{blue} Daniel: does this make sense as
 a ``weakness'' of their approach?  Ideally I would like to have a comparison between our method and
@@ -300,11 +308,12 @@ approximate Metropolis-Hastings test which does not use all $N$ points during ea
 Our starting point is the following Lemma.
 
 \begin{lemma}\label{lem:detailed_balance}
-Let $\Delta = \log \left(\frac{f(\theta') q(\theta_t \mid
-\theta')}{f(\theta_t) q(\theta'\mid \theta_t)} \right)$, where $f$ is proportional to the desired target distribution and $q$ is our chosen
-proposal distribution. Any acceptance function $g$ such that $g(\Delta) = \exp(\Delta) g(-\Delta )$
-satisfies detailed balance. That is, $f(\theta_t)p(\theta' \mid \theta_t) = f(\theta')p(\theta_t
-\mid \theta')$, where $p(\theta_y \mid \theta_x)$ is the probability of jumping from $\theta_x$ to $\theta_y$ in our chain.
+Let $\Delta = \log \left(\frac{f(\theta') q(\theta_t \mid \theta')}{f(\theta_t) q(\theta'\mid
+\theta_t)} \right)$, where $f$ is proportional to the desired target distribution and $q$ is our
+chosen proposal distribution. Any acceptance function $g$ such that $g(\Delta) = \exp(\Delta)
+g(-\Delta )$ satisfies detailed balance. That is, $f(\theta_t)p(\theta' \mid \theta_t) =
+f(\theta')p(\theta_t \mid \theta')$, where $p(\theta_y \mid \theta_x)$ is the probability of jumping
+from $\theta_x$ to $\theta_y$ in our chain.
 \end{lemma}
 
 \begin{proof}
@@ -422,15 +431,55 @@ ourselves: do NOT modify the \texttt{Learner.scala} code -- just make it a new `
 
 \section{Experiments}\label{sec:experiments}
 
-\subsection{Experiment 1}
+\subsection{Mixture of Gaussians}\label{ssec:gaussians}
 
-\subsection{Experiment 2}
+We start with a simple mixture of Gaussians.
 
-\subsection{Experiment 3}
+\begin{figure}[ht]
+  \centering
+  \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
+  %\includegraphics[width=0.5\linewidth]{empty}
+  \caption{This will be a sequence of images for the Gaussian mixture.}
+\end{figure}
+
+{\color{blue}
+Daniel: TODO
+}
+
+\subsection{Logistic Regression}\label{ssec:logistic}
+
+\begin{figure}[ht]
+  \centering
+  \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
+  %\includegraphics[width=0.5\linewidth]{empty}
+  \caption{This will be a sequence of images for logistic regression.}
+\end{figure}
+
+{\color{blue}
+Daniel: TODO
+}
+
+\subsection{Neural Network Optimization}\label{ssec:nets}
+
+\begin{figure}[ht]
+  \centering
+  \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
+  %\includegraphics[width=0.5\linewidth]{empty}
+  \caption{This will hopefully show results for neural networks on BIDMach.}
+\end{figure}
+
+{\color{blue}
+Daniel: TODO
+}
 
 
 
-\section{Conclusion}\label{sec:conclusion}
+
+\section{Conclusions}\label{sec:conclusion}
+
+{\color{blue}
+Daniel: TODO
+}
 
 
 \small
@@ -440,21 +489,157 @@ ourselves: do NOT modify the \texttt{Learner.scala} code -- just make it a new `
 \clearpage
 \appendix
 
-\section{Section for Appendix Information}
+\begin{center}
+{\Large Outline of Appendix}
+\end{center}
+
+In this appendix, we describe the following topics, with an emphasis on clarity and understanding:
+
+\begin{itemize}[noitemsep]
+    \item Detailed discussion of the experiment from Section~\ref{ssec:gaussians}.
+    \item Detailed discussion of the experiment from Section~\ref{ssec:logistic}.
+    \item Detailed discussion of the experiment from Section~\ref{ssec:nets}.
+\end{itemize}
+
+\section{Gaussian Mixture Experiment Details}
+
+\subsection{Mathematical Assumptions}
+
+We borrow this example from~\cite{langevin_2011}. Our parameter is a two dimensional vector, denoted
+as $\theta = (\theta_1, \theta_2)$, where we have
+\begin{equation}
+\theta_1 \sim \mathcal{N}(0, \sigma_1^2) \quad \mbox{ and } \quad \theta_2 \sim \mathcal{N}(0, \sigma_2^2)
+\end{equation}
+where $\mathcal{N}$ indicates the normal distribution (more generally, the multivariate normal). We
+consider the above as our prior. Following~\cite{langevin_2011}, we set $\sigma_1^2 = 10$ and
+$\sigma_2^2=1$, so the covariance matrix of $\theta$ is $\Sigma = {\rm diag}(10,1)$. Therefore, the
+log prior probability we endow on $\theta$ is
+\begin{equation}
+\log p(\theta) = \log \left(\frac{1}{2\pi\sqrt{10}}\right) - \frac{1}{2}\theta^T\Sigma^{-1}\theta.
+\end{equation}
+To generate the data, we use the following Gaussian mixture with tied means:
+\begin{equation}\label{eq:x_points}
+x_i \sim \frac{1}{2}\mathcal{N}(\theta_1, \sigma_x^2) + \frac{1}{2}\mathcal{N}(\theta_1+\theta_2, \sigma_x^2)
+\end{equation}
+where, again following~\cite{langevin_2011}, we set $\sigma_x^2 = 2$. This means the log likelihood
+of a single data instance is
+\begin{equation}
+\log p(x_i \mid \theta) = \log\left(\frac{1}{4\sqrt{\pi}}\right) +
+\log\left(\exp\left(-\frac{1}{4}(x_i - \theta_1)^2\right) + \exp\left(-\frac{1}{4}(x_i -
+(\theta_1+\theta_2))^2\right)\right)
+\end{equation}
+Here is the problem statement. Given some number of i.i.d. data points $x_1, x_2, \ldots, x_N$
+generated according to~(\ref{eq:x_points}), determine the posterior distribution\footnote{Note that,
+as is typical with Bayesian analysis, we do not concern ourselves with the denominator of the
+original (non-log) posterior.} of $\theta$:
+\begin{equation}\label{eq:log_post}
+\log p(\theta \mid x_1,\ldots,x_n) = \log p(\theta) + \sum_{i=1}^N\log p(x_i \mid \theta).
+\end{equation}
+Alternatively, if there are too many data points, we may opt to instead pick a point estimate of
+$\theta$, generally the MAP estimate. (If $N$ is extremely large, it will cause the posterior to
+peak sharply at its modes, reducing distribution estimates to point estimates.) Note that in many
+cases, we will need to take a \emph{minibatch estimate} of~(\ref{eq:log_post}). In that case, the
+literature generally uses
+\begin{equation}\label{eq:scaling_factor}
+\log p(\theta \mid x_1,\ldots,x_n) \approx \log p(\theta) + \frac{N}{n} \sum_{i=1}^n\log p(x_i \mid \theta).
+\end{equation}
+where we only use $n \ll N$ samples, but we must scale up the likelihood contribution by $N/n$. If we
+didn't add this scaling factor, then the contribution of the likelihood terms would be weaker. We
+we will discuss this scaling factor in more detail later.
+
+Finally, recall earlier that we needed to define $\Delta$. In our context, $\Delta$ is:
+\begin{align}
+\Delta &= \log \left(\frac{f(\theta') q(\theta_t \mid \theta')}{f(\theta_t) q(\theta'\mid \theta_t)} \right) \\
+&= \log p(\theta') - \log p(\theta_t) + \sum_{i=1}^N(\log p(x_i \mid \theta') - \log p(x_i \mid \theta_t)) + \log\left(\frac{q(\theta_t \mid \theta')}{q(\theta' \mid \theta_t)}\right).
+\end{align}
+
+\subsection{Experiment Observations}
+
+Figure~\ref{fig:contour} describes a contour plot of the posterior based on the points we have
+sampled. The goal is to get distributions that either cover this posterior well (i.e., identifying
+that there are two modes), or if the data is too large and we want MAP estimates, we wish to see the
+methods stay at one of the modes.
+
+In the following, we only consider random walk proposals, so the term in $\Delta$ containing the
+$q$s disappears.  Random walk proposals are bad, but since the proposal is poor, good performance
+can only be obtained with a strong MH test, hence why we can use this as a reasonable starting
+benchmark.
+
+We use the settings:
+
+\begin{itemize}[noitemsep]
+    \item We use $N=10000$ samples of $x_i$.
+    \item The covariance of the Gaussian random walk is ${\rm diag}(0.15, 0.15)$.
+    \item The mini-batch size is ...
+    \item (more settings) ...
+    \item For the adaptive sampling method, the tolerance for deciding on a test is ....
+    \item The number of iterations is .... One iteration involves one $\theta'$ proposal and a test
+    to accept/reject.
+\end{itemize}
+
+Figure~\ref{fig:scatter} compares scatter plots of the ``Cutting the MH'' test (hereafter called
+``adaptive minibatch'') versus ``Our Method''.
+
+Figure~\ref{fig:cutting_mh} describes the histograms of the adaptive minibatch's batch sizes.
+
+Figure~\ref{fig:diagnostics} describes the histograms of various statistics for our method.
+
+\begin{figure}[ht]
+  \centering
+  \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
+  %\includegraphics[width=0.5\linewidth]{empty}
+  \caption{TODO contour plots}
+  \label{fig:contour}
+\end{figure}
+
+\begin{figure}[ht]
+  \centering
+  \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
+  %\includegraphics[width=0.5\linewidth]{empty}
+  \caption{Scatter plots}
+  \label{fig:scatter}
+\end{figure}
+
+\begin{figure}[ht]
+  \centering
+  \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
+  %\includegraphics[width=0.5\linewidth]{empty}
+  \caption{Diagnostic Plots 1 (e.g., histigrams of cutting MH)}
+  \label{fig:cutting_mh}
+\end{figure}
+
+\begin{figure}[ht]
+  \centering
+  \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
+  %\includegraphics[width=0.5\linewidth]{empty}
+  \caption{Diagnostic Plots 2 (sd, delta, etc)}
+  \label{fig:diagnostics}
+\end{figure}
+
+
 
 {\color{blue}
-Daniel: In case we want to use this.
+Daniel: TODO FINISH
 }
 
+\section{Logistic Regression Experiment Details}
+
+{\color{blue}
+Daniel: TODO
+}
+
+\section{Neural Network Experiment Details}
+
+{\color{blue}
+Daniel: TODO
+}
 
 % Daniel: here are example LaTeX codes for figures and tables if we want to use them.
-
 %\begin{figure}[h]
 %  \centering
 %  \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
 %  \caption{Sample figure caption.}
 %\end{figure}
-
 %\begin{table}[t]
 %  \caption{Sample table title}
 %  \label{sample-table}
@@ -471,7 +656,6 @@ Daniel: In case we want to use this.
 %    \bottomrule
 %  \end{tabular}
 %\end{table}
-
 %\usepackage[pdftex]{graphicx} ...
 %\includegraphics[width=0.8\linewidth]{myfile.pdf}
 
