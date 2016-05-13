@@ -32,7 +32,7 @@ framexleftmargin=20pt}
 
 \newtheorem{lemma}{Lemma}
 
-\title{Fast Mini-Batch MCMC for Big Data Bayesian Posterior Inference}
+\title{Fast Mini-Batch MCMC for Big Data Parameter Optimization}
 
 % The \author macro works with any number of authors. There are two commands used to separate the
 % names and addresses of multiple authors: \And and \AND.
@@ -73,34 +73,83 @@ framexleftmargin=20pt}
 }
 
 \begin{document}
-% \nipsfinalcopy is no longer used
+
+\begin{comment}
+\end{comment}
 
 \maketitle
 
 \begin{abstract}
-Markov chain Monte Carlo (MCMC) methods have become one of the most popular techniques in machine
-learning, but they can be intractably slow when doing Bayesian posterior estimation due to the need
-to use information from all training data points during each sampling iteration. We propose a
-mini-batch approach that uses information from a small subset of samples per iteration. This, along
-with a new Metropolis-Hastings test, will allow us to sample faster to obtain higher-quality
-parameter estimates. We implement our sampler in BIDMach and benchmark it with the state of the art.
-{\color{blue} Daniel: I hope we can do this.}
-{\color{blue} Xinlei: Compare with "cutting MH test budget" paper?}
+Markov chain Monte Carlo (MCMC) methods are one of the most popular techniques in machine learning
+for Bayesian inference. With large datasets, however, MCMC methods can be intractably slow due to
+the need to compute the likelihood of all the data items. Borrowing from the optimization
+literature, one intuitive way to make MCMC faster is to compute necessary gradients or likelihood
+ratios based only on a random subset of the data each iteration. Such stochastic MCMC has received
+increased research attention in recent years, but it is relatively difficult to develop formal
+guarantees for those algorithms. Some stochastic MCMC methods also involve adaptively increasing the
+minibatch size, which can nullify the benefits of the method if too much data is used. In addition,
+with large datasets, it is unclear if obtaining a full posterior distribution is necessary or better
+than deriving just a single MAP or point estimate of the parameters. In this paper, we present an
+alternative perspective on stochastic MCMC based on deriving high-quality point estimates of
+parameters in the presence of big data. To this end, we present a different Metropolis-Hastings test
+designed to be more efficient in the state space. We also augment the target posterior distribution
+with a temperature parameter, alleviating the need to adjust minibatch sizes.  We theoretically
+show the benefits of our approach, and verify with empirical benchmarks on synthetic data and neural
+network optimization.
 \end{abstract}
 
-\section{Introduction}
 
-MCMC has become one of the most popular techniques in machine learning...
 
-In this paper, we resolve these challenges\footnote{{\color{blue} Daniel: we can write these
-``challenges'' later once the project becomes clearer}.} by proposing an MCMC algorithm for
-Bayesian parameter estimation in which proposals are fast and mini-batch based. Our M-H test
-acceptance probability is about 50 percent, reasonably high, which means our samples mix well.We
-experimentally show that our approach is better than the state of the art.
+\section{Introduction}\label{sec:introduction}
 
-{\color{blue} Daniel: we can fill out this section later.}
+Markov chain Monte Carlo (MCMC) sampling is one of the most popular techniques for Bayesian
+computation. In general, an MCMC algorithm will propose samples from a proposal distribution $q$,
+and decide whether to accept or reject the new sample based on a Metropolis-Hastings
+test~\cite{Metropolis1953,hastings70}. With traditional Bayesian posterior inference, the posterior
+probability $p(\theta \mid x_1, \ldots x_N) \propto p(\theta)\prod_{i=1}^np(x_i \mid \theta)$ based
+on i.i.d. data $\{x_i\}_{i=1}^n$ is the target distribution which one aims to approximate by
+sampling. This formula is problematic when $n$ is large (e.g., on the order of billions) because the
+likelihood must be evaluated based on each individual point.
 
-\section{Related Work}
+
+
+and~\cite{RobbinsMonro1951}.
+
+In this paper, we resolve these challenges by proposing an MCMC algorithm for Bayesian parameter
+estimation in which proposals are fast and mini-batch based. Our M-H test acceptance probability is
+about 50 percent, reasonably high, which means our samples mix well.We experimentally show that our
+approach is better than the state of the art.
+
+Our goal is using MH testing is in the context of MCMC model optimization, especially for neural
+networks. We are also interested in using it for other big data problems. We are not interested in
+exact inference of the posterior model parameters for a very large dataset. 
+
+The example you have been using, the mixture of two gaussians, illustrates this point well. The
+"full data" posterior  based on 300 points has two sharp modes. The "cutting the MH budget" paper
+takes on average about half the data points to make steps on this distribution. That's intuitive.
+But it is also not very useful. The more data you have, the sharper the modes based on all the data.
+On a non-toy problem (e.g. > 10,000 points), the posterior would collapse to two points from which
+the MCMC simulation could likely never escape. And the "cutting the budget" method would still
+require almost all the data to make steps. 
+
+For any real big-data problem (billions of points) the story would be the same. 
+
+We should argue instead that for model parameter inference, the goal is either MAP or ML estimation.
+In both cases the goal is to find a good posterior mode. But the exact form of the distribution is
+arbitrary, and e.g. non-unit powers of the distribution are fine. That corresponds to changing the
+temperature of the distribution, or changing the scale factor in log delta space (which the factor
+N/n is doing). 
+
+So rather than fixing the posterior temperature and trying to use adjustable mini-batch size to
+achieve it (which ends up reducing to nearly-full-batch updates) we are proposing to run at the
+natural temperature induced by a given minibatch size. We can always increase the mini-batch size to
+reduce the temperature. But there is no need to do this beyond the point where the posterior mode is
+sharp and well-defined. That will occur at some fixed number of points (e.g. a few thousand,
+depending on the problem), and far less than the full dataset.
+
+
+
+\section{Related Work}\label{sec:related_work}
 
 In this section, we review different results on improving MCMC methods with a focus on those dealing
 with mini-batches of large datasets. 
@@ -377,6 +426,7 @@ ourselves: do NOT modify the \texttt{Learner.scala} code -- just make it a new `
 
 \subsection{Experiment 2}
 
+\subsection{Experiment 3}
 
 
 
