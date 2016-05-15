@@ -30,6 +30,7 @@ language=matlab,
 framexleftmargin=20pt}
 
 \newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
 
 \title{A New Metropolis-Hastings Test for Fast Minibatch MCMC Inference and Optimization}
 
@@ -131,7 +132,7 @@ to find a good posterior mode, but the exact form of the distribution is arbitra
 non-unit powers of the distribution are fine. That corresponds to changing the temperature of the
 distribution to make it ``flatter''.
 
-Rather than fixing the posterior temperature and trying to use adjustable mini-batch size to achieve
+Rather than fixing the posterior temperature and trying to use adjustable minibatch size to achieve
 it (which ends up reducing to nearly-full-batch updates) we propose to run at the natural
 temperature induced by a given minibatch size. We can always increase the minibatch size to reduce
 the temperature, but there is no need to do this beyond the point where the posterior mode is sharp
@@ -141,34 +142,31 @@ To this end, we present a new Metropolis-Hastings test that can fit in this fram
 MCMC methods. We present theoretical and experimental results on our method and show that it can be
 the method of choice for minibatch MCMC .
 
+{\color{blue}
+Daniel: This section needs work in describing our argument carefully.
+}
 
 
 
 \section{Preliminaries and Related Work}\label{sec:related_work}
 
-The standard MCMC method proceeds as follows~\cite{gilks1996markov,brooks2011handbook}. For a
-parameter $\theta$ and conditionally independent data, we wish to compute the target distribution
-$p(\theta \mid x_1, \ldots, x_N)$. Since exact evaluation is intractable, we generate a chain of
-correlated samples $\theta_1, \ldots, \theta_T$ for some large $T$, and approximate $p$ by using
-counts of samples. For each iteration $t$, we start with our current $\theta_t$. We use a
-\emph{proposal distribution} $q(\theta' \mid \theta_t)$ to determine a new candidate $\theta'$. With
-probability $P_a$, we accept it and set $\theta_{t+1} = \theta'$; otherwise, we repeat the previous
-value $\theta_{t+1} = \theta_t$. Traditionally, $P_a$ is computed as follows:
+In the standard MCMC method~\cite{gilks1996markov,brooks2011handbook} for Bayesian inference with
+parameter $\theta$ and conditionally independent data, the goal is to compute the target
+distribution $p(\theta \mid x_1, \ldots, x_N)$.  To do so, one generates a chain of (correlated)
+samples $\theta_1, \ldots, \theta_T$ for large $T$ and approximates $p$ using the sample counts.
+Each iteration $t$ has a current $\theta_t$, and a \emph{proposal distribution} $q(\theta' \mid
+\theta_t)$ determines a new candidate $\theta'$. With probability $P_a$, the sample is accepted, so
+$\theta_{t+1} = \theta'$. Otherwise, $\theta_{t+1} = \theta_t$. This can be implemented by drawing
+a uniform random variable $u \sim {\rm Unif}[0,1]$ and accepting if $u < P_a$. Traditionally, $P_a$ is
 \begin{equation}\label{eq:traditional}
 P_a = \min\left\{ 1, \frac{f(\theta')q(\theta_t \mid \theta')}{f(\theta_t)q(\theta' \mid \theta_t)}
 \right\} = \min\left\{ 1, \frac{p(\theta')\prod_{i=1}^N p(x_i ; \theta')q(\theta_t \mid \theta')}{p(\theta_t)\prod_{i=1}^N p(x_i ; \theta_t)q(\theta' \mid
 \theta_t)} \right\},
 \end{equation}
-where $f(\theta_t)=p(\theta_t|x_1,\ldots,x_N) \propto p(\theta_t)\prod_{i=1}^N p(x_i \mid
-\theta_t)$. The technical requirement for $P_a$ is that $f$ be proportional to the true target
-distribution.
-
-One then draws a uniform random variable $u$ from ${\rm Unif}[0,1]$ and accepts $\theta_{t+1} =
-\theta'$ if $u < P_a$, and uses $\theta_{t+1} = \theta_t$ otherwise. The $P_a$ from
-Equation~\ref{eq:traditional} satisfies detailed balance, so if one samples long enough using the
-heuristic above, one will arrive at a stationary distribution.  The $P_a$ is guaranteed to converge
-to the true $p$ distribution given sufficiently many examples (though a burn-in period and/or taking
-every $n$th sample may be necessary).
+where $f(\theta_t)=p(\theta_t \mid x_1,\ldots,x_N)$. The $P_a$ from Equation~\ref{eq:traditional}
+satisfies detailed balance, so if one samples long enough, one will arrive at a stationary
+distribution matching the posterior, though a burn-in period and/or taking every $n$th sample may be
+helpful.
 
 Unfortunately, computing $f$ requires the use of all $N$ training data points. Moreover, it is
 difficult to design tests using substantially fewer than $N$ points that also satisfy detailed
@@ -182,9 +180,9 @@ stuck.
 {\color{blue}
 Daniel: I am worried. We need to motivate why it is not easy to use minibatch MCMC, and what other
 researchers have tried to do about that.  The last paragraph is from~\cite{cutting_mh_2014}, and it
-seems to argue that people have not used minibatch MCMC before ``the algorithm gets stuck''. But
-isn't that exactly what our algorithm is doing when it is getting ``stuck'' at modes? If we wanted
-to get stuck at modes with large datasets, why didn't we just do what previous work did?
+seems to argue that people have not used minibatch MCMC before because ``the algorithm gets stuck''.
+But isn't that exactly what our algorithm is doing when it is getting ``stuck'' at modes? If we
+wanted to get stuck at modes with large datasets, why didn't we just do what previous work did?
 }
 
 The work of~\cite{cutting_mh_2014} proposes an adaptive minibatch approach by using a sequential
@@ -193,11 +191,12 @@ test the hypothesis that the sample $\theta'$ should be accepted or rejected bas
 ratio. If the test cannot make a decision over a certain confidence threshold, then they increase
 the minibatch size and test again. This process repeats until a decision.  The downside of this
 algorithm is the need to keep incrementing the mini-batch size in one iteration; in the worst case,
-all $N$ data points may be needed in a single iteration. A related approach
-is~\cite{icml2014c1_bardenet14}, which has slightly more robust theoretical properties, but comes at
-the cost of more computational time. The work of~\cite{conf/uai/MaclaurinA14} presents an
-\emph{exact} approach, but has the sometimes unreasonable requirement of a lower bound on the
-per-datum likelihood factors.
+all $N$ data points may be needed in a single iteration. A similar approach
+from~\cite{icml2014c1_bardenet14} has slightly more robust theoretical properties, but comes at the
+cost of more computational time. The work of~\cite{conf/uai/MaclaurinA14} presents another minibatch
+MCMC method, but which gets the \emph{exact} posterior, with the only requirement being that there
+needs to be a lower bound on the log likelihood for each data point. They augment the likelihood
+with auxiliary random variables, but this can hurt mixing.
 
 There is a separate line of work related to optimizing MCMC about simulating the physics of a
 probability distribution. By viewing random variables as ``particles'' in a system, it is possible
@@ -219,6 +218,10 @@ size.
 %% Daniel: I don't know how to integrate this easily.
 %% \cite{sgmcmc_2015} (NIPS 2015) might want to give this a mention, where it would fit in their
 %% recipe.
+
+%% Daniel: for a further discussion on the 'Firefly' paper, see this blog post:
+%% https://xianblog.wordpress.com/2014/04/02/firefly-monte-carlo/
+%% Note: this guy also blogged about our earlier ICLR 2015 paper.
 
 
 
@@ -372,10 +375,135 @@ deconvolution problem.  }
 
 \section{Theoretical Results}\label{sec:theory}
 
-TODO insert Haoyu's proof.
+Since our proposed accept probability function $g(\Delta) = (1+ \exp(-\Delta))^{-1}$ satisfies
+detail balance, if $\Delta$ is computed from the complete data, the distribution of the sampled data
+will be the same as our target distribution $f(.)$. Define the accept probability computed by the
+complete data as $P_a = g(\Delta) = \Pr(\Delta + X > 0)$. However, if our proposed mini-batch
+testing method, we use $\Delta'$, which comes from mini-batch data, to estimate the accept
+probability. Define the accept probability we get by $\Delta'$ as $P_a' = \Pr(\Delta' +
+X_{correction} > 0)$. In this section, we first prove that if the our estimation of $X_{norm}$ is
+correct, our accept probability $P_a'$ is the same as the $P_a$. Secondly, we define the transition
+kernel of complete data at sampling step $i$ is $T_i$, the transition kernel of mini-batch data at
+sampling step $i$ is $T_i'$. We show the distance of $T_i$ and $T_i'$ is proportional to our
+estimation of $X_{norm}$. Thirdly, we define the stationary distribution obtained by $T_i$ is $\pi$.
+We show the by decreasing the step size, the distribution of our sampled data converge to the $\pi$.
 
-We implement our system within the open-source BIDMach project~\cite{canny2013bidmach}. Note to
-ourselves: do NOT modify the \texttt{Learner.scala} code -- just make it a new ``Model''.
+\begin{theorem}
+If our estimation of $X_{norm}$ is ideally correct, the accept probability between our mini-batch
+algorithm and the complete data are the same, i.e. $P_a = P_a'$.
+\end{theorem}
+
+\begin{proof}
+\[
+P_a = \Pr (\Delta + X > 0) = \Pr (\Delta + X_{norm} + X_{correction} > 0) = \Pr (\Delta' +
+X_{correction} > 0) = P_a'.
+\]
+\end{proof}
+
+\begin{lemma}
+The distribution of $\Delta'$ is approximately Gaussian, if we choose the mini-batch data randomly. 
+\end{lemma}
+
+\begin{proof}
+By definition, $\Delta' = \log \left( \frac{f(\theta')P(\theta_t | \theta')}{f(\theta_t) P(\theta' |
+\theta_t)} \right)$, where $f(\theta)$ is the posterior distribution, i.e. $f(\theta) =
+p_{\theta}(\theta) \prod_i p(x_i | \theta)$. By plugging the $f(\theta)$, we have $\Delta' = \log
+p_{\theta}(\theta') - \log p_{\theta}(\theta_t) + \log P(\theta_t|\theta') - \log
+P(\theta'|\theta_t) + \sum_i (\log p(x_i|\theta') - \log p(x_i|\theta_t))$. If we fix the $\theta_t$
+and $\theta'$, the randomness only comes from the choice of mini-batch data, i.e. $\sum_i (\log
+p(x_i|\theta') - \log p(x_i|\theta_t))$. Since we choose the mini-batch data randomly, the
+distribution of $\sum_i (\log p(x_i|\theta') - \log p(x_i|\theta_t))$ converge to Gaussian
+distribution by the Central Limit Theorem.
+\end{proof}
+
+Let's define the our estimation of $X_{norm}$ is $X_{norm}'$, and $X+{\xi} = X_{norm} - X_{norm}'$.
+We also define the cumulative distribution function of $X$ is $F_X(.)$.
+
+\begin{lemma}
+If $|X_\xi| < \zeta$ and $\nabla F_X < k$, the total variance distance between $T_i$ and $T_i'$ is
+bounded by $2\zeta k$.
+\end{lemma}
+
+\begin{proof}
+We firsts prove the difference of accept rate is bounded: $|P_a - P_a'| \leq 2\zeta k$ where, $P_a =
+\Pr (\Delta + X > 0)$, $P_a' = \Pr(\Delta' + X_{corr} > 0)$, $X= X_{corr} + X_{norm}$, and $\Delta'
+= \Delta + X_{norm} + X_\xi$. Given $X_\xi = \xi$ the $|P_a - P_a'|$ is:
+\begin{align*}
+|P_a - P_a'| &= |\Pr(\Delta + X >0) - \Pr(\Delta' + X_{corr} > 0)|\\
+& = | \Pr (\Delta + X > 0) - \Pr (\Delta + X_{norm} + \xi + X_{corr} >0) |    \\
+&= |\Pr (\Delta + X > 0) -\Pr(\Delta + X + \xi >0)| = |F_X(-\Delta)- F_X(-\Delta - \xi)| \\
+&= |\nabla F(-\Delta) \xi + o(\xi^2)| \leq  |\nabla F(-\Delta) \xi| +| o(\xi^2)| \leq 2|\nabla F(-\Delta)| |\xi| \leq 2k \xi.
+\end{align*}
+Since $|X_\xi| < \zeta$, $|P_a - P_a'| < 2k\zeta$.
+
+Next, we show the transition kernels at each step are bounded if we use the same proposer, i.e.
+$||T_i - T'_i||\leq 2k\zeta$. We can write the $T_i(\theta_t|\theta') = P_a(\theta_t, \theta')
+q(\theta'|\theta_t) + (1-P_a(\theta_t,\theta')) \delta_D(\theta' - \theta_t)$, where $\delta_D$ is
+the Dirac delta function. We can write the distance between two proposal kernel is:
+
+\begin{align*}
+||T_i - T'_i || &= \int_{\theta'} d\theta' |\int_{\theta_t} d\theta_t ((P_a-P_a') q(\theta'|\theta_t) + (1-P_a - 1+P_a') \delta_D(\theta_t -\theta')) | \\
+& = \int_{\theta'} d\theta' |\int _{\theta_t} d\theta_t (P_a- P_a')(q(\theta'|\theta_t) - \delta_D(\theta_t - \theta')) | \\ 
+& \leq 2 \zeta k \int_{\theta'}d\theta' | \int_{\theta_t} d\theta_t (q(\theta'|\theta_t) + q(\theta_t|\theta'))| = 2 \zeta k.
+\end{align*}
+\end{proof}
+
+Since the accuracy of our transition kernel is related to how accurate our estimation of $X_{\rm
+norm}$, we show the error of our estimation is roughly proportional to the step size of our
+proposer.
+
+\begin{lemma}
+For one step sampling from $\theta_t$ to $\theta'$, if the jumping step  $|\theta_t - \theta'|$ is
+smaller than $\epsilon$, and the gradient of the log-likelihood is bounded by a constant factor,
+i.e. $|\nabla (\log \Pr(x_i| \theta))| < k$, the variance of $\Delta'$ is bounded by $4\epsilon^2
+k^2 m$, where $m is the mini-batch size$.
+\end{lemma}
+
+\begin{proof}
+Similarly as the proof in the Lemma 2, We write the $\Delta'$ as: $\Delta' = \sum_i (\log
+p(x_i|\theta') - \log p(x_i|\theta_t)) + \log P(\theta_t | \theta') - P(\theta'|\theta_t) + \log
+p_{\theta}(\theta') - \log p_{\theta}(\theta_t)$. Since only the $\sum_i (\log p(x_i|\theta') - \log
+p(x_i|\theta_t))$ brings randomness, we define function $g_i(\theta)$ as $\log p(x_i|\theta)$. Then
+we have:
+\begin{align*} 
+|\log \Pr(x_i | \theta') - \log \Pr (x_i |\theta_t)| & = |g(\theta') - g(\theta_t)| \\
+&= |\nabla g(\theta_t) (\theta' - \theta_t) + o(\theta' - \theta_t)^2| \leq 2\epsilon k.
+\end{align*}
+Thus, with given the $\theta$, and $\theta'$, the variance of $\Delta'$ can be write as:
+\begin{align*}
+var(\Delta') &= var(\sum_i (\log \Pr(x_i | \theta') - \log \Pr (x_i |\theta_t))) = var(\sum_i g_i(\theta') - g_i(\theta_t)) \\
+& \leq \sum_i var(g_i(\theta') - g_i(\theta_t)) \leq  4\epsilon^2 m k^2,
+\end{align*}
+where $m$ is the minibatch size.
+\end{proof}
+
+Since $var(\Delta') < \epsilon^2 k^2 m$, we can assume the maximum value of $X_{\xi}$ is
+proportional to $sd(\Delta)$, i.e. $\epsilon$. Thus, we can assume $\zeta=\epsilon C$, where $C$ is
+a constant factor.
+
+\begin{theorem}
+Assume the stationary distribution $\pi$ satisfies $||T \circ P_0 - \pi|| \leq \eta ||P_0 - \pi||$,
+where $\eta \in [0, 1)$ for all distribution $P_0$. And assume there exists $\rho_t < 1$ such that
+$||T'_i(x, .) - \pi_i'|| \leq 2\rho_i$. We can get $|| T_t' \circ T_{t-1}' \circ \cdots \circ T_1' P_0
+- \pi_0 || \leq \sum_{s=1}^t \{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\} \rho_s \alpha_s + \alpha_t $,
+where $\alpha_i = \frac{\epsilon_i k }{1-\eta}$.
+\end{theorem}
+
+\begin{proof}
+Firstly, "Austerity in MCMC Land" shows that with $||T \circ P_0 - \pi|| \leq \eta ||P_0 - \pi||$
+and $||T-T'_i|| \leq \epsilon_i k$, the norm between the stationary distribution is $||\pi -
+\pi_i'||\leq \frac{\epsilon_i k}{1-\eta}$.
+
+Second, by Theorem 3.6 in~\cite{yang2013sequential}, we have  $\| T_t' \circ T_{t-1}' \circ \cdots
+\circ T_1' P_0 - \pi_t \| \leq \sum_{s=1}^t \{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\} \rho_s
+\alpha_s$, where $\alpha = \frac{\epsilon_i k}{1-\eta}$. Thus, we get:
+\[
+ \| T_t' \circ T_{t-1}' \circ \cdots \circ T_1' P_0 - \pi_0 \| \leq \|T_t' \circ T_{t-1}' \circ
+ \cdots \circ T_1' P_0 - \pi_t\| + \|\pi_t - \pi_0\| \leq \sum_{s=1}^t \{\prod _{u=s+1}^t \rho_u
+ (1-\alpha_u)\} \rho_s \alpha_s + \alpha_t.
+\]
+\end{proof}
+
 
 
 
@@ -423,6 +551,9 @@ Daniel: TODO
 Daniel: TODO
 }
 
+We implement our system within the open-source BIDMach project~\cite{canny2013bidmach}. Note to
+ourselves: do NOT modify the \texttt{Learner.scala} code -- just make it a new ``Model''.
+
 
 
 
@@ -431,6 +562,10 @@ Daniel: TODO
 {\color{blue}
 Daniel: TODO
 }
+
+Straightforward directions for future work include more extensive experiments. More elaborate
+extensions could be combining our results with Hamiltonian Monte Carlo methods, or integrating
+parallel MCMC~\cite{conf/uai/AngelinoKWSA14} concepts into our work.
 
 
 \small
