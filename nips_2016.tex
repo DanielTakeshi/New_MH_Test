@@ -31,7 +31,7 @@ framexleftmargin=20pt}
 
 \newtheorem{lemma}{Lemma}
 
-\title{Fast Mini-Batch MCMC for Big Data Parameter Optimization}
+\title{A New Metropolis-Hastings Test for Fast Minibatch MCMC Inference and Optimization}
 
 % The \author macro works with any number of authors. There are two commands used to separate the
 % names and addresses of multiple authors: \And and \AND.
@@ -85,20 +85,16 @@ framexleftmargin=20pt}
 \begin{abstract}
 Markov chain Monte Carlo (MCMC) methods are one of the most popular techniques in machine learning
 for Bayesian inference. With large datasets, however, MCMC methods can be intractably slow due to
-the need to compute the likelihood of all the data items. Borrowing from the optimization
-literature, one intuitive way to make MCMC faster is to compute necessary gradients or likelihood
-ratios based only on a random subset of the data each iteration. Such stochastic MCMC has received
-increased research attention in recent years, but it is relatively difficult to develop formal
-guarantees for those algorithms. Some stochastic MCMC methods also involve adaptively increasing the
-minibatch size, which can nullify the benefits of the method if too much data is used. In addition,
-with large datasets, it is unclear if obtaining a full posterior distribution is necessary or better
-than deriving just a single MAP or point estimate of the parameters. In this paper, we present an
-alternative perspective on stochastic MCMC based on deriving high-quality point estimates of
-parameters in the presence of big data. To this end, we present a different Metropolis-Hastings test
-designed to be more efficient in the state space. We also augment the target posterior distribution
-with a temperature parameter, alleviating the need to adjust minibatch sizes.  We theoretically
-show the benefits of our approach, and verify with empirical benchmarks on synthetic data and neural
-network optimization.
+the need to compute the likelihood of all data points each iteration. Borrowing from the
+optimization field, one way to make MCMC faster is to compute the posterior based on a random subset
+of the data each iteration. Such stochastic MCMC has received increased research attention in recent
+years, but these methods generally require adaptively increasing the minibatch size each iteration,
+which can nullify the benefits if too much data is needed. In addition, with large datasets and
+model optimization, it is unclear if obtaining a full posterior distribution is desirable over
+getting a high-quality point MAP or ML estimate of the parameters.  In this paper, we present a new
+Metropolis-Hastings test to fit in our alternative perspective on stochastic MCMC methods for big
+data model optimization. We demonstrate the benefits of our approach with theoretical and empirical
+results.
 \end{abstract}
 
 
@@ -106,177 +102,127 @@ network optimization.
 \section{Introduction}\label{sec:introduction}
 
 Markov chain Monte Carlo (MCMC) sampling is one of the most popular techniques for Bayesian
-computation. In general, an MCMC algorithm will propose samples from a proposal distribution $q$,
-and decide whether to accept or reject the new sample based on a Metropolis-Hastings
-test~\cite{Metropolis1953,hastings70}. With traditional Bayesian posterior inference, the posterior
-probability $p(\theta \mid x_1, \ldots x_N) \propto p(\theta)\prod_{i=1}^np(x_i \mid \theta)$ based
-on i.i.d. data $\{x_i\}_{i=1}^n$ is the target distribution which one aims to approximate by
-sampling. This formula is problematic when $n$ is large (e.g., on the order of billions) because the
-likelihood must be evaluated based on each individual point.
+computation. MCMC algorithms propose samples from a proposal distribution $q$, and decide whether to
+accept or reject them based on a Metropolis-Hastings test~\cite{Metropolis1953,hastings70}. With
+traditional Bayesian posterior inference, the posterior distribution $p(\theta \mid x_1, \ldots,
+x_N) \propto p(\theta)\prod_{i=1}^np(x_i \mid \theta)$ of parameter $\theta$ based on conditionally
+independent data $\{x_i\}_{i=1}^n$ is the target distribution which one aims to approximate by
+sampling $\theta$ values. When $n$ is large (e.g., in the billions), it is computationally difficult
+to compute the exact posterior because the likelihood must be evaluated on each $x_i$.
 
-We can use stochasticity~\cite{RobbinsMonro1951}.
+Recent success in machine learning optimization in the presence of large datasets have been in part
+due to the ubiquitous use of stochastic gradient methods, where a subset of the data is used each
+iteration to compute a noisy estimate of the gradient. These Robbins-Munro
+algorithms~\cite{RobbinsMonro1951} have historically not been used with MCMC methods. A recent
+result from~\cite{cutting_mh_2014} attempted to bridge the gap between minibatch optimization and
+Bayesian inference by proposing an \emph{adaptive minibatch} method. Their method uses a subset of
+the $N$ data points for the MH test each iteration, but requires incrementally increasing the
+minibatch size so that it is more confident in its prediction on accepting or rejecting.
 
-In this paper, we resolve these challenges by proposing an MCMC algorithm for Bayesian parameter
-estimation in which proposals are fast and mini-batch based. Our M-H test acceptance probability is
-about 50 percent, reasonably high, which means our samples mix well.We experimentally show that our
-approach is better than the state of the art.
+We argue for an alternative approach to using MCMC methods in the context of big data problems. In
+general, model optimization involves finding one point estimate of optimal parameters based on a
+user's goals, which typically refer to MAP or ML estimates. In addition, the more data one has, the
+sharper the posterior distribution's modes. In the extreme case, the posterior would collapse to the
+points corresponding to the modes, and it would be difficult for MCMC methods to escape.
 
-Our goal is using MH testing is in the context of MCMC model optimization, especially for neural
-networks. We are also interested in using it for other big data problems. We are not interested in
-exact inference of the posterior model parameters for a very large dataset. 
+Therefore, we are not interested in exact inference of the posterior model parameters for a very
+large dataset, but rather, we want to perform either MAP or ML estimation. In both cases the goal is
+to find a good posterior mode, but the exact form of the distribution is arbitrary. In particular,
+non-unit powers of the distribution are fine. That corresponds to changing the temperature of the
+distribution to make it ``flatter''.
 
-The example you have been using, the mixture of two gaussians, illustrates this point well. The
-"full data" posterior  based on 300 points has two sharp modes. The "cutting the MH budget" paper
-takes on average about half the data points to make steps on this distribution. That's intuitive.
-But it is also not very useful. The more data you have, the sharper the modes based on all the data.
-On a non-toy problem (e.g. > 10,000 points), the posterior would collapse to two points from which
-the MCMC simulation could likely never escape. And the "cutting the budget" method would still
-require almost all the data to make steps. 
+Rather than fixing the posterior temperature and trying to use adjustable mini-batch size to achieve
+it (which ends up reducing to nearly-full-batch updates) we propose to run at the natural
+temperature induced by a given minibatch size. We can always increase the minibatch size to reduce
+the temperature, but there is no need to do this beyond the point where the posterior mode is sharp
+and well-defined. That will occur at some fixed number of points and far less than the full dataset.
 
-For any real big-data problem (billions of points) the story would be the same. 
-
-We should argue instead that for model parameter inference, the goal is either MAP or ML estimation.
-In both cases the goal is to find a good posterior mode. But the exact form of the distribution is
-arbitrary, and e.g. non-unit powers of the distribution are fine. That corresponds to changing the
-temperature of the distribution, or changing the scale factor in log delta space (which the factor
-N/n is doing). 
-
-So rather than fixing the posterior temperature and trying to use adjustable mini-batch size to
-achieve it (which ends up reducing to nearly-full-batch updates) we are proposing to run at the
-natural temperature induced by a given minibatch size. We can always increase the mini-batch size to
-reduce the temperature. But there is no need to do this beyond the point where the posterior mode is
-sharp and well-defined. That will occur at some fixed number of points (e.g. a few thousand,
-depending on the problem), and far less than the full dataset.
+To this end, we present a new Metropolis-Hastings test that can fit in this framework of minibatch
+MCMC methods. We present theoretical and experimental results on our method and show that it can be
+the method of choice for minibatch MCMC .
 
 
 
-\section{Related Work}\label{sec:related_work}
 
-In this section, we review different results on improving MCMC methods with a focus on those dealing
-with mini-batches of large datasets. 
+\section{Preliminaries and Related Work}\label{sec:related_work}
 
-Hamiltonian Monte Carlo (HMC) methods attempt to simulate the ``physics'' of the
-system\footnote{Intuitively, we can think of a probability distribution as being a distribution over
-particles in the system, where particles are the values of random variables.} in order to generate
-distant, high-quality sample proposals (those are the best kind of samples). Since they simulate the
-physical dynamics of the system, total energy is preserved and their proposals are always
-accepted and there is no need for a Metropolis-Hastings correction/test\footnote{I'm not sure why
-this follows but I haven't read the details.}. Unfortunately, HMC methods require the use of a
-gradient computation based on all of the data per iteration. (This means the advantage of HMC
-methods is that they generate high-quality proposals that mix well; their downside is that they are
-unsuitable for big data, which might involve Bayesian posterior inference over that data.)
-
-The Stochastic Gradient Hamiltonian Monte Carlo (SGHMC) method~ \cite{sghmc_2014} tries to
-compromise by using a \emph{mini-batch version} of HMC, so each iteration, only the mini-batch is
-used to compute the gradient.  SGHMC also includes an extra friction term to counteract the effect
-of noise on the system (or gradient) that is added due to using only a small subset of data. (The
-``naive'' way of replacing the batch with the mini-batch \emph{without} friction means the system
-deviates from the target/desired distribution.) ~\cite{sghmc_2014} assumes the injected noise is
-Gaussian (we make a similar assumption) and appeals to the Central Limit Theorem and second-order
-Langevin dynamics\footnote{There is a class of MCMC method techniques called \emph{Langevin
-dynamics}~\cite{mcmc_hamiltonian_2010}. Those algorithms involve computing a gradient update for the
-parameter of interest $\theta$ and then using the updated $\theta$ as the next sample (i.e., this is
-like the proposal test). Moreover, by simulating the Hamiltonian dynamics of the system, there is no
-need for a rejection test. To converge to a \emph{full (posterior) distribution} of $\theta$ and not
-a single point (i.e., the MAP estimate of $\theta$, or the mode of the distribution) langevin
-dynamics adds Gaussian noise each iteration to cause the $\theta$ samples to ``jump around.'' The
-work of~\cite{langevin_2011} is closer to ours because it applies the normal Langevin dynamics
-algorithm with one difference: the gradient updates are based on a \emph{mini-batch} of the original
-data.} to show that SGHMC maintains the desired target distribution as the stationary distribution.
-Our methods are similar in that we use mini-batches of data, but the difference is that they focus
-on improving a particular flavor of MCMC, \emph{Hamiltonian} Monte Carlo (which uses Langevin
-dynamics to add noise), and they also try avoiding MH tests, while we are focused on improving
-\emph{general} MCMC by means of a \emph{more efficient} MH proposal. These are different ways of
-solving the same problem (i.e., the problem of using mini-batches of large data for MCMC).
-
-The work of~\cite{cutting_mh_2014} also concerns speeding up MCMC by using mini-batches of data.
-Their argument is that the standard MCMC algorithm for Bayesian posterior inference (i.e., to
-compute $p(\theta \mid x_1, \ldots, x_N)$ for i.i.d. data points) is unsuitable for large datasets
-because the likelihood computation requires the use of all points, $p(x_1, \ldots, x_n \mid \theta)
-= \prod_{i=1}^Np(x_i\mid \theta)$. Using all of this data just to decide whether the new sample
-$\theta$ should be accepted or rejected is computationally inefficient. In theory, given infinite
-time, using all the data points is fine because it results in an unbiased estimate of the target
-distribution and the variance of the resulting sampled values is low given enough
-time.\footnote{Note that~\cite{cutting_mh_2014} primarily use MCMC to estimate just the expectation
-of the target distribution, but their analysis should extend to other values of the target
-distribution for arbitrary input $\theta$. In other words, they use MCMC to estimate
-$\mathbb{E}[p(\theta \mid x_1, \ldots, x_N)]$, but we are mostly interested in $p(\theta \mid x_1,
-\ldots, x_N)$.} In reality, we have limited time. The key argument in~\cite{cutting_mh_2014} is that
-given a fixed budget, it may be better to use $n$ data points per iteration (where $n \ll N$), which
-will sacrifice some bias but will perhaps improve variance by allowing us to sample for $\theta$
-more often, since we will get $\theta_1, \ldots, \theta_T$ as opposed to the standard case using all
-$N$ samples but with only $\theta_1, \ldots, \theta_t$ samples ($t \ll T$).
-
-More formally, the algorithm they develop is a sequential hypothesis testing algorithm. During each
-iteration, their algorithm generates a new sample $\theta'$ from the proposal distribution. They
-start with a small mini-batch of the data, and test the hypothesis (based on this small mini-batch)
-that $\theta'$ should be accepted or rejected based the likelihood ratio. (Intuitively, we can
-easily tell if $\theta'$ will be accepted/rejected if the mini-batch of data results in likelihood
-drastically different from the likelihood of the current sample $\theta$.) If the hypothesis test is
-too uncertain, then we increase the mini-batch size and apply the test again, and we repeat this
-increment until we accept or reject $\theta'$ with high confidence (based on a Student-t
-distribution). The downside of this algorithm is the need to keep incrementing the mini-batch size
-in one iteration; in the worst case, they may not be able to tell with confidence to accept or
-reject until we get nearly all $N$ of the data points, which defeats the purpose of the algorithm.
-We propose our own algorithm that avoids this problem. {\color{blue} Daniel: does this make sense as
-a ``weakness'' of their approach?  Ideally I would like to have a comparison between our method and
-theirs.}
-
-Some additional references to use:
-
-\begin{itemize}
-    \item \cite{icml2014c1_bardenet14} (ICML 2014) I think we definitely want to consider this. It
-    seems to be ``an alternative to the Cutting the MH budget approach'' and so it might also be
-    considered as a direct competitor.
-    \item \cite{conf/icml/AhnBW12} (ICML 2012) is the ``successor'' to Stochastic Gradient Langevin
-    Dynamics.
-    \item \cite{conf/uai/MaclaurinA14} (UAI 2014) seems like it would be interesting to state its
-    limitations.
-    \item \cite{mcmc_hamiltonian_2010} is a long paper and is written like a chapter in a textbook,
-    so it's for pedagogical reasons. It describes MCMC with Hamiltonian dynamics. It is useful to
-    gain some background on a lot of the HMC-related papers that have come since its publication
-    (2010).
-    \item \cite{stochastic_thermostats_2014} (NIPS 2014) might be considered as a ``competitor''
-    though only for HMC cases.
-    \item \cite{sgmcmc_2015} (NIPS 2015) might want to give this a mention, where it would fit in
-    their recipe.
-\end{itemize}
-
-
-
-\section{Our Algorithm}\label{sec:our_algorithm}
-
-\subsection{The General MCMC Method}\label{sec:general_mcmc}
-
-The general MCMC method proceeds as follows. For a desired random vector $\theta$, we have a
-\emph{target distribution} we wish to compute, $p(\theta \mid x_1, \ldots, x_N)$, based on $N$
-i.i.d. data points. Since exact evaluation is intractable, we generate a chain of correlated samples
-$\theta_1, \ldots, \theta_T$ for some large $T$, and approximate $p$ by using counts of samples. For
-each iteration $t$, we start with our current $\theta_t$. We use a \emph{proposal distribution}
-$q(\theta' \mid \theta_t)$ to determine a new candidate $\theta'$. With probability $P_a$, we accept
-it and set $\theta_{t+1} = \theta'$; otherwise, we repeat the previous value $\theta_{t+1} =
-\theta_t$. Traditionally, $P_a$ is computed as follows:
+The standard MCMC method proceeds as follows~\cite{gilks1996markov,brooks2011handbook}. For a
+parameter $\theta$ and conditionally independent data, we wish to compute the target distribution
+$p(\theta \mid x_1, \ldots, x_N)$. Since exact evaluation is intractable, we generate a chain of
+correlated samples $\theta_1, \ldots, \theta_T$ for some large $T$, and approximate $p$ by using
+counts of samples. For each iteration $t$, we start with our current $\theta_t$. We use a
+\emph{proposal distribution} $q(\theta' \mid \theta_t)$ to determine a new candidate $\theta'$. With
+probability $P_a$, we accept it and set $\theta_{t+1} = \theta'$; otherwise, we repeat the previous
+value $\theta_{t+1} = \theta_t$. Traditionally, $P_a$ is computed as follows:
 \begin{equation}\label{eq:traditional}
 P_a = \min\left\{ 1, \frac{f(\theta')q(\theta_t \mid \theta')}{f(\theta_t)q(\theta' \mid \theta_t)}
 \right\} = \min\left\{ 1, \frac{p(\theta')\prod_{i=1}^N p(x_i ; \theta')q(\theta_t \mid \theta')}{p(\theta_t)\prod_{i=1}^N p(x_i ; \theta_t)q(\theta' \mid
 \theta_t)} \right\},
 \end{equation}
-where $f(\theta_t)=p(\theta_t|x_1,\ldots,x_N) \propto p(\theta_t)\prod_{i=1}^N p(x_i
-\mid \theta_t)$ which roughly tells us how ``likely'' we are to have a $\theta_t$ sample. The
-normalizing constants cancel out, so the requirement for $P_a$ is that $f$ be proportional to the
-true target distribution.
+where $f(\theta_t)=p(\theta_t|x_1,\ldots,x_N) \propto p(\theta_t)\prod_{i=1}^N p(x_i \mid
+\theta_t)$. The technical requirement for $P_a$ is that $f$ be proportional to the true target
+distribution.
 
 One then draws a uniform random variable $u$ from ${\rm Unif}[0,1]$ and accepts $\theta_{t+1} =
 \theta'$ if $u < P_a$, and uses $\theta_{t+1} = \theta_t$ otherwise. The $P_a$ from
-Equation~\ref{eq:traditional} satisfies ``detailed balance'' which, roughly speaking, means that if
-we sample long enough using the heuristic above, we will arrive at a stationary distribution.
+Equation~\ref{eq:traditional} satisfies detailed balance, so if one samples long enough using the
+heuristic above, one will arrive at a stationary distribution.  The $P_a$ is guaranteed to converge
+to the true $p$ distribution given sufficiently many examples (though a burn-in period and/or taking
+every $n$th sample may be necessary).
 
-The $P_a$ is guaranteed to converge to the true $p$ distribution given sufficiently many examples
-(though a burn-in period and/or taking every $n$th sample may be necessary). Unfortunately,
-computing $f$ requires the use of all $N$ training data points. In this paper, we derive a new fast,
-approximate Metropolis-Hastings test which does not use all $N$ points during each test.
+Unfortunately, computing $f$ requires the use of all $N$ training data points. Moreover, it is
+difficult to design tests using substantially fewer than $N$ points that also satisfy detailed
+balance. There has been research on ways to conduct exact accept/reject tests using unbiased
+estimators of the likelihood~\cite{Andrieu09thepseudo-marginal}. However, unbiased estimators of the
+likelihood that can be computed from minibatches of data, such as the Kennedy-Bhanot
+estimator~\cite{PhysRevD} have very high variance for large datasets. Because of this, once we get a
+very high estimate of the likelihood, almost all proposed moves are rejected and the algorithm gets
+stuck.
 
-\subsection{A Different Metropolis-Hastings Test}\label{sec:faster}
+{\color{blue}
+Daniel: I am worried. We need to motivate why it is not easy to use minibatch MCMC, and what other
+researchers have tried to do about that.  The last paragraph is from~\cite{cutting_mh_2014}, and it
+seems to argue that people have not used minibatch MCMC before ``the algorithm gets stuck''. But
+isn't that exactly what our algorithm is doing when it is getting ``stuck'' at modes? If we wanted
+to get stuck at modes with large datasets, why didn't we just do what previous work did?
+}
+
+The work of~\cite{cutting_mh_2014} proposes an adaptive minibatch approach by using a sequential
+hypothesis testing algorithm. During each iteration, they start with a small minibatch of data and
+test the hypothesis that the sample $\theta'$ should be accepted or rejected based the likelihood
+ratio. If the test cannot make a decision over a certain confidence threshold, then they increase
+the minibatch size and test again. This process repeats until a decision.  The downside of this
+algorithm is the need to keep incrementing the mini-batch size in one iteration; in the worst case,
+all $N$ data points may be needed in a single iteration. A related approach
+is~\cite{icml2014c1_bardenet14}, which has slightly more robust theoretical properties, but comes at
+the cost of more computational time. The work of~\cite{conf/uai/MaclaurinA14} presents an
+\emph{exact} approach, but has the sometimes unreasonable requirement of a lower bound on the
+per-datum likelihood factors.
+
+There is a separate line of work related to optimizing MCMC about simulating the physics of a
+probability distribution. By viewing random variables as ``particles'' in a system, it is possible
+to apply Hamiltonian Monte Carlo (HMC)~\cite{mcmc_hamiltonian_2010} methods which generate both high
+quality and distant proposals, getting the best of both worlds. These require a full gradient
+computation of the posterior, which means they also suffer from the problem of needing to know the
+likelihood at each point. Stochastic versions of HMC~\cite{sghmc_2014,stochastic_thermostats_2014}
+use a minibatch of data each iteration but require controlling the noise from sampling so the sample
+sequence does not diverge. A similar approach is to use Langevin
+Dynamics~\cite{langevin_2011,conf/icml/AhnBW12}, which does not use the momentum terms in HMC.
+
+Ultimately, minibatch SGHMC and Langevin Dynamics is an orthogonal contribution to ours, two ways of
+attempting to solve the same problem of MCMC methods with big datasets. We could augment their
+methods with our MH test, to get the benefit of their high quality proposals. Note that while their
+methods in theory do not need an MH test, in practice, they need one due to discretization of the
+system. Furthermore, tests may also be needed for when the algorithms are run with a constant step
+size.
+
+%% Daniel: I don't know how to integrate this easily.
+%% \cite{sgmcmc_2015} (NIPS 2015) might want to give this a mention, where it would fit in their
+%% recipe.
+
+
+
+\section{A New Metropolis-Hastings Test}\label{sec:our_algorithm}
 
 \begin{figure}[t]
   \centering
@@ -301,6 +247,9 @@ approximate Metropolis-Hastings test which does not use all $N$ points during ea
   To the left, we have $\Delta U$ (which is simplified as $\Delta$ in
   Section~\ref{sec:our_algorithm}), along with two noise terms that come from the new variable we
   define $X$. The details are in Section~\ref{sec:our_algorithm}.
+  {\color{blue}
+  Daniel: I think this needs to be merged into Figure~\ref{fig:part1}.
+  }
   }
   \label{fig:part2}
 \end{figure}
@@ -421,7 +370,9 @@ deconvolution problem.  }
 
 
 
-\section{Implementation}\label{sec:implementation}
+\section{Theoretical Results}\label{sec:theory}
+
+TODO insert Haoyu's proof.
 
 We implement our system within the open-source BIDMach project~\cite{canny2013bidmach}. Note to
 ourselves: do NOT modify the \texttt{Learner.scala} code -- just make it a new ``Model''.
