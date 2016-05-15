@@ -19,6 +19,7 @@
 \usepackage{microtype}      % microtypography
 
 \usepackage{amsmath,amsthm,color,graphicx,verbatim,listings,enumitem}
+\usepackage[]{algorithm2e}
 \graphicspath{{figures/}}
 
 \lstset{
@@ -130,20 +131,26 @@ Therefore, we are not interested in exact inference of the posterior model param
 large dataset, but rather, we want to perform either MAP or ML estimation. In both cases the goal is
 to find a good posterior mode, but the exact form of the distribution is arbitrary. In particular,
 non-unit powers of the distribution are fine. That corresponds to changing the temperature of the
-distribution to make it ``flatter''.
-
-Rather than fixing the posterior temperature and trying to use adjustable minibatch size to achieve
-it (which ends up reducing to nearly-full-batch updates) we propose to run at the natural
-temperature induced by a given minibatch size. We can always increase the minibatch size to reduce
-the temperature, but there is no need to do this beyond the point where the posterior mode is sharp
-and well-defined. That will occur at some fixed number of points and far less than the full dataset.
+distribution to make it ``flatter''.  Rather than fixing the posterior temperature and trying to use
+adjustable minibatch size to achieve it (which ends up reducing to nearly-full-batch updates) we
+propose to run at the natural temperature induced by a given minibatch size. We can always increase
+the minibatch size to reduce the temperature, but there is no need to do this beyond the point where
+the posterior mode is sharp and well-defined. That will occur at some fixed number of points and far
+less than the full dataset.
 
 To this end, we present a new Metropolis-Hastings test that can fit in this framework of minibatch
 MCMC methods. We present theoretical and experimental results on our method and show that it can be
-the method of choice for minibatch MCMC .
+the method of choice for minibatch MCMC. The contributions of this paper are as follows:
+
+\begin{enumerate}[noitemsep]
+    \item We develop a new minibatch MH test which satisfies detailed balance.
+    \item Our MH test is more efficient than the adaptive sampling method.
+    \item The test can incorporate temperature considerations to control mixing rates.
+\end{enumerate}
 
 {\color{blue}
-Daniel: This section needs work in describing our argument carefully.
+Daniel: This section needs work in describing our argument carefully. I will decrease the focus on
+temperature and increase focus on the new MH test once the results are clearer.
 }
 
 
@@ -160,7 +167,8 @@ $\theta_{t+1} = \theta'$. Otherwise, $\theta_{t+1} = \theta_t$. This can be impl
 a uniform random variable $u \sim {\rm Unif}[0,1]$ and accepting if $u < P_a$. Traditionally, $P_a$ is
 \begin{equation}\label{eq:traditional}
 P_a = \min\left\{ 1, \frac{f(\theta')q(\theta_t \mid \theta')}{f(\theta_t)q(\theta' \mid \theta_t)}
-\right\} = \min\left\{ 1, \frac{p(\theta')\prod_{i=1}^N p(x_i ; \theta')q(\theta_t \mid \theta')}{p(\theta_t)\prod_{i=1}^N p(x_i ; \theta_t)q(\theta' \mid
+\right\} = \min\left\{ 1, \frac{p(\theta')\prod_{i=1}^N p(x_i \mid \theta')q(\theta_t \mid
+\theta')}{p(\theta_t)\prod_{i=1}^N p(x_i \mid \theta_t)q(\theta' \mid
 \theta_t)} \right\},
 \end{equation}
 where $f(\theta_t)=p(\theta_t \mid x_1,\ldots,x_N)$. The $P_a$ from Equation~\ref{eq:traditional}
@@ -181,8 +189,10 @@ stuck.
 Daniel: I am worried. We need to motivate why it is not easy to use minibatch MCMC, and what other
 researchers have tried to do about that.  The last paragraph is from~\cite{cutting_mh_2014}, and it
 seems to argue that people have not used minibatch MCMC before because ``the algorithm gets stuck''.
-But isn't that exactly what our algorithm is doing when it is getting ``stuck'' at modes? If we
-wanted to get stuck at modes with large datasets, why didn't we just do what previous work did?
+But \emph{isn't that exactly what our algorithm is doing when it is getting ``stuck'' at modes}? If
+we wanted to get stuck at modes with large datasets, why didn't we just do what previous work did?
+The only way around this is if our algorithm is getting stuck at ``better'' modes, but then we need
+to design our experiments to test this.
 }
 
 The work of~\cite{cutting_mh_2014} proposes an adaptive minibatch approach by using a sequential
@@ -257,31 +267,39 @@ size.
   \label{fig:part2}
 \end{figure}
 
-Our starting point is the following Lemma.
+In this section, we introduce our new Metropolis-Hastings test and show how to use it to achieve
+sufficient mixing and/or to reach better posterior modes. To start, we introduce two key values we
+will use frequently: $\Delta$ and $\Delta'$:
+\begin{equation}\label{eq:deltas}
+\Delta = \log \left( \frac{p(\theta')\prod_{i=1}^N p(x_i \mid \theta')q(\theta_t \mid
+\theta')}{p(\theta_t)\prod_{i=1}^N p(x_i \mid \theta_t)q(\theta' \mid
+\theta_t)} \right);\;  \Delta' = \log \left( \frac{p(\theta')\prod_{i=1}^n p(x_i \mid \theta')q(\theta_t \mid
+\theta')}{p(\theta_t)\prod_{i=1}^n p(x_i \mid \theta_t)q(\theta' \mid
+\theta_t)} \right)
+\end{equation}
+where $p$ and $q$ have similar definitions as in Equation~\ref{eq:traditional}, so the terms here
+consider the likelihood ratios in log space. The only difference between $\Delta$ and $\Delta'$ is
+that they use $N$ and $n$ terms in the likelihood ratio, respectively. We assume $n \ll N$ (so
+$\Delta'$ is substantially faster to compute) and that the $n$ data points $x_i$ represent a random
+minibatch of data.
+
+To motivate the use of $\Delta$, we turn to Lemma~\ref{lem:detailed_balance}.
 
 \begin{lemma}\label{lem:detailed_balance}
-Let $\Delta = \log \left(\frac{f(\theta') q(\theta_t \mid \theta')}{f(\theta_t) q(\theta'\mid
-\theta_t)} \right)$, where $f$ is proportional to the desired target distribution and $q$ is our
-chosen proposal distribution. Any acceptance function $g$ such that $g(\Delta) = \exp(\Delta)
-g(-\Delta )$ satisfies detailed balance. That is, $f(\theta_t)p(\theta' \mid \theta_t) =
-f(\theta')p(\theta_t \mid \theta')$, where $p(\theta_y \mid \theta_x)$ is the probability of jumping
-from $\theta_x$ to $\theta_y$ in our chain.
+Let $\Delta$ be defined as in Equation~\ref{eq:deltas}. Any acceptance function $g$ such that
+$g(\Delta) = \exp(\Delta) g(-\Delta )$ satisfies detailed balance. That is, $f(\theta_t)p(\theta'
+\mid \theta_t) = f(\theta')p(\theta_t \mid \theta')$, where $p(\theta_y \mid \theta_x)$ is the
+probability of jumping from $\theta_x$ to $\theta_y$ in our chain.
 \end{lemma}
 
 \begin{proof}
 We begin by deriving $p(\theta' \mid \theta_t)$. This is equivalent to the probability of proposing
-$\theta'$ and then accepting it, so
-\begin{equation}\label{eq:one_way}
-p(\theta' \mid \theta_t) = q(\theta' \mid \theta_t)g(\Delta).
-\end{equation}
-Similarly, we have
-\begin{equation}\label{eq:other_way}
-p(\theta_t \mid \theta') = q(\theta_t \mid \theta')g(-\Delta).
-\end{equation}
-Notice that the probability of accepting a transition from $\theta'$ to $\theta_t$ is $g(-\Delta)$
-because this inverts the fraction inside the logarithm term of $\Delta$.  By assumption, we can
-expand $g(\Delta) = \exp(\Delta)g(-\Delta)$ in Equation~\ref{eq:one_way}.  Doing this, and combining
-the result of Equation~\ref{eq:other_way}, we get
+$\theta'$ and then accepting it, so $p(\theta' \mid \theta_t) = q(\theta' \mid \theta_t)g(\Delta).$
+Similarly, $p(\theta_t \mid \theta') = q(\theta_t \mid \theta')g(-\Delta).$ Notice that the
+probability of accepting a transition from $\theta'$ to $\theta_t$ is $g(-\Delta)$ because this
+inverts the fraction inside the logarithm term of $\Delta$.  By assumption, we can expand $g(\Delta)
+= \exp(\Delta)g(-\Delta)$ in $p(\theta' \mid \theta_t)$. Doing this, and combining that with the
+definition of $p(\theta_t \mid \theta')$, we get
 \begin{equation}\label{eq:combined}
 g(-\Delta) = \frac{p(\theta' \mid \theta_t)}{q(\theta' \mid \theta_t)\exp(\Delta)} = \frac{p(\theta_t \mid \theta')}{q(\theta_t \mid \theta')}.
 \end{equation}
@@ -289,135 +307,149 @@ Rearranging terms and expanding $\exp(\Delta)$, we have
 \begin{equation}\label{eq:rearrange}
 \frac{p(\theta' \mid \theta_t) f(\theta_t) q(\theta' \mid \theta_t)}{q(\theta' \mid \theta_t) f(\theta') q(\theta_t \mid \theta')} = \frac{p(\theta_t \mid \theta')}{ q(\theta_t \mid \theta')}.
 \end{equation}
-Cancellations result in $f(\theta') p(\theta_t \mid \theta') = f(\theta_t) p(\theta' \mid \theta_t)$. Thus, detailed balance is satisfied.\\
+Cancellations result in $f(\theta') p(\theta_t \mid \theta') = f(\theta_t) p(\theta' \mid
+\theta_t)$. Thus, detailed balance is satisfied.
 \end{proof}
 
 Some straightforward arithmetic shows that the standard Metropolis-Hastings acceptance function
-$g(\Delta) = \min\{1, e^\Delta \} = \min\left\{1, \frac{f(\theta')q(\theta_t \mid \theta')}{f(\theta_t)q(\theta' \mid
-\theta_t)}\right\}$ satisfies the condition $g(\Delta) =
+$g(\Delta) = \min\{1, e^\Delta \} = \min\left\{1, \frac{f(\theta')q(\theta_t \mid
+\theta')}{f(\theta_t)q(\theta' \mid \theta_t)}\right\}$ satisfies the condition $g(\Delta) =
 \exp(\Delta)g(-\Delta)$ and consequently, results in detailed balance.
 
-For reasons that will be clear later, we choose an alternative $g$, the logistic function:
-$g(\Delta) = (1+\exp(-\Delta))^{-1}$. Again, straightforward arithmetic shows that it satisfies the
-condition in Lemma~\ref{lem:detailed_balance}.
-
-We can sample from the logistic function using the following procedure. Let $u$ be drawn from ${\rm
-Unif}[0,1]$. At any given iteration, we can compute $\Delta$, and we accept the new candidate
-$\theta'$ if $g(\Delta) > u$, and reject otherwise. Let us define the random variable $X =
-g^{-1}(u)$ where again, $g$ is the logistic function. We claim that $X$ has CDF function $F_X(x) =
-g(x)$, i.e., its CDF is precisely the logistic function. This is because for some $X = x$, we have
+For our MH test, the key is that we use a different $g$, the logistic function: $g(\Delta) =
+(1+\exp(-\Delta))^{-1}$. Again, straightforward arithmetic shows that it satisfies the condition in
+Lemma~\ref{lem:detailed_balance}.  The logistic function is nice because we can easily sample from
+it using the following procedure. Let $u$ be a uniform random variable $u \sim {\rm Unif}[0,1]$. At
+any iteration with a current parameter $\theta_t$ and a proposed sample $\theta'$, we can compute
+$\Delta$. We accept the candidate if $g(\Delta) > u$, and reject otherwise. To see why this works,
+define a new random variable $X = g^{-1}(u)$ where again, $g$ is the logistic function. Notice that
+$X$ has cumulative distribution function $F_X(x) = g(x)$. In other words, the CDF is precisely the
+logistic function. This is because for some $X = x$, we have
 \[
 F_X(x) = {\rm Pr}(X \le x) = {\rm Pr}(g^{-1}(u) \le x) = {\rm Pr}(u \le g(x)) = \int_{0}^{g(x)} 1 dx = g(x),
 \]
 as the density of the uniform random variable here is simply one. Thus, the criteria to accept the
-candidate $\theta'$ is equivalent to whether $\Delta > X$, where $X$ has CDF of logistic function.
-(If this isn't immediately obvious, note that we can pre-multiply $g^{-1}$ to $g(\Delta) \ge u$, and
-our test is $\Delta > X$.) Since $X$ is symmetric about zero, the acceptance criteria can also be
-expressed as $\Delta + X>0$, as shown in Figure~\ref{fig:part1}.
+candidate $\theta'$ is equivalent to whether $\Delta > X$. Since $X$ is symmetric about zero, the
+acceptance criteria is equivalently expressed as $\Delta + X>0$, as shown in Figure~\ref{fig:part1}.
 
 {\color{blue}
-Daniel: The above makes sense, but I still don't understand why we had to show that the CDF of $X$
-is the logistic function, because I never use that when I claim that our acceptance test is now
-$\Delta > X$.  Do we need that assumption so that, for instance, we can decompose $X$ later the way
-we do it, with $X_{\rm noise}$ having the same variance as $\epsilon$? That might explain it.
+Daniel: The above makes sense, but I \emph{still} don't understand why we had to show that the CDF
+of $X$ is the logistic function, because I never use that when I claim that our acceptance test is
+now $\Delta > X$. All I need to say is this: we can pre-multiply $g^{-1}$ to $g(\Delta) \ge u$, and
+our test is $\Delta > X$. Right???
 }
 
-Unfortunately, there's a problem with the $\Delta + X > 0$ test: it requires us to compute $\Delta$,
-so our test will be slow! We can get around this by defining a new scalar-valued term, $\Delta'$, which is
-computed the same way as $\Delta$, but uses far fewer samples. In other words, $\Delta'$ is computed
-based on a \emph{mini-batch} of data, and it is an approximation of $\Delta$, so we can express the
-relationship as $\Delta' = \Delta + \epsilon$ for a noise term $\epsilon$. \emph{The key is that
-$\epsilon$ follows a normal distribution}, $\epsilon \sim \mathcal{N}(0, \sigma^2)$, because for i.i.d. data $x_1, \ldots, x_N$, the $\Delta$
-is expressed as the sum of log probabilities (look at Equation~\ref{eq:traditional} and apply the
-logarithm to the product over the $N$ data points, to get a sum of log terms). All we do with
-$\Delta$ is take far fewer of the summations, and normally-distributed noise is there as a product
-of the Central Limit Theorem.
+With large datasets, $\Delta$ is intractable to compute. An intuitive alternative is to use
+$\Delta'$ instead. The following lemma characterizes the distribution of $\Delta'$.
 
-To sample accurately from $\Delta'$, we need to slightly change our acceptance criteria. We can
-decompose $X$ as $X = X_{\rm norm} +X_{\rm correction}$, where the first term is a ``noise term''
-which has the same variance as $\epsilon$, and the second term is a ``residual'' term. The criteria
-to accept, previously expressed as $\Delta + X > 0$, can be rewritten as
-\begin{equation}\label{eq:criteria}
-\Delta + X = \Delta + X_{\rm norm} + X_{\rm correction} \approx \Delta' + X_{\rm correction} >0.
+\begin{lemma}\label{lem:gaussian}
+If the minibatch data is chosen randomly, then the distribution of $\Delta'$ is Gaussian.
+\end{lemma}
+
+\begin{proof}
+By expanding the definition of $\Delta'$ from Equation~\ref{eq:deltas}, we get
+\[
+\Delta' = \log p(\theta') - \log p(\theta_t) + \log q(\theta_t \mid \theta') - \log q(\theta' \mid \theta_t) +
+\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta_t)).
+\]
+If we fix $\theta_t$ and $\theta'$, the randomness in our $\Delta'$ samples only comes from the
+minibatch. Since the minibatch is chosen randomly, the distribution of $\sum_{i=1}^n (\log p(x_i\mid
+\theta') - \log p(x_i\mid \theta_t))$ converge to a Gaussian by the Central Limit Theorem.
+\end{proof}
+
+From Lemma~\ref{lem:gaussian}, since $\Delta'$ is a noisy approximation of $\Delta$, the
+relationship can be expressed as
+\begin{equation}\label{eq:relationship}
+\Delta' = \Delta + \epsilon, \quad \epsilon \sim \mathcal{N}(0, \sigma^2),
 \end{equation}
-This explains Figure~\ref{fig:part2} (though it really should be an approximation as we can't guarantee that our $X_{\rm norm}$ term is exactly the correct amount of noise), where the left hand side has distributions representing normal
+for a Gaussian noise term $\epsilon$.  The extra noise in $\Delta'$ means we can no longer perform
+the $\Delta + X$ test, so we need to slightly change our acceptance criteria. We can decompose
+$X$ as $X = X_{\rm norm}+X_{\rm corr}$, where the first term is a zero-mean ``noise term'' which
+has the same variance as $\epsilon$, and the second term is a zero-mean ``correction'' term.
+These two convolve to form $X$. The criteria to accept can be rewritten as
+\begin{equation}\label{eq:criteria}
+\Delta + X = \Delta + X_{\rm norm} + X_{\rm corr} \approx \Delta' + X_{\rm corr} >0.
+\end{equation}
+This deconvolution process is visualized in Figure~\ref{fig:part2}. {\color{blue} (Daniel: note that
+we will be fixing this figure, so the visualization should hopefully be a little clearer.)} We
+decompose $X$ this way so that we can estimate the two components separately.  Notice that if we
+increase the mini-batch size, this will cause the $X_{\rm noise}$ distribution to shrink and become
+narrower.
+
+Furthermore, since our proposed acceptance function $g(\Delta) = (1+ \exp(-\Delta))^{-1}$ satisfies
+detailed balance (see Lemma~\ref{lem:detailed_balance}), if $\Delta$ is computed from the complete
+data, the distribution of the sampled data will match our target distribution $f$, the posterior,
+under standard MCMC assumptions (e.g., that the chain is run sufficiently long enough and mixes
+well). Now consider the case of using minibatches of data. Let our true and estimated acceptance
+probabilities be $P_a = g(\Delta) = \Pr(\Delta + X > 0)$ and $P_a' = \Pr(\Delta' + X_{\rm corr} >
+0)$.  If our estimate of $X_{\rm norm}$ is exact, then $P_a' = P_a$, which follows by making the
+inequality in Equation~\ref{eq:criteria} an equality.
+
+Algorithm~\ref{alg:our_algorithm} concisely describes our MH test.
+
+{\color{blue}
+Daniel: I really need to make this clear and do the algorithm description.
+}
+
+\begin{comment}
+though it really should be an approximation as we can't guarantee that our $X_{\rm norm}$ term is
+exactly the correct amount of noise), where the left hand side has distributions representing normal
 noise ($X_{\rm norm}$, which is labeled as ${\rm Noise}_U$, but they are the same thing) and a
 ``correction'' term labeled $X_{\rm correction}$. Be aware that all of these ``additions'' are to be
 interpreted as convolutions when computing the sum of densities.
 
-Notice that we have several options we can control. For instance, we can adjust the mini-batch size;
-increasing the mini-batch size will cause the $X_{\rm noise}$ distribution to shrink and become
-narrower.
-
-{\color{blue} Daniel: I think it's becoming clear but I'm still trying to connect all of the steps.
-During each iteration of MCMC, we compute $\Delta'$ and \emph{sample} (right?) an $X$ (which we can
-do by sampling $u$ and then doing $X = g^{-1}(u)$. This gives us $\Delta' + X$ but our MH test
-    actually requires $X_{\rm correction}$, so first we must estimate $\sigma^2$, the variance of
-    $X_{\rm noise} \sim \mathcal{N}(0, \sigma^2)$ (perhaps from the mini-batch data, somehow?) and
-    then somehow ``remove'' that component from $X$ to get $X_{\rm correction}$? Then we have our
-    acceptance test. Is this right? Or, of course, we don't have to sample $X$ at all, but just
-    figure out a way to sample $X_{\rm correction}$ directly.
+I think it's becoming clear but I'm still trying to connect all of the steps.  During each iteration
+of MCMC, we compute $\Delta'$ and \emph{sample} (right?) an $X$ (which we can do by sampling $u$ and
+then doing $X = g^{-1}(u)$. This gives us $\Delta' + X$ but our MH test actually requires $X_{\rm
+correction}$, so first we must estimate $\sigma^2$, the variance of $X_{\rm noise} \sim
+\mathcal{N}(0, \sigma^2)$ (perhaps from the mini-batch data, somehow?) and then somehow ``remove''
+that component from $X$ to get $X_{\rm correction}$? Then we have our acceptance test. Is this
+right? Or, of course, we don't have to sample $X$ at all, but just figure out a way to sample
+$X_{\rm correction}$ directly.
 
 I think we talked about estimating $\sigma^2$. The variance $\sigma^2$ that we're concerned about is
 a scalar value based on the sum of log probabilities of different samples, so one way we could
 estimate the variance is by taking all samples of a mini-batch and seeing how much those individual
 $\log p(x_i \mid \theta)$ vary. Or we could look at $k$ mini-batches of data which will give us
 $\Delta_1, \ldots, \Delta_k$ and compute the empirical $\sigma^2$ (of course that defeats the
-purpose of using mini-batches).  }
+purpose of using mini-batches).
 
-{\color{blue} Xinlei: I agree with you that out MH test requires $X_{correction}$. My understanding
+I agree with you that out MH test requires $X_{correction}$. My understanding
 is that we can actually estimate $X$ from the whole data set, and the probability distribution of
 $X_{norm}$ is what we proposed? So the determination of $X_{correction}$ is a deterministic
-deconvolution problem.  }
+deconvolution problem.
+\end{comment}
+
+
+\begin{algorithm}[t]
+\KwData{this text}
+\KwResult{how to write algorithm with \LaTeX2e } initialization\;
+\While{not at end of this document}{
+    read current\;
+    \eIf{understand}{
+        go to next section\;
+        current section becomes this one\;
+    }{
+        go back to the beginning of current section\;
+    }
+}
+\caption{A description of our MH test.}
+\label{alg:our_algorithm}
+\end{algorithm}
 
 
 
 
 \section{Theoretical Results}\label{sec:theory}
 
-Since our proposed accept probability function $g(\Delta) = (1+ \exp(-\Delta))^{-1}$ satisfies
-detail balance, if $\Delta$ is computed from the complete data, the distribution of the sampled data
-will be the same as our target distribution $f(.)$. Define the accept probability computed by the
-complete data as $P_a = g(\Delta) = \Pr(\Delta + X > 0)$. However, if our proposed mini-batch
-testing method, we use $\Delta'$, which comes from mini-batch data, to estimate the accept
-probability. Define the accept probability we get by $\Delta'$ as $P_a' = \Pr(\Delta' +
-X_{correction} > 0)$. In this section, we first prove that if the our estimation of $X_{norm}$ is
-correct, our accept probability $P_a'$ is the same as the $P_a$. Secondly, we define the transition
-kernel of complete data at sampling step $i$ is $T_i$, the transition kernel of mini-batch data at
-sampling step $i$ is $T_i'$. We show the distance of $T_i$ and $T_i'$ is proportional to our
-estimation of $X_{norm}$. Thirdly, we define the stationary distribution obtained by $T_i$ is $\pi$.
-We show the by decreasing the step size, the distribution of our sampled data converge to the $\pi$.
-
-\begin{theorem}
-If our estimation of $X_{norm}$ is ideally correct, the accept probability between our mini-batch
-algorithm and the complete data are the same, i.e. $P_a = P_a'$.
-\end{theorem}
-
-\begin{proof}
-\[
-P_a = \Pr (\Delta + X > 0) = \Pr (\Delta + X_{norm} + X_{correction} > 0) = \Pr (\Delta' +
-X_{correction} > 0) = P_a'.
-\]
-\end{proof}
-
-\begin{lemma}
-The distribution of $\Delta'$ is approximately Gaussian, if we choose the mini-batch data randomly. 
-\end{lemma}
-
-\begin{proof}
-By definition, $\Delta' = \log \left( \frac{f(\theta')P(\theta_t | \theta')}{f(\theta_t) P(\theta' |
-\theta_t)} \right)$, where $f(\theta)$ is the posterior distribution, i.e. $f(\theta) =
-p_{\theta}(\theta) \prod_i p(x_i | \theta)$. By plugging the $f(\theta)$, we have $\Delta' = \log
-p_{\theta}(\theta') - \log p_{\theta}(\theta_t) + \log P(\theta_t|\theta') - \log
-P(\theta'|\theta_t) + \sum_i (\log p(x_i|\theta') - \log p(x_i|\theta_t))$. If we fix the $\theta_t$
-and $\theta'$, the randomness only comes from the choice of mini-batch data, i.e. $\sum_i (\log
-p(x_i|\theta') - \log p(x_i|\theta_t))$. Since we choose the mini-batch data randomly, the
-distribution of $\sum_i (\log p(x_i|\theta') - \log p(x_i|\theta_t))$ converge to Gaussian
-distribution by the Central Limit Theorem.
-\end{proof}
-
-Let's define the our estimation of $X_{norm}$ is $X_{norm}'$, and $X+{\xi} = X_{norm} - X_{norm}'$.
-We also define the cumulative distribution function of $X$ is $F_X(.)$.
+In this section, we explore how well our algorithm will converge to the posterior distribution.
+Define our estimate of $X_{\rm norm}$ as $X_{\rm norm}'$, and let $X_{\xi} = X_{\rm norm} - X_{\rm
+norm}'$, so that $\Delta' = \Delta + X_{\rm norm} + X_\xi$.  We also denote $F_X$ as the CDF of $X$.
+Let the transition kernel of complete data at sampling step $i$ be $T_i$, and let the transition
+kernel of minibatch data at sampling step $i$ is $T_i'$.  We show that the distance of $T_i$ and
+$T_i'$ is proportional to our estimate of $X_{\rm norm}$. We also define the stationary distribution
+obtained by $T_i$ is $\pi$.  We show the by decreasing the step size, the distribution of our
+sampled data converges to $\pi$.
 
 \begin{lemma}
 If $|X_\xi| < \zeta$ and $\nabla F_X < k$, the total variance distance between $T_i$ and $T_i'$ is
@@ -425,83 +457,82 @@ bounded by $2\zeta k$.
 \end{lemma}
 
 \begin{proof}
-We firsts prove the difference of accept rate is bounded: $|P_a - P_a'| \leq 2\zeta k$ where, $P_a =
-\Pr (\Delta + X > 0)$, $P_a' = \Pr(\Delta' + X_{corr} > 0)$, $X= X_{corr} + X_{norm}$, and $\Delta'
-= \Delta + X_{norm} + X_\xi$. Given $X_\xi = \xi$ the $|P_a - P_a'|$ is:
+We first prove that the difference in our acceptance rates is bounded: $|P_a - P_a'| \leq 2\zeta k$
+for some small constant $\zeta > 0$. Given $X_\xi = \xi$ the distance $|P_a - P_a'|$ is:
 \begin{align*}
-|P_a - P_a'| &= |\Pr(\Delta + X >0) - \Pr(\Delta' + X_{corr} > 0)|\\
-& = | \Pr (\Delta + X > 0) - \Pr (\Delta + X_{norm} + \xi + X_{corr} >0) |    \\
+|P_a - P_a'| &= |\Pr(\Delta + X >0) - \Pr(\Delta' + X_{\rm corr} > 0)|\\
+& = | \Pr (\Delta + X > 0) - \Pr (\Delta + X_{\rm norm} + \xi + X_{\rm corr} >0) |    \\
 &= |\Pr (\Delta + X > 0) -\Pr(\Delta + X + \xi >0)| = |F_X(-\Delta)- F_X(-\Delta - \xi)| \\
-&= |\nabla F(-\Delta) \xi + o(\xi^2)| \leq  |\nabla F(-\Delta) \xi| +| o(\xi^2)| \leq 2|\nabla F(-\Delta)| |\xi| \leq 2k \xi.
+&= |\nabla F(-\Delta) \xi + o(\xi^2)| \leq  |\nabla F(-\Delta) \xi| +| o(\xi^2)| \leq 2|\nabla F(-\Delta)| |\xi| \leq 2k \xi,
 \end{align*}
-Since $|X_\xi| < \zeta$, $|P_a - P_a'| < 2k\zeta$.
+where the last line uses Taylor's Theorem ($o(\xi^2)$ represents higher-order terms that have
+smaller absolute value) and the Triangle Inequality.  Since $|X_\xi| < \zeta$, $|P_a - P_a'| <
+2k\zeta$.
 
 Next, we show the transition kernels at each step are bounded if we use the same proposer, i.e.
-$||T_i - T'_i||\leq 2k\zeta$. We can write the $T_i(\theta_t|\theta') = P_a(\theta_t, \theta')
-q(\theta'|\theta_t) + (1-P_a(\theta_t,\theta')) \delta_D(\theta' - \theta_t)$, where $\delta_D$ is
-the Dirac delta function. We can write the distance between two proposal kernel is:
-
+$\|T_i - T'_i\|_1 \leq 2k\zeta$ with $\| \cdot \|_1$ the standard $L_1$ norm. We can write the
+$T_i(\theta_t \mid \theta') = P_a(\theta_t, \theta') q(\theta'\mid \theta_t) +
+(1-P_a(\theta_t,\theta')) \delta_D(\theta' - \theta_t)$, where $\delta_D$ is the Dirac delta
+function. The distance between two proposal kernels is
 \begin{align*}
-||T_i - T'_i || &= \int_{\theta'} d\theta' |\int_{\theta_t} d\theta_t ((P_a-P_a') q(\theta'|\theta_t) + (1-P_a - 1+P_a') \delta_D(\theta_t -\theta')) | \\
-& = \int_{\theta'} d\theta' |\int _{\theta_t} d\theta_t (P_a- P_a')(q(\theta'|\theta_t) - \delta_D(\theta_t - \theta')) | \\ 
-& \leq 2 \zeta k \int_{\theta'}d\theta' | \int_{\theta_t} d\theta_t (q(\theta'|\theta_t) + q(\theta_t|\theta'))| = 2 \zeta k.
+\|T_i - T'_i \|_1 &= \int_{\theta'} \left| \int_{\theta_t}((P_a-P_a') q(\theta'|\theta_t) + (1-P_a - 1+P_a') \delta_D(\theta_t -\theta')) d\theta_t  \right| d\theta' \\
+& = \int_{\theta'} \left| \int_{\theta_t} (P_a- P_a')(q(\theta'|\theta_t) - \delta_D(\theta_t - \theta')) d\theta_t \right|  d\theta'\\ 
+& \leq 2 \zeta k \int_{\theta'} \left| \int_{\theta_t}(q(\theta'|\theta_t) + q(\theta_t|\theta'))  d\theta_t \right| d\theta'= 2 \zeta k,
 \end{align*}
+as desired.
 \end{proof}
 
-Since the accuracy of our transition kernel is related to how accurate our estimation of $X_{\rm
-norm}$, we show the error of our estimation is roughly proportional to the step size of our
+Since the accuracy of our transition kernel is related to the accuracy of our $X_{\rm norm}$
+estimate, we can show that error of our estimation is roughly proportional to the step size of our
 proposer.
 
 \begin{lemma}
-For one step sampling from $\theta_t$ to $\theta'$, if the jumping step  $|\theta_t - \theta'|$ is
-smaller than $\epsilon$, and the gradient of the log-likelihood is bounded by a constant factor,
-i.e. $|\nabla (\log \Pr(x_i| \theta))| < k$, the variance of $\Delta'$ is bounded by $4\epsilon^2
-k^2 m$, where $m is the mini-batch size$.
+For one step sampling from $\theta_t$ to $\theta'$, if the jumping step  $|\theta_t - \theta'| <
+\epsilon$, and the gradient of the log-likelihood is bounded by a constant factor, i.e. $|\nabla
+(\log \Pr(x_i| \theta))| < k$, the variance of $\Delta'$ is bounded by $4\epsilon^2 k^2 m$, where
+$m$ is the minibatch size.
 \end{lemma}
 
 \begin{proof}
-Similarly as the proof in the Lemma 2, We write the $\Delta'$ as: $\Delta' = \sum_i (\log
-p(x_i|\theta') - \log p(x_i|\theta_t)) + \log P(\theta_t | \theta') - P(\theta'|\theta_t) + \log
-p_{\theta}(\theta') - \log p_{\theta}(\theta_t)$. Since only the $\sum_i (\log p(x_i|\theta') - \log
-p(x_i|\theta_t))$ brings randomness, we define function $g_i(\theta)$ as $\log p(x_i|\theta)$. Then
-we have:
-\begin{align*} 
-|\log \Pr(x_i | \theta') - \log \Pr (x_i |\theta_t)| & = |g(\theta') - g(\theta_t)| \\
-&= |\nabla g(\theta_t) (\theta' - \theta_t) + o(\theta' - \theta_t)^2| \leq 2\epsilon k.
-\end{align*}
+From Lemma~\ref{lem:gaussian}, only the $\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid
+\theta_t))$ term brings randomness into $\Delta'$. To simplify the subsequent notation, we define
+$g_i(\theta) = \log p(x_i\mid \theta)$. Then by Taylor's Theorem:
+\[
+|g(\theta') - g(\theta_t)| = |\nabla g(\theta_t) (\theta' - \theta_t) + o(\theta' - \theta_t)^2| \leq 2\epsilon k.
+\]
 Thus, with given the $\theta$, and $\theta'$, the variance of $\Delta'$ can be write as:
 \begin{align*}
-var(\Delta') &= var(\sum_i (\log \Pr(x_i | \theta') - \log \Pr (x_i |\theta_t))) = var(\sum_i g_i(\theta') - g_i(\theta_t)) \\
-& \leq \sum_i var(g_i(\theta') - g_i(\theta_t)) \leq  4\epsilon^2 m k^2,
+{\rm Var}(\Delta') &= {\rm Var}\left[\sum_{i=1}^n (\log \Pr(x_i | \theta') - \log \Pr (x_i |\theta_t))\right] = {\rm Var}\left[\sum_{i=1}^n g_i(\theta') - g_i(\theta_t)\right] \\
+& \leq \sum_{i=1}^n {\rm Var}(g_i(\theta') - g_i(\theta_t)) \leq  4\epsilon^2 m k^2,
 \end{align*}
-where $m$ is the minibatch size.
+as desired.
 \end{proof}
 
-Since $var(\Delta') < \epsilon^2 k^2 m$, we can assume the maximum value of $X_{\xi}$ is
-proportional to $sd(\Delta)$, i.e. $\epsilon$. Thus, we can assume $\zeta=\epsilon C$, where $C$ is
-a constant factor.
+Since ${\rm Var}(\Delta') < \epsilon^2 k^2 m$, we can assume the maximum value of $X_{\xi}$ is
+proportional to the standard deviation of $\Delta$, i.e. $\epsilon$. Thus, we can assume
+$\zeta=\epsilon C$, where $C$ is a constant factor.
 
 \begin{theorem}
-Assume the stationary distribution $\pi$ satisfies $||T \circ P_0 - \pi|| \leq \eta ||P_0 - \pi||$,
+Assume the stationary distribution $\pi$ satisfies $\|T \circ P_0 - \pi\| \leq \eta \|P_0 - \pi\|$,
 where $\eta \in [0, 1)$ for all distribution $P_0$. And assume there exists $\rho_t < 1$ such that
-$||T'_i(x, .) - \pi_i'|| \leq 2\rho_i$. We can get $|| T_t' \circ T_{t-1}' \circ \cdots \circ T_1' P_0
-- \pi_0 || \leq \sum_{s=1}^t \{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\} \rho_s \alpha_s + \alpha_t $,
+$\|T'_i(x, \cdot) - \pi_i'\| \leq 2\rho_i$. We can get $\| T_t' \circ T_{t-1}' \circ \cdots \circ T_1' P_0
+- \pi_0 \| \leq \sum_{s=1}^t \{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\} \rho_s \alpha_s + \alpha_t $,
 where $\alpha_i = \frac{\epsilon_i k }{1-\eta}$.
 \end{theorem}
 
 \begin{proof}
-Firstly, "Austerity in MCMC Land" shows that with $||T \circ P_0 - \pi|| \leq \eta ||P_0 - \pi||$
-and $||T-T'_i|| \leq \epsilon_i k$, the norm between the stationary distribution is $||\pi -
-\pi_i'||\leq \frac{\epsilon_i k}{1-\eta}$.
+First, by Theorem 1 in~\cite{cutting_mh_2014}, $\|T \circ P_0 - \pi\| \leq \eta \|P_0
+- \pi\|$ and $\|T-T'_i\| \leq \epsilon_i k$, the norm between the stationary distribution is $\|\pi
+- \pi_i'\|\leq \frac{\epsilon_i k}{1-\eta}$.
 
 Second, by Theorem 3.6 in~\cite{yang2013sequential}, we have  $\| T_t' \circ T_{t-1}' \circ \cdots
 \circ T_1' P_0 - \pi_t \| \leq \sum_{s=1}^t \{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\} \rho_s
 \alpha_s$, where $\alpha = \frac{\epsilon_i k}{1-\eta}$. Thus, we get:
-\[
- \| T_t' \circ T_{t-1}' \circ \cdots \circ T_1' P_0 - \pi_0 \| \leq \|T_t' \circ T_{t-1}' \circ
- \cdots \circ T_1' P_0 - \pi_t\| + \|\pi_t - \pi_0\| \leq \sum_{s=1}^t \{\prod _{u=s+1}^t \rho_u
- (1-\alpha_u)\} \rho_s \alpha_s + \alpha_t.
-\]
+\begin{align*}
+ \| T_t' \circ \cdots \circ T_1' P_0 - \pi_0 \| &\leq \|T_t' \circ \cdots \circ T_1' P_0 - \pi_t\| + \|\pi_t - \pi_0\| \\
+ &\leq \sum_{s=1}^t \left\{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\right\} \rho_s \alpha_s + \alpha_t,
+\end{align*}
+as desired.
 \end{proof}
 
 
@@ -754,7 +785,7 @@ which is also expected (and it also exhibits a decrease in a factor of 10 for an
 in temperature).
 
 {\color{blue}
-One concern I have is that our $\Delta'$ values do not seem to be ``sufficiently negative''. If our
+Daniel: One concern I have is that our $\Delta'$ values do not seem to be ``sufficiently negative''. If our
 $\Delta'$ values are negative (but large in absolute value) that means our MH test will reject more
 often. But then this raises another concern: didn't we say at one point that we \emph{should} be
 getting high acceptance rates, around 50 percent (in part because of the shape of the logistic
