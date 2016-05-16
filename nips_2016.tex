@@ -550,7 +550,12 @@ The Theorem above indicates that the difference of the target distribution and t
 In this section, we use three experiments to reveal the benefits of our mini-batch MH testing. For the first experiment, we illustrate that our mini-batch MH testing can obtain the posterior distribution which is very close to the ideal one. For the second experiment, we use Logistic regression to reveal that our mini-batch sampler is much more efficient than adaptive minibatch approach. The third experiment shows that with the help of temperature, our mini-batch MH testing can be used to obtain the parameters which are close to MAP. 
 \subsection{Mixture of Gaussians}\label{ssec:gaussians}
 
-We start with a simple mixture of Gaussians.
+We start with a simple mixture of Gaussians, which has the tied means:
+
+\[
+\theta_1 \sim N(0, \sigma_1^2); \theta_2 \sim N(0, \sigma_2^2); x_i \sim \frac{1}{2}N(\theta_1, \sigma_x^2) + \frac{1}{2} N(\theta_2, \sigma_x^2)
+\]
+where $\sigma_1^2 = 10, \sigma_2^2 = 1$ and $\sigma_x^2=2$. 200 data points are generated from the model with $\theta_1 = 0$ and $\theta_2 = 1$. The theoretical posterior distribution can be seen in Fig.~3a. We use random walk as the proposer. We set the step size 0.1 as a constant. We compare three scenarios: with our mini-batch MH testing (see Fig.~3b), without our mini-batch MH testing (see Fig.~3c), and with the standard MH testing (see Fig.~3d). 
 
 \begin{figure}[ht]
   \centering
@@ -559,17 +564,9 @@ We start with a simple mixture of Gaussians.
   \caption{This will be a sequence of images for the Gaussian mixture.}
 \end{figure}
 
-{\color{blue}
-Daniel: I can borrow some of the description from the Appendix into here, but I need to know what we
-are testing. What is the purpose of this experiment? What do we want to show? Once I know that,
-writing this part will be easier, and for the Gaussian case in particular, the experiment is pretty
-simple and can be run on short notice.
-
-For additional details, see Appendix~\ref{app:gaussian}.
-}
-
+From the figures above, we find that with the help of our mini-batch MH testing we can obtain the sampled distribution which are very close to target one. We feature draw our estimation of standard derivation of $X_{\rm norm}$ over iterations, see Fig.~3e. We find with even constant step size, the standard derivation decreases, because the gradient of posterior distribution declines and make the scale of $\Delta'$ deminished when the sampled point is apporching MAP. Thus, the error our transition kernel will declines with even constant step size as discribed in Sect.~ 4.
 \subsection{Logistic Regression}\label{ssec:logistic}
-
+In this experiment, we use logistic regression to classify the MNIST dataset. For similification, we only train the binary classifer for digits 1 vs 7. The dataset consisted of 12007 training data and 1000 testing data. Similarly, we use random walk as the proposer. We compare our mini-batch MH testing with the adaptive mini-batch MH testing. Figure 4 shows the loglikelihood value and perdiction accuracy over training process. Since the adaptive MH testing method needs to increase the mini-batch size adaptively, we use the cumulative number of data instance each algorithm consumes as the horizontal axis.
 \begin{figure}[ht]
   \centering
   \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
