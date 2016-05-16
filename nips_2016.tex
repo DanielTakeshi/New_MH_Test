@@ -36,7 +36,7 @@ framexleftmargin=20pt}
 \newtheorem{lemma}{Lemma}
 \newtheorem{theorem}{Theorem}
 
-\title{A New Metropolis-Hastings Test for Fast Minibatch MCMC Inference and Optimization}
+\title{A Simple Minibatch Acceptance Test for MCMC}
 
 % The \author macro works with any number of authors. There are two commands used to separate the
 % names and addresses of multiple authors: \And and \AND.
@@ -88,32 +88,46 @@ framexleftmargin=20pt}
 \maketitle
 
 \begin{abstract}
-Markov chain Monte Carlo (MCMC) methods are one of the most popular techniques in machine learning
-for Bayesian inference. With large datasets, however, MCMC methods can be intractably slow due to
-the need to compute the likelihood of all data points each iteration. Borrowing from the
-optimization field, one way to make MCMC faster is to compute the posterior based on a random subset
-of the data each iteration. Such stochastic MCMC has received increased research attention in recent
-years, but these methods generally require adaptively increasing the minibatch size each iteration,
-which can nullify the benefits if too much data is needed. In addition, with large datasets and
-model optimization, it is unclear if obtaining a full posterior distribution is desirable over
-getting a high-quality point MAP or ML estimate of the parameters.  In this paper, we present a new
-Metropolis-Hastings test to fit in our alternative perspective on stochastic MCMC methods for big
-data model optimization. We demonstrate the benefits of our approach with theoretical and empirical
-results.
+Markov chain Monte Carlo (MCMC) methods have many applications in
+machine learning. We are particularly interested in their application
+to modeling very large datasets, where it is impractical to
+perform Metropolis-Hastings tests on an entire dataset. Instead we
+describe a novel acceptance test which is applied to minibatches of
+data. Previous work on minibatch Metropolis-Hastings use adaptive
+batch sizes, which may use far more than one minibatch of data and/or
+yield few samples.  Here we describe a simpler test on fixed-sized
+minibatches. Instead of adaptive batch size, this test requires a
+precondition on the variance of the log proposal probability
+ratio. Given a measurement of this variance, minibatch size can be
+chosen to support the test in one step, and yielding a number of
+samples proportional to the batch/minibatch ratio. Alternatively the
+variance condition can be used to adjust the temperature of the
+sampling distribution to a ``natural'' value to provide regular
+samples at a given minibatch size. The resulting proposal/test is only
+slightly more complex than a simple SGD update. In this paper we
+derive the test, discuss its implementation, and present several
+experiments.
+
 \end{abstract}
 
 
 
 \section{Introduction}\label{sec:introduction}
 
-Markov chain Monte Carlo (MCMC) sampling is one of the most popular techniques for Bayesian
-computation. MCMC algorithms propose samples from a proposal distribution $q$, and decide whether to
-accept or reject them based on a Metropolis-Hastings test~\cite{Metropolis1953,hastings70}. With
-traditional Bayesian posterior inference, the posterior distribution $p(\theta \mid x_1, \ldots,
-x_N) \propto p(\theta)\prod_{i=1}^np(x_i \mid \theta)$ of parameter $\theta$ based on conditionally
-independent data $\{x_i\}_{i=1}^n$ is the target distribution which one aims to approximate by
-sampling $\theta$ values. When $n$ is large (e.g., in the billions), it is computationally difficult
-to compute the exact posterior because the likelihood must be evaluated on each $x_i$.
+Markov chain Monte Carlo (MCMC) sampling is a powerful method for
+computation on intractable distributions. MCMC algorithms propose
+samples from a proposal distribution $q$ which is in general different
+from the target distribution $p$, and decide whether to accept or
+reject them based on an acceptance test. The acceptance test is
+usually a Metropolis-Hastings
+test~\cite{Metropolis1953,hastings70}. For example, for Bayesian
+posterior inference, the posterior distribution $p(\theta \mid x_1,
+\ldots, x_N) \propto p(\theta)\prod_{i=1}^np(x_i \mid \theta)$ of
+parameter $\theta$ based on conditionally independent data
+$\{x_i\}_{i=1}^n$ is the target distribution which one aims to
+approximate by sampling $\theta$ values. When $n$ is large (e.g., in
+the billions), it is computationally difficult to compute the exact
+posterior because the likelihood must be evaluated on each $x_i$.
 
 Recent success in machine learning optimization in the presence of large datasets have been in part
 due to the ubiquitous use of stochastic gradient methods, where a subset of the data is used each
