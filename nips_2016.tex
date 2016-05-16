@@ -832,10 +832,12 @@ ones more often.
 
 \section{Logistic Regression Experiment Details}\label{app:logistic}
 
-{\color{blue}
-Daniel: TODO
-}
-
+We applied our mini-batch Metropolis Hastings algorithm to a Bayesian logistic regression model,
+338 comparing with the adaptive sampling method. We tested both our method and the adaptive sampling
+339 method using a random walk proposer q(θ|θt) = N (θt, σ2 ). Since the random walk proposer does RW
+340 not contain any information about the target distribution, it only relies on the Metropolis Hastings
+341 test to converge to the correct distribution. Therefore, random walk proposer is the ideal choice for
+342 illustrating our algorithm and comparing with the adaptive sampling method.
 \section{Neural Network Experiment Details}\label{app:nnet}
 
 {\color{blue}
