@@ -81,33 +81,28 @@ framexleftmargin=20pt}
 }
 
 \begin{document}
-
-\begin{comment}
-\end{comment}
-
 \maketitle
 
 \begin{abstract}
 Markov chain Monte Carlo (MCMC) methods have many applications in
 machine learning. We are particularly interested in their application
 to modeling very large datasets, where it is impractical to
-perform Metropolis-Hastings tests on an entire dataset. Instead we
+perform Metropolis-Hastings tests on the full data. To do this, we
 describe a novel acceptance test which is applied to minibatches of
 data. Previous work on minibatch Metropolis-Hastings use adaptive
-batch sizes, which may use far more than one minibatch of data and/or
+batch sizes, which may use far more than one minibatch of data and therefore
 yield few samples.  Here we describe a simpler test on fixed-sized
-minibatches. Instead of adaptive batch size, this test requires a
+minibatches. Instead of adaptive batch sizes, our test requires a
 precondition on the variance of the log proposal probability
-ratio. Given a measurement of this variance, minibatch size can be
-chosen to support the test in one step, and yielding a number of
-samples proportional to the batch/minibatch ratio. Alternatively the
+ratio. Given a measurement of this variance, a minibatch size can be
+chosen to support the test in one step, which yields a number of
+samples proportional to the batch/minibatch ratio. Alternatively, the
 variance condition can be used to adjust the temperature of the
 sampling distribution to a ``natural'' value to provide regular
 samples at a given minibatch size. The resulting proposal/test is only
 slightly more complex than a simple SGD update. In this paper we
 derive the test, discuss its implementation, and present several
 experiments.
-
 \end{abstract}
 
 
@@ -130,64 +125,59 @@ very expensive to compute the exact posterior because the
 likelihood must be evaluated on every $x_i$.
 
 Many state-of-the-art machine learning methods, and deep learning in
-particular, are based on minibatch updates (such as SGD) to a model.may
-Minibatch updates produce many improvements in the model for each pass
+particular, are based on minibatch updates (such as SGD) to a model.
+Minibatch updates produce many improvements to the model for each pass
 over the dataset, and have high sample efficiency. They also map very
-well onto hardware such as GPUs. MCMC methods in contrast, typically
+well onto hardware such as GPUs. In contrast, MCMC methods typically
 require calculations over the full dataset to produce a new sample. A
 recent result from~\cite{cutting_mh_2014} attempted to bridge the gap
 between minibatch optimization and MCMC by proposing an \emph{adaptive
   minibatch} method. Their method uses a subset of the $N$ data points
 for the MH test each iteration. However the number of points is not
 known a priori, and is adjusted dynamically during every test. This
-undermines many of the practical advantages of minibatch calculations
-- GPU kernels work best for certain minibatch sizes, memory blocks
-can be reused when minibatch size is fixed etc. 
+undermines many of the practical advantages of minibatch calculations: 
+GPU kernels work best for certain minibatch sizes, memory blocks
+can be reused when minibatch size is fixed, etc. 
 
-Here we develop an alternative minibatch acceptance test for MCMC
+In this paper, we develop an alternative minibatch acceptance test for MCMC
 methods which uses only one fixed-size minibatch per test. Instead of
-dynamically adjusting the batch size, we add a prequisite for the test
+dynamically adjusting the batch size, we add a prerequisite for the test
 based on the variance of the log acceptance probability. If this
 variance is small enough, the test requires only a single step. This
 variance changes slowly on typical problems, and we can estimate it
-before performaning the accpeptance test. The minibatch variance
-descreases with the minibatch size, so the variance measurement can be
+before performing the test. The minibatch variance
+decreases as the minibatch size grows, so the variance measurement can be
 used to set the minimum minibatch size.
 
-There is an additional advantage when using the test for Bayesian
-posterior inference. As dataset size grows, the posterior distribution
-sharpens and will often concentrate to a few sharp peaks. Samples from
+There is another advantage when using our test for Bayesian
+posterior inference. As the dataset size grows, the posterior distribution
+sharpens and often concentrates to a few sharp peaks. Samples from
 this distribution will come from those peaks, and will easily become
-stuck in one of them (see section 5.1).  The samples are not exploring
+stuck in one of them (see Section~\ref{ssec:gaussians}).  The samples are not exploring
 the posterior parameter space, and are unlikely to concentrate at a
 strong local optimum. They therefore fail to accurately represent a
-sample of the posterior because of inadequate search (inadequate
+sample of the posterior because of inadequate search (i.e.,
 mixing). We argue that it is much more natural to sample the
-distribution at a different (higher) temperature determined by the
+distribution at a higher temperature determined by the
 minibatch size rather than the dataset size. This temperature is
 determined in a natural way by the variance prerequisite for our
 test. Starting at a high temperature (small minibatch size) which
 mixes easily, one can reduce the temperature (increasing minibatch
 size) until one reaches the desired target distribution temperature.
-Although this approach also involves changing minibath size, the
+Although this approach also involves changing minibatch size, the
 changes increase minibatch size monotonically, and only a few changes
 are performed in the course of a sampling session.
 Annealing can also be used for MAP and ML estimation because changing temperature preserves
 posterior modes. 
 
-
-The contributions of this paper are as follows:
+To be precise, the contributions of this paper are as follows:
 
 \begin{enumerate}[noitemsep]
     \item We develop a new minibatch acceptance test which satisfies detailed balance.
     \item We compare performance of our new test and the adaptive sampling method.
-    \item Experiments using the approach for posterior estimation.
+    \item We experiment using the approach for posterior estimation.
 \end{enumerate}
 
-%{\color{blue}
-%Daniel: This section needs work in describing our argument carefully. I will decrease the focus on
-%temperature and increase focus on the new MH test once the results are clearer.
-%}
 
 
 
@@ -254,12 +244,11 @@ use a minibatch of data each iteration but require controlling the noise from sa
 sequence does not diverge. A similar approach is to use Langevin
 Dynamics~\cite{langevin_2011,conf/icml/AhnBW12}, which does not use the momentum terms in HMC.
 
-Ultimately, minibatch SGHMC and Langevin Dynamics is an orthogonal contribution to ours, two ways of
-attempting to solve the same problem of MCMC methods with big datasets. We could augment their
-methods with our MH test, to get the benefit of their high quality proposals. Note that while their
-methods in theory do not need an MH test, in practice, they need one due to discretization of the
-system. Furthermore, tests may also be needed for when the algorithms are run with a constant step
-size.
+Minibatch SGHMC and Langevin Dynamics are orthogonal to our work; two ways of attempting
+to solve the same problem of MCMC methods with big datasets. We could augment their methods with our
+MH test, to get the benefit of their high quality proposals. Note that while their methods in theory
+do not need an MH test, in practice, they need one due to discretization of the system. Furthermore,
+    tests may also be needed for when the algorithms are run with a constant step size.
 
 %% Daniel: I don't know how to integrate this easily.
 %% \cite{sgmcmc_2015} (NIPS 2015) might want to give this a mention, where it would fit in their
@@ -305,7 +294,7 @@ size.
 
 In this section, we introduce our new Metropolis-Hastings test and show how to use it to achieve
 sufficient mixing and/or to reach better posterior modes. To start, we introduce two key values we
-will use frequently: $\Delta$ and $\Delta'$:
+will use frequently, $\Delta$ and $\Delta'$:
 \begin{equation}\label{eq:deltas}
 \Delta = \log \left( \frac{p(\theta')  \prod_{i=1}^N p(x_i \mid \theta')  q(\theta_t \mid
 \theta')}{p(\theta_t)\prod_{i=1}^N p(x_i \mid \theta_t)  q(\theta' \mid
@@ -353,30 +342,21 @@ $g(\Delta) = \min\{1, e^\Delta \} = \min\left\{1, \frac{f(\theta')q(\theta_t \mi
 \exp(\Delta)g(-\Delta)$ and consequently, results in detailed balance.
 
 For our MH test, the key is that we use a different $g$, the logistic function: $g(\Delta) =
-(1+\exp(-\beta \Delta))^{-1}$. Again, straightforward arithmetic shows that it satisfies the condition in
-Lemma~\ref{lem:detailed_balance}.  The logistic function is nice because we can easily sample from
-it using the following procedure. At
-any iteration with a current parameter $\theta_t$ and a proposed sample $\theta'$, we can compute
-$\Delta$. Let $u$ be a value sampled from uniform distribution $U \sim {\rm Unif}[0,1]$. We accept the candidate if $g(\Delta) > u$, and reject otherwise. This testing process is equivalent to sample a value $x$ from distribution whose CDF is $g(x)$, and accept if $\Delta + x > 0$, reject otherwise. To see why this works,
-define a new random variable $X = g^{-1}(U)$ where again, $g$ is the logistic function. Notice that
-$X$ has cumulative distribution function $F_X(x) = g(x)$. In other words, the CDF is precisely the
-logistic function. This is because for arbitrary $X = x$, we have
+(1+\exp(-\beta \Delta))^{-1}$. Again, straightforward arithmetic shows that it satisfies the
+condition in Lemma~\ref{lem:detailed_balance}.  The logistic function is nice because we can easily
+sample from it using the following procedure. At any iteration with a current parameter $\theta_t$
+and a candidate sample $\theta'$, we can compute $\Delta$. Let $u$ be a uniform random variable $u
+\sim {\rm Unif}[0,1]$. We accept $\theta'$ if $g(\Delta) > u$, and reject otherwise. This process is
+equivalent to sampling a random variable $X$ with cumulative distribution function $F_X(x) = g(x)$,
+and accepting if $\Delta > X$ and rejecting otherwise. To see why, define $X = g^{-1}(u)$ where
+again, $g$ is the logistic function. The CDF of $X$ is precisely the logistic function because for
+arbitrary $X = x$, we have
 \[
 F_X(x) = {\rm Pr}(X \le x) = {\rm Pr}(g^{-1}(u) \le x) = {\rm Pr}(u \le g(x)) = \int_{0}^{g(x)} 1 dx = g(x),
 \]
 as the density of the uniform random variable here is simply one. Thus, the criteria to accept the
 candidate $\theta'$ is equivalent to whether $\Delta > X$. Since $X$ is symmetric about zero, the
 acceptance criteria is equivalently expressed as $\Delta + X>0$, as shown in Figure~\ref{fig:part1}.
-
-{\color{blue}
-Daniel: The above makes sense, but I \emph{still} don't understand why we had to show that the CDF
-of $X$ is the logistic function, because I never use that when I claim that our acceptance test is
-now $\Delta > X$. All I need to say is this: we can pre-multiply $g^{-1}$ to $g(\Delta) \ge u$, and
-our test is $\Delta > X$. Right???
-}
-{\color{red}
-Haoyu: If you don't show the CDF of $X$ is $g()$, how do you define the $X$. In order to use rule: $\Delta +X >0$, you need to tell people how to get $X$, thus, we need the distribution of $X$. If you just say $Delta > g^{-1}(u)$, then what's X? Then how can you decomposite the $X$ to get the $X_{corr}$? So we need to at least annouce the distribution of $X$ is $g()$.
-}
 
 With large datasets, $\Delta$ is intractable to compute. An intuitive alternative is to use
 $\Delta'$ instead. The following lemma characterizes the distribution of $\Delta'$.
@@ -583,15 +563,29 @@ The Theorem above indicates that the difference of the target distribution and t
 
 \section{Experiments}\label{sec:experiments}
 
-In this section, we use three experiments to reveal the benefits of our mini-batch MH testing. For the first experiment, we illustrate that our mini-batch MH testing can obtain the posterior distribution which is very close to the ideal one. For the second experiment, we use Logistic regression to reveal that our mini-batch sampler is much more efficient than adaptive minibatch approach. The third experiment shows that with the help of temperature, our mini-batch MH testing can be used to obtain the parameters which are close to MAP. 
+In this section, we use three experiments to reveal the benefits of our mini-batch MH testing. For
+the first experiment, we illustrate that our mini-batch MH testing can obtain the posterior
+distribution which is very close to the ideal one. For the second experiment, we use Logistic
+regression to reveal that our mini-batch sampler is much more efficient than adaptive minibatch
+approach. The third experiment shows that with the help of temperature, our mini-batch MH testing
+can be used to obtain the parameters which are close to MAP. 
+
 \subsection{Mixture of Gaussians}\label{ssec:gaussians}
 
-We start with a simple mixture of Gaussians, which has the tied means:
+{\color{blue}
+Daniel: TODO Have to show that with more data, the posterior peaks (because it is referenced by the
+introduction).
+}
 
+We start with a simple mixture of Gaussians, which have tied means:
 \[
 \theta_1 \sim N(0, \sigma_1^2); \theta_2 \sim N(0, \sigma_2^2); x_i \sim \frac{1}{2}N(\theta_1, \sigma_x^2) + \frac{1}{2} N(\theta_2, \sigma_x^2)
 \]
-where $\sigma_1^2 = 10, \sigma_2^2 = 1$ and $\sigma_x^2=2$. 200 data points are generated from the model with $\theta_1 = 0$ and $\theta_2 = 1$. The theoretical posterior distribution can be seen in Fig.~3a. We use random walk as the proposer. We set the step size 0.1 as a constant. We compare three scenarios: with our mini-batch MH testing (see Fig.~3b), without our mini-batch MH testing (see Fig.~3c), and with the standard MH testing (see Fig.~3d). 
+where $\sigma_1^2 = 10, \sigma_2^2 = 1$ and $\sigma_x^2=2$. 200 data points are generated from the
+model with $\theta_1 = 0$ and $\theta_2 = 1$. The theoretical posterior distribution can be seen in
+Fig.~3a. We use random walk as the proposer. We set the step size 0.1 as a constant. We compare
+three scenarios: with our mini-batch MH testing (see Fig.~3b), without our mini-batch MH testing
+(see Fig.~3c), and with the standard MH testing (see Fig.~3d). 
 
 \begin{figure}[ht]
   \centering
@@ -600,9 +594,24 @@ where $\sigma_1^2 = 10, \sigma_2^2 = 1$ and $\sigma_x^2=2$. 200 data points are 
   \caption{This will be a sequence of images for the Gaussian mixture.}
 \end{figure}
 
-From the figures above, we find that with the help of our mini-batch MH testing we can obtain the sampled distribution which are very close to target one. We feature draw our estimation of standard derivation of $X_{\rm norm}$ over iterations, see Fig.~3e. We find with even constant step size, the standard derivation decreases, because the gradient of posterior distribution declines and make the scale of $\Delta'$ deminished when the sampled point is apporching MAP. Thus, the error our transition kernel will declines with even constant step size as discribed in Sect.~ 4.
+From the figures above, we find that with the help of our mini-batch MH testing we can obtain the
+sampled distribution which are very close to target one. We feature draw our estimation of standard
+derivation of $X_{\rm norm}$ over iterations, see Fig.~3e. We find with even constant step size, the
+standard derivation decreases, because the gradient of posterior distribution declines and make the
+scale of $\Delta'$ deminished when the sampled point is apporching MAP. Thus, the error our
+transition kernel will declines with even constant step size as discribed in Sect.~ 4.
+
 \subsection{Logistic Regression}\label{ssec:logistic}
-In this experiment, we use logistic regression to classify the MNIST dataset. For similification, we only train the binary classifer for digits 1 vs 7. The dataset consisted of 12007 training data and 1000 testing data. Similarly, we use random walk as the proposer. We compare our mini-batch MH testing with the adaptive mini-batch MH testing. Figure 4 shows the loglikelihood value and perdiction accuracy over training process. Since the adaptive MH testing method needs to increase the mini-batch size adaptively, we use the cumulative number of data instance each algorithm consumes as the horizontal axis. We find our mini-batch MH testing can achieve the similar (or even better loglikelihood/prediction accuracy) with consuming much fewer data points. Thus, we can assert that our mini-batch MH testing is much more efficient than the adaptive one. 
+
+In this experiment, we use logistic regression to classify the MNIST dataset. For similification, we
+only train the binary classifer for digits 1 vs 7. The dataset consisted of 12007 training data and
+1000 testing data. Similarly, we use random walk as the proposer. We compare our mini-batch MH
+testing with the adaptive mini-batch MH testing. Figure 4 shows the loglikelihood value and
+perdiction accuracy over training process. Since the adaptive MH testing method needs to increase
+the mini-batch size adaptively, we use the cumulative number of data instance each algorithm
+consumes as the horizontal axis. We find our mini-batch MH testing can achieve the similar (or even
+better loglikelihood/prediction accuracy) with consuming much fewer data points. Thus, we can assert
+that our mini-batch MH testing is much more efficient than the adaptive one. 
 
 In this experiment, we also illustrate that by appling the temperature, we can achieve slight faster convergence than the constant temperature one.
 
