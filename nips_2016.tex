@@ -566,7 +566,9 @@ where $\sigma_1^2 = 10, \sigma_2^2 = 1$ and $\sigma_x^2=2$. 200 data points are 
 
 From the figures above, we find that with the help of our mini-batch MH testing we can obtain the sampled distribution which are very close to target one. We feature draw our estimation of standard derivation of $X_{\rm norm}$ over iterations, see Fig.~3e. We find with even constant step size, the standard derivation decreases, because the gradient of posterior distribution declines and make the scale of $\Delta'$ deminished when the sampled point is apporching MAP. Thus, the error our transition kernel will declines with even constant step size as discribed in Sect.~ 4.
 \subsection{Logistic Regression}\label{ssec:logistic}
-In this experiment, we use logistic regression to classify the MNIST dataset. For similification, we only train the binary classifer for digits 1 vs 7. The dataset consisted of 12007 training data and 1000 testing data. Similarly, we use random walk as the proposer. We compare our mini-batch MH testing with the adaptive mini-batch MH testing. Figure 4 shows the loglikelihood value and perdiction accuracy over training process. Since the adaptive MH testing method needs to increase the mini-batch size adaptively, we use the cumulative number of data instance each algorithm consumes as the horizontal axis.
+In this experiment, we use logistic regression to classify the MNIST dataset. For similification, we only train the binary classifer for digits 1 vs 7. The dataset consisted of 12007 training data and 1000 testing data. Similarly, we use random walk as the proposer. We compare our mini-batch MH testing with the adaptive mini-batch MH testing. Figure 4 shows the loglikelihood value and perdiction accuracy over training process. Since the adaptive MH testing method needs to increase the mini-batch size adaptively, we use the cumulative number of data instance each algorithm consumes as the horizontal axis. We find our mini-batch MH testing can achieve the similar (or even better loglikelihood/prediction accuracy) with consuming much fewer data points. Thus, we can assert that our mini-batch MH testing is much more efficient than the adaptive one. 
+
+In this experiment, we also illustrate that by appling the temperature, we can achieve slight faster convergence than the constant temperature one.
 \begin{figure}[ht]
   \centering
   \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
@@ -574,8 +576,11 @@ In this experiment, we use logistic regression to classify the MNIST dataset. Fo
   \caption{This will be a sequence of images for logistic regression.}
 \end{figure}
 
+We use this experiment to illustarte another property of our mini-batch MH testing: 
+
 {\color{blue}
 Daniel: TODO
+Add the roofline description.
 
 For additional details, see Appendix~\ref{app:logistic}.
 }
@@ -591,7 +596,9 @@ For additional details, see Appendix~\ref{app:logistic}.
 
 {\color{blue}
 Daniel: TODO
-
+1) describe the data background
+2) describe the SGHMC proposer, and our other hyperparams
+3) show the results and analysis
 For additional details, see Appendix~\ref{app:nnet}.
 }
 
