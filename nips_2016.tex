@@ -125,50 +125,69 @@ posterior inference, the posterior distribution $p(\theta \mid x_1,
 \ldots, x_N) \propto p(\theta)\prod_{i=1}^np(x_i \mid \theta)$ of
 parameter $\theta$ based on conditionally independent data
 $\{x_i\}_{i=1}^n$ is the target distribution which one aims to
-approximate by sampling $\theta$ values. When $n$ is large (e.g., in
-the billions), it is computationally difficult to compute the exact
-posterior because the likelihood must be evaluated on each $x_i$.
+approximate by sampling $\theta$ values. When $n$ is large, it is
+very expensive to compute the exact posterior because the
+likelihood must be evaluated on every $x_i$.
 
-Recent success in machine learning optimization in the presence of large datasets have been in part
-due to the ubiquitous use of stochastic gradient methods, where a subset of the data is used each
-iteration to compute a noisy estimate of the gradient. These Robbins-Munro
-algorithms~\cite{RobbinsMonro1951} have historically not been used with MCMC methods. A recent
-result from~\cite{cutting_mh_2014} attempted to bridge the gap between minibatch optimization and
-Bayesian inference by proposing an \emph{adaptive minibatch} method. Their method uses a subset of
-the $N$ data points for the MH test each iteration, but requires incrementally increasing the
-minibatch size so that it is more confident in its prediction on accepting or rejecting.
+Many state-of-the-art machine learning methods, and deep learning in
+particular, are based on minibatch updates (such as SGD) to a model.may
+Minibatch updates produce many improvements in the model for each pass
+over the dataset, and have high sample efficiency. They also map very
+well onto hardware such as GPUs. MCMC methods in contrast, typically
+require calculations over the full dataset to produce a new sample. A
+recent result from~\cite{cutting_mh_2014} attempted to bridge the gap
+between minibatch optimization and MCMC by proposing an \emph{adaptive
+  minibatch} method. Their method uses a subset of the $N$ data points
+for the MH test each iteration. However the number of points is not
+known a priori, and is adjusted dynamically during every test. This
+undermines many of the practical advantages of minibatch calculations
+- GPU kernels work best for certain minibatch sizes, memory blocks
+can be reused when minibatch size is fixed etc. 
 
-We argue for an alternative approach to using MCMC methods in the context of big data problems. In
-general, model optimization involves finding one point estimate of optimal parameters based on a
-user's goals, which typically refer to MAP or ML estimates. In addition, the more data one has, the
-sharper the posterior distribution's modes. In the extreme case, the posterior would collapse to the
-points corresponding to the modes, and it would be difficult for MCMC methods to escape.
+Here we develop an alternative minibatch acceptance test for MCMC
+methods which uses only one fixed-size minibatch per test. Instead of
+dynamically adjusting the batch size, we add a prequisite for the test
+based on the variance of the log acceptance probability. If this
+variance is small enough, the test requires only a single step. This
+variance changes slowly on typical problems, and we can estimate it
+before performaning the accpeptance test. The minibatch variance
+descreases with the minibatch size, so the variance measurement can be
+used to set the minimum minibatch size.
 
-Therefore, we are not interested in exact inference of the posterior model parameters for a very
-large dataset, but rather, we want to perform either MAP or ML estimation. In both cases the goal is
-to find a good posterior mode, but the exact form of the distribution is arbitrary. In particular,
-non-unit powers of the distribution are fine. That corresponds to changing the temperature of the
-distribution to make it ``flatter''.  Rather than fixing the posterior temperature and trying to use
-adjustable minibatch size to achieve it (which ends up reducing to nearly-full-batch updates) we
-propose to run at the natural temperature induced by a given minibatch size. We can always increase
-the minibatch size to reduce the temperature, but there is no need to do this beyond the point where
-the posterior mode is sharp and well-defined. That will occur at some fixed number of points and far
-less than the full dataset.
+There is an additional advantage when using the test for Bayesian
+posterior inference. As dataset size grows, the posterior distribution
+sharpens and will often concentrate to a few sharp peaks. Samples from
+this distribution will come from those peaks, and will easily become
+stuck in one of them (see section 5.1).  The samples are not exploring
+the posterior parameter space, and are unlikely to concentrate at a
+strong local optimum. They therefore fail to accurately represent a
+sample of the posterior because of inadequate search (inadequate
+mixing). We argue that it is much more natural to sample the
+distribution at a different (higher) temperature determined by the
+minibatch size rather than the dataset size. This temperature is
+determined in a natural way by the variance prerequisite for our
+test. Starting at a high temperature (small minibatch size) which
+mixes easily, one can reduce the temperature (increasing minibatch
+size) until one reaches the desired target distribution temperature.
+Although this approach also involves changing minibath size, the
+changes increase minibatch size monotonically, and only a few changes
+are performed in the course of a sampling session.
+Annealing can also be used for MAP and ML estimation because changing temperature preserves
+posterior modes. 
 
-To this end, we present a new Metropolis-Hastings test that can fit in this framework of minibatch
-MCMC methods. We present theoretical and experimental results on our method and show that it can be
-the method of choice for minibatch MCMC. The contributions of this paper are as follows:
+
+The contributions of this paper are as follows:
 
 \begin{enumerate}[noitemsep]
-    \item We develop a new minibatch MH test which satisfies detailed balance.
-    \item Our MH test is more efficient than the adaptive sampling method.
-    \item The test can incorporate temperature considerations to control mixing rates.
+    \item We develop a new minibatch acceptance test which satisfies detailed balance.
+    \item We compare performance of our new test and the adaptive sampling method.
+    \item Experiments using the approach for posterior estimation.
 \end{enumerate}
 
-{\color{blue}
-Daniel: This section needs work in describing our argument carefully. I will decrease the focus on
-temperature and increase focus on the new MH test once the results are clearer.
-}
+%{\color{blue}
+%Daniel: This section needs work in describing our argument carefully. I will decrease the focus on
+%temperature and increase focus on the new MH test once the results are clearer.
+%}
 
 
 
