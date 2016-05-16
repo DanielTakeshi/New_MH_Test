@@ -271,10 +271,10 @@ In this section, we introduce our new Metropolis-Hastings test and show how to u
 sufficient mixing and/or to reach better posterior modes. To start, we introduce two key values we
 will use frequently: $\Delta$ and $\Delta'$:
 \begin{equation}\label{eq:deltas}
-\Delta = \log \left( \frac{p(\theta')\prod_{i=1}^N p(x_i \mid \theta')q(\theta_t \mid
-\theta')}{p(\theta_t)\prod_{i=1}^N p(x_i \mid \theta_t)q(\theta' \mid
-\theta_t)} \right);\;  \Delta' = \log \left( \frac{p(\theta')\prod_{i=1}^n p(x_i \mid \theta')q(\theta_t \mid
-\theta')}{p(\theta_t)\prod_{i=1}^n p(x_i \mid \theta_t)q(\theta' \mid
+\Delta = \log \left( \frac{p(\theta') \left ( \prod_{i=1}^N p(x_i \mid \theta') \right)^t q(\theta_t \mid
+\theta')}{p(\theta_t)\left (\prod_{i=1}^N p(x_i \mid \theta_t) \right) ^t q(\theta' \mid
+\theta_t)} \right);\;  \Delta' = \log \left( \frac{p(\theta') \left ( \prod_{i=1}^n p(x_i \mid \theta') \right ) ^t q(\theta_t \mid
+\theta')}{p(\theta_t) \left ( \prod_{i=1}^n p(x_i \mid \theta_t) \right ) ^t q(\theta' \mid
 \theta_t)} \right)
 \end{equation}
 where $p$ and $q$ have similar definitions as in Equation~\ref{eq:traditional}, so the terms here
@@ -350,10 +350,10 @@ If the minibatch data is chosen randomly, then the distribution of $\Delta'$ is 
 By expanding the definition of $\Delta'$ from Equation~\ref{eq:deltas}, we get
 \[
 \Delta' = \log p(\theta') - \log p(\theta_t) + \log q(\theta_t \mid \theta') - \log q(\theta' \mid \theta_t) +
-\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta_t)).
+\frac{1}{t}\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta_t)).
 \]
 If we fix $\theta_t$ and $\theta'$, the randomness in our $\Delta'$ samples only comes from the
-minibatch. Since the minibatch is chosen randomly, the distribution of $\sum_{i=1}^n (\log p(x_i\mid
+minibatch. Since the minibatch is chosen randomly, the distribution of $\frac{1}{t}\sum_{i=1}^n (\log p(x_i\mid
 \theta') - \log p(x_i\mid \theta_t))$ converge to a Gaussian by the Central Limit Theorem.
 \end{proof}
 
@@ -488,12 +488,12 @@ proposer.
 \begin{lemma}
 For one step sampling from $\theta_t$ to $\theta'$, if the jumping step  $|\theta_t - \theta'| <
 \epsilon$, and the gradient of the log-likelihood is bounded by a constant factor, i.e. $|\nabla
-(\log \Pr(x_i| \theta))| < k$, the variance of $\Delta'$ is bounded by $4\epsilon^2 k^2 m$, where
-$m$ is the minibatch size.
+(\log \Pr(x_i| \theta))| < k$, the variance of $\Delta'$ is bounded by $4\epsilon^2 k^2 m /t^2$, where
+$m$ is the minibatch size, and $t$ is the temperature.
 \end{lemma}
 
 \begin{proof}
-From Lemma~\ref{lem:gaussian}, only the $\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid
+From Lemma~\ref{lem:gaussian}, only the $\frac{1}{t}\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid
 \theta_t))$ term brings randomness into $\Delta'$. To simplify the subsequent notation, we define
 $g_i(\theta) = \log p(x_i\mid \theta)$. Then by Taylor's Theorem:
 \[
@@ -501,38 +501,40 @@ $g_i(\theta) = \log p(x_i\mid \theta)$. Then by Taylor's Theorem:
 \]
 Thus, with given the $\theta$, and $\theta'$, the variance of $\Delta'$ can be write as:
 \[
-{\rm Var}(\Delta') = {\rm Var}\left[\sum_{i=1}^n g_i(\theta') - g_i(\theta_t)\right] \leq
-\sum_{i=1}^n {\rm Var}(g_i(\theta') - g_i(\theta_t)) \leq  4\epsilon^2 m k^2,
+{\rm Var}(\Delta') = {\rm Var}\left[\frac{1}{t}\sum_{i=1}^n g_i(\theta') - g_i(\theta_t)\right] \leq
+\sum_{i=1}^n \frac{1}{t^2} {\rm Var}(g_i(\theta') - g_i(\theta_t)) \leq  4\epsilon^2 m k^2 /t^2,
 \]
 as desired.
 \end{proof}
 
-Since ${\rm Var}(\Delta') < \epsilon^2 k^2 m$, we can assume the maximum value of $X_{\xi}$ is
-proportional to the standard deviation of $\Delta$, i.e. $\epsilon$. Thus, we can assume
-$\zeta=\epsilon C$, where $C$ is a constant factor.
+Since ${\rm Var}(\Delta') < \epsilon^2 k^2 m / t^2$, we can assume the maximum value of $X_{\xi}$ is
+proportional to the standard deviation of $\Delta$, i.e. $\epsilon / t$. Thus, we can assume
+$\zeta=\epsilon C/t$, where $C$ is a constant factor.
 
 \begin{theorem}
 Assume the stationary distribution $\pi$ satisfies $\|T \circ P_0 - \pi\| \leq \eta \|P_0 - \pi\|$,
 where $\eta \in [0, 1)$ for all distribution $P_0$. And assume there exists $\rho_t < 1$ such that
 $\|T'_i(x, \cdot) - \pi_i'\| \leq 2\rho_i$. We can get $\| T_t' \circ T_{t-1}' \circ \cdots \circ T_1' P_0
 - \pi_0 \| \leq \sum_{s=1}^t \{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\} \rho_s \alpha_s + \alpha_t $,
-where $\alpha_i = \frac{\epsilon_i k }{1-\eta}$.
+where $\alpha_i = \frac{\epsilon_i C }{t_i(1-\eta)}$.
 \end{theorem}
 
 \begin{proof}
 First, by Theorem 1 in~\cite{cutting_mh_2014}, $\|T \circ P_0 - \pi\| \leq \eta \|P_0
-- \pi\|$ and $\|T-T'_i\| \leq \epsilon_i k$, the norm between the stationary distribution is $\|\pi
-- \pi_i'\|\leq \frac{\epsilon_i k}{1-\eta}$.
+- \pi\|$ and $\|T-T'_i\| \leq \epsilon_i C/t_i$, the norm between the stationary distribution is $\|\pi
+- \pi_i'\|\leq \frac{\epsilon_i C}{t_i(1-\eta)}$.
 
 Second, by Theorem 3.6 in~\cite{yang2013sequential}, we have  $\| T_t' \circ T_{t-1}' \circ \cdots
 \circ T_1' P_0 - \pi_t \| \leq \sum_{s=1}^t \{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\} \rho_s
-\alpha_s$, where $\alpha = \frac{\epsilon_i k}{1-\eta}$. Thus, we get:
+\alpha_s$, where $\alpha = \frac{\epsilon_i C}{t_i(1-\eta)}$. Thus, we get:
 \begin{align*}
  \| T_t' \circ \cdots \circ T_1' P_0 - \pi_0 \| &\leq \|T_t' \circ \cdots \circ T_1' P_0 - \pi_t\| + \|\pi_t - \pi_0\| \\
  &\leq \sum_{s=1}^t \left\{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\right\} \rho_s \alpha_s + \alpha_t,
 \end{align*}
 as desired.
 \end{proof}
+
+The Theorem above indicates that the difference of the distburition obtained by applying the 
 
 
 
