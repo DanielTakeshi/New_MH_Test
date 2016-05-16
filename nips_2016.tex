@@ -442,18 +442,18 @@ deconvolution problem.
 
 \section{Theoretical Results}\label{sec:theory}
 
-In this section, we explore how well our algorithm will converge to the posterior distribution.
-Define our estimate of $X_{\rm norm}$ as $X_{\rm norm}'$, and let $X_{\xi} = X_{\rm norm} - X_{\rm
-norm}'$, so that $\Delta' = \Delta + X_{\rm norm} + X_\xi$.  We also denote $F_X$ as the CDF of $X$.
-Let the transition kernel of complete data at sampling step $i$ be $T_i$, and let the transition
-kernel of minibatch data at sampling step $i$ is $T_i'$.  We show that the distance of $T_i$ and
-$T_i'$ is proportional to our estimate of $X_{\rm norm}$. We also define the stationary distribution
-obtained by $T_i$ is $\pi$.  We show the by decreasing the step size, the distribution of our
-sampled data converges to $\pi$.
+In this section, we explore the convergence properties of our algorithm.  Define our estimate of
+$X_{\rm norm}$ as $X_{\rm norm}'$, and let $X_{\xi} = X_{\rm norm} - X_{\rm norm}'$, so that
+$\Delta' = \Delta + X_{\rm norm} + X_\xi$.  We also denote $F_X$ as the CDF of $X$.  Let the
+transition kernel of complete data at sampling step $i$ be $T_i$, and let the transition kernel of
+minibatch data at sampling step $i$ is $T_i'$.  We show that the distance of $T_i$ and $T_i'$ is
+proportional to our estimate of $X_{\rm norm}$. We also define the stationary distribution obtained
+by $T_i$ is $\pi$.  We show the by decreasing the step size, the distribution of our sampled data
+converges to $\pi$. We use something called the \emph{total variation distance} between two kernels,
+denoted as $\| \cdot \|$.
 
 \begin{lemma}
-If $|X_\xi| < \zeta$ and $\nabla F_X < k$, the total variance distance between $T_i$ and $T_i'$ is
-bounded by $2\zeta k$.
+If $|X_\xi| < \zeta$ and $\nabla F_X < k$, then $\|T_i-T_i'\| \le 2\zeta k$.
 \end{lemma}
 
 \begin{proof}
@@ -470,12 +470,11 @@ smaller absolute value) and the Triangle Inequality.  Since $|X_\xi| < \zeta$, $
 2k\zeta$.
 
 Next, we show the transition kernels at each step are bounded if we use the same proposer, i.e.
-$\|T_i - T'_i\|_1 \leq 2k\zeta$ with $\| \cdot \|_1$ the standard $L_1$ norm. We can write the
-$T_i(\theta_t \mid \theta') = P_a(\theta_t, \theta') q(\theta'\mid \theta_t) +
-(1-P_a(\theta_t,\theta')) \delta_D(\theta' - \theta_t)$, where $\delta_D$ is the Dirac delta
-function. The distance between two proposal kernels is
+$\|T_i - T'_i\| \leq 2k\zeta$. We write $T_i(\theta_t \mid \theta') = P_a(\theta_t, \theta')
+q(\theta'\mid \theta_t) + (1-P_a(\theta_t,\theta')) \delta_D(\theta' - \theta_t)$, where $\delta_D$
+is the Dirac delta function. The total variation distance between two proposal kernels is
 \begin{align*}
-\|T_i - T'_i \|_1 &= \int_{\theta'} \left| \int_{\theta_t}((P_a-P_a') q(\theta'|\theta_t) + (1-P_a - 1+P_a') \delta_D(\theta_t -\theta')) d\theta_t  \right| d\theta' \\
+\|T_i - T'_i \| &= \int_{\theta'} \left| \int_{\theta_t}((P_a-P_a') q(\theta'|\theta_t) + (1-P_a - 1+P_a') \delta_D(\theta_t -\theta')) d\theta_t  \right| d\theta' \\
 & = \int_{\theta'} \left| \int_{\theta_t} (P_a- P_a')(q(\theta'|\theta_t) - \delta_D(\theta_t - \theta')) d\theta_t \right|  d\theta'\\ 
 & \leq 2 \zeta k \int_{\theta'} \left| \int_{\theta_t}(q(\theta'|\theta_t) + q(\theta_t|\theta'))  d\theta_t \right| d\theta'= 2 \zeta k,
 \end{align*}
@@ -501,10 +500,10 @@ $g_i(\theta) = \log p(x_i\mid \theta)$. Then by Taylor's Theorem:
 |g(\theta') - g(\theta_t)| = |\nabla g(\theta_t) (\theta' - \theta_t) + o(\theta' - \theta_t)^2| \leq 2\epsilon k.
 \]
 Thus, with given the $\theta$, and $\theta'$, the variance of $\Delta'$ can be write as:
-\begin{align*}
-{\rm Var}(\Delta') &= {\rm Var}\left[\sum_{i=1}^n (\log \Pr(x_i | \theta') - \log \Pr (x_i |\theta_t))\right] = {\rm Var}\left[\sum_{i=1}^n g_i(\theta') - g_i(\theta_t)\right] \\
-& \leq \sum_{i=1}^n {\rm Var}(g_i(\theta') - g_i(\theta_t)) \leq  4\epsilon^2 m k^2,
-\end{align*}
+\[
+{\rm Var}(\Delta') = {\rm Var}\left[\sum_{i=1}^n g_i(\theta') - g_i(\theta_t)\right] \leq
+\sum_{i=1}^n {\rm Var}(g_i(\theta') - g_i(\theta_t)) \leq  4\epsilon^2 m k^2,
+\]
 as desired.
 \end{proof}
 
@@ -553,7 +552,12 @@ We start with a simple mixture of Gaussians.
 \end{figure}
 
 {\color{blue}
-Daniel: TODO
+Daniel: I can borrow some of the description from the Appendix into here, but I need to know what we
+are testing. What is the purpose of this experiment? What do we want to show? Once I know that,
+writing this part will be easier, and for the Gaussian case in particular, the experiment is pretty
+simple and can be run on short notice.
+
+For additional details, see Appendix~\ref{app:gaussian}.
 }
 
 \subsection{Logistic Regression}\label{ssec:logistic}
@@ -567,6 +571,8 @@ Daniel: TODO
 
 {\color{blue}
 Daniel: TODO
+
+For additional details, see Appendix~\ref{app:logistic}.
 }
 
 \subsection{Neural Network Optimization}\label{ssec:nets}
@@ -580,6 +586,8 @@ Daniel: TODO
 
 {\color{blue}
 Daniel: TODO
+
+For additional details, see Appendix~\ref{app:nnet}.
 }
 
 We implement our system within the open-source BIDMach project~\cite{canny2013bidmach}. Note to
@@ -619,7 +627,7 @@ In this appendix, we describe the following topics, with an emphasis on clarity 
     \item Detailed discussion of the experiment from Section~\ref{ssec:nets}.
 \end{itemize}
 
-\section{Gaussian Mixture Experiment Details}
+\section{Gaussian Mixture Experiment Details}\label{app:gaussian}
 
 \subsection{Mathematical Assumptions}
 
@@ -820,13 +828,13 @@ ones more often.
 
 
 
-\section{Logistic Regression Experiment Details}
+\section{Logistic Regression Experiment Details}\label{app:logistic}
 
 {\color{blue}
 Daniel: TODO
 }
 
-\section{Neural Network Experiment Details}
+\section{Neural Network Experiment Details}\label{app:nnet}
 
 {\color{blue}
 Daniel: TODO
