@@ -443,15 +443,18 @@ deconvolution problem.
 
 
 \begin{algorithm}[t]
-\KwData{this text}
-\KwResult{how to write algorithm with \LaTeX2e } initialization\;
-\While{not at end of this document}{
-    read current\;
-    \eIf{understand}{
-        go to next section\;
-        current section becomes this one\;
+\KwData{$\{x_i\}$ under a target distribution}
+\KwResult{a serise of sampled $\{\theta_i\}$ under the posterior distribution} 
+set the $var(\Delta') = 1.0$ and deconvolve $X$ to get the disribution of $X_{corr}$\;
+\While{not enough sampled data}{
+	estimate the $sd(\Delta')$\;
+    propose a candidate $\theta'$\;
+    compute the noisy $\Delta'$\;
+    sample a $x$ from $X_{corr}$;
+    \eIf{$x*sd(\Delta') + \Delta' > 0$}{
+        accpet the $\theta'$;
     }{
-        go back to the beginning of current section\;
+        reject the $\theta'$;
     }
 }
 \caption{A description of our MH test.}
@@ -639,13 +642,6 @@ In this experiment, we also illustrate that by appling the temperature, we can a
     \caption{Experiments of logistic regression}\label{fig:logistic}
 \end{figure}
 
-\begin{figure}[ht]
-  \centering
-  \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
-  %\includegraphics[width=0.5\linewidth]{empty}
-  \caption{This will be a sequence of images for logistic regression.}
-\end{figure}
-
 We use this experiment to illustarte another property of our mini-batch MH testing: when the size of mini-batch increase to a threshold, the accuracy / loglikelihood of sampled data at a fix iteration number will not improve with larger mini-batch size, see Fig.~4c. This is because the variance of $\Delta'$ decrease with large mini-batch, and the error of our mini-batch MH testing is proportional to our estimation error of variance of $\Delta'$. When the $var(\Delta')$ decrease to a threshold, the error of our mini-batch MH testing can be ignored.  
 
 {\color{blue}
@@ -654,7 +650,9 @@ For additional details, see Appendix~\ref{app:logistic}.
 }
 
 \subsection{Neural Network Optimization}\label{ssec:nets}
-In this experiment, we apply about mini-batch MH testing with SGHMC proposer to sample the parameter instances from a fully connected neural network.
+In this experiment, we apply about mini-batch MH testing with SGHMC proposer to sample the parameter instances from a fully connected neural network. We use Higgs data set from University of California Irvine. It is a classification problem to distinguish between a signal process which produces Higgs bosons and a background process which does not. We build a 4 layers neural network to tackle this problem. The first layer is a input layer, the last layer is a softmax layer, the intermediate layers are linear followed by Sigmoid, norm, dropout, starting and ending with linear operation. 
+
+We choose the 
 \begin{figure}[ht]
   \centering
   \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
