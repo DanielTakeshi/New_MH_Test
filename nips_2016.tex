@@ -204,35 +204,21 @@ helpful.
 
 Unfortunately, computing $f$ requires the use of all $N$ training data points. Moreover, it is
 difficult to design tests using substantially fewer than $N$ points that also satisfy detailed
-balance. There has been research on ways to conduct exact accept/reject tests using unbiased
-estimators of the likelihood~\cite{Andrieu09thepseudo-marginal}. However, unbiased estimators of the
-likelihood that can be computed from minibatches of data, such as the Kennedy-Bhanot
-estimator~\cite{PhysRevD} have very high variance for large datasets. Because of this, once we get a
-very high estimate of the likelihood, almost all proposed moves are rejected and the algorithm gets
-stuck.
+balance. To reconcile these competing objectives,~\cite{cutting_mh_2014} propose an adaptive
+minibatch MCMC algorithm which uses a sequential hypothesis test. During each iteration, the
+algorithm starts with a small minibatch of data and tests the hypothesis that the sample $\theta'$
+should be accepted or rejected based on the likelihood ratio. If the test cannot make a decision
+over a certain confidence threshold, then they increase the minibatch size and test again. This
+process repeats until a decision.  The downside of this algorithm is the need to keep incrementing
+the mini-batch size in one iteration; in the worst case, all $N$ data points may be needed in a
+single iteration. 
 
-{\color{blue}
-Daniel: I am worried. We need to motivate why it is not easy to use minibatch MCMC, and what other
-researchers have tried to do about that.  The last paragraph is from~\cite{cutting_mh_2014}, and it
-seems to argue that people have not used minibatch MCMC before because ``the algorithm gets stuck''.
-But \emph{isn't that exactly what our algorithm is doing when it is getting ``stuck'' at modes}? If
-we wanted to get stuck at modes with large datasets, why didn't we just do what previous work did?
-The only way around this is if our algorithm is getting stuck at ``better'' modes, but then we need
-to design our experiments to test this.
-}
-
-The work of~\cite{cutting_mh_2014} proposes an adaptive minibatch approach by using a sequential
-hypothesis testing algorithm. During each iteration, they start with a small minibatch of data and
-test the hypothesis that the sample $\theta'$ should be accepted or rejected based the likelihood
-ratio. If the test cannot make a decision over a certain confidence threshold, then they increase
-the minibatch size and test again. This process repeats until a decision.  The downside of this
-algorithm is the need to keep incrementing the mini-batch size in one iteration; in the worst case,
-all $N$ data points may be needed in a single iteration. A similar approach
-from~\cite{icml2014c1_bardenet14} has slightly more robust theoretical properties, but comes at the
-cost of more computational time. The work of~\cite{conf/uai/MaclaurinA14} presents another minibatch
-MCMC method, but which gets the \emph{exact} posterior, with the only requirement being that there
-needs to be a lower bound on the log likelihood for each data point. They augment the likelihood
-with auxiliary random variables, but this can hurt mixing.
+A similar approach from~\cite{icml2014c1_bardenet14} has slightly more robust theoretical
+properties, but comes at the cost of more computational time. The work
+of~\cite{conf/uai/MaclaurinA14} presents another minibatch MCMC method, but which gets the
+\emph{exact} posterior, with the only requirement being that there needs to be a lower bound on the
+log likelihood for each data point. They augment the likelihood with auxiliary random variables, but
+this can hurt mixing.
 
 There is a separate line of work related to optimizing MCMC about simulating the physics of a
 probability distribution. By viewing random variables as ``particles'' in a system, it is possible
@@ -248,15 +234,14 @@ Minibatch SGHMC and Langevin Dynamics are orthogonal to our work; two ways of at
 to solve the same problem of MCMC methods with big datasets. We could augment their methods with our
 MH test, to get the benefit of their high quality proposals. Note that while their methods in theory
 do not need an MH test, in practice, they need one due to discretization of the system. Furthermore,
-    tests may also be needed for when the algorithms are run with a constant step size.
-
-%% Daniel: I don't know how to integrate this easily.
-%% \cite{sgmcmc_2015} (NIPS 2015) might want to give this a mention, where it would fit in their
-%% recipe.
+tests may also be needed for when the algorithms are run with a constant step size. {\color{blue}
+Daniel: not totally confident on this paragraph, how much SGHMC/LD do we discuss?}
 
 %% Daniel: for a further discussion on the 'Firefly' paper, see this blog post:
 %% https://xianblog.wordpress.com/2014/04/02/firefly-monte-carlo/
-%% Note: this guy also blogged about our earlier ICLR 2015 paper.
+%% Note: this guy also blogged about our earlier ICLR 2015 paper. He's the third author of the SAME
+%% paper, which explains why he knows this stuff.
+
 
 
 
@@ -264,32 +249,13 @@ do not need an MH test, in practice, they need one due to discretization of the 
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\textwidth]{john_bair_fig01}
+  \includegraphics[width=\textwidth]{mh_convolution_diagram}
   \caption{
-  To the left is the logistic distribution, representing a possible acceptance test. As $\Delta U$
-  approaches infinity, the acceptance rate approaches 1. To the right, we have a new variable $X$
-  and its density, along with an acceptance test $\Delta U + X$, which we describe in detail in
-  Section~\ref{sec:our_algorithm} (note that we use $\Delta$ instead of $\Delta U$ for simplicity).
   {\color{blue}
-  Daniel: I think that the diagram to the left should use the logistic function, i.e., replace
-  ``$\exp(\Delta U)$'' with ``$(1+\exp(\Delta U))^{-1}$.''
+  Daniel: this image is finalized, but change this caption.
   }
   }
-  \label{fig:part1}
-\end{figure}
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\textwidth]{john_bair_fig02}
-  \caption{
-  To the left, we have $\Delta U$ (which is simplified as $\Delta$ in
-  Section~\ref{sec:our_algorithm}), along with two noise terms that come from the new variable we
-  define $X$. The details are in Section~\ref{sec:our_algorithm}.
-  {\color{blue}
-  Daniel: I think this needs to be merged into Figure~\ref{fig:part1}.
-  }
-  }
-  \label{fig:part2}
+  \label{fig:deconvolution}
 \end{figure}
 
 In this section, we introduce our new Metropolis-Hastings test and show how to use it to achieve
@@ -356,7 +322,7 @@ F_X(x) = {\rm Pr}(X \le x) = {\rm Pr}(g^{-1}(u) \le x) = {\rm Pr}(u \le g(x)) = 
 \]
 as the density of the uniform random variable here is simply one. Thus, the criteria to accept the
 candidate $\theta'$ is equivalent to whether $\Delta > X$. Since $X$ is symmetric about zero, the
-acceptance criteria is equivalently expressed as $\Delta + X>0$, as shown in Figure~\ref{fig:part1}.
+acceptance criteria is equivalently expressed as $\Delta + X>0$.
 
 With large datasets, $\Delta$ is intractable to compute. An intuitive alternative is to use
 $\Delta'$ instead. The following lemma characterizes the distribution of $\Delta'$.
@@ -390,12 +356,12 @@ These two convolve to form $X$. The criteria to accept can be rewritten as
 \begin{equation}\label{eq:criteria}
 \Delta + X = \Delta + X_{\rm norm} + X_{\rm corr} \approx \Delta' + X_{\rm corr} >0.
 \end{equation}
-This deconvolution process is visualized in Figure~\ref{fig:part2}. We decompose $X$ this way so
-that we can estimate $X_{\rm norm}$ from the data, and then add the correction $X_{\rm corr}$ later.
-Notice that we have some control over the true value of $X_{\rm norm}$, even though we cannot
-generally guarantee computing it exactly. In particular, increasing the minibatch size will cause
-the $X_{\rm norm}$ distribution to become narrower. {\color{blue} (Daniel: note that we will be
-fixing this figure, so the visualization should hopefully be a little clearer, along with the
+This deconvolution process is visualized in Figure~\ref{fig:deconvolution}. We decompose $X$ this
+way so that we can estimate $X_{\rm norm}$ from the data, and then add the correction $X_{\rm corr}$
+later.  Notice that we have some control over the true value of $X_{\rm norm}$, even though we
+cannot generally guarantee computing it exactly. In particular, increasing the minibatch size will
+cause the $X_{\rm norm}$ distribution to become narrower. {\color{blue} (Daniel: note that we will
+be fixing this figure, so the visualization should hopefully be a little clearer, along with the
 corresponding paragraph description. In particular, this paragraph needs an informal description of
 Algorithm~\ref{alg:our_algorithm}.)} Algorithm~\ref{alg:our_algorithm} concisely describes our MH
 test.
@@ -570,7 +536,7 @@ Fig.~3a. We use random walk as the proposer. We set the step size 0.1 as a const
 three scenarios: with our mini-batch MH testing (see Fig.~3b), without our mini-batch MH testing
 (see Fig.~3c), and with the standard MH testing (see Fig.~3d). 
 
-\begin{figure}[ht]
+\begin{figure}[t]
   \centering
   \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
   %\includegraphics[width=0.5\linewidth]{empty}
@@ -586,19 +552,21 @@ transition kernel will declines with even constant step size as discribed in Sec
 
 \subsection{Logistic Regression}\label{ssec:logistic}
 
-In this experiment, we use logistic regression to classify the MNIST dataset. For similification, we
-only train the binary classifer for digits 1 vs 7. The dataset consisted of 12007 training data and
-1000 testing data. Similarly, we use random walk as the proposer. We compare our mini-batch MH
-testing with the adaptive mini-batch MH testing. Figure 4 shows the loglikelihood value and
-perdiction accuracy over training process. Since the adaptive MH testing method needs to increase
-the mini-batch size adaptively, we use the cumulative number of data instance each algorithm
-consumes as the horizontal axis. We find our mini-batch MH testing can achieve the similar (or even
-better loglikelihood/prediction accuracy) with consuming much fewer data points. Thus, we can assert
-that our mini-batch MH testing is much more efficient than the adaptive one. 
+In this experiment, we use logistic regression to classify the MNIST
+dataset~\cite{lecun-mnisthandwrittendigit-2010}. For simplification, we only train the binary
+classifier for digits 1 vs 7. The dataset consisted of 12007 training data and 1000 testing data.
+Similarly, we use random walk as the proposer. We compare our mini-batch MH testing with the
+adaptive mini-batch MH testing. Figure 4 shows the log likelihood value and prediction accuracy over
+training process. Since the adaptive MH testing method needs to increase the mini-batch size
+adaptively, we use the cumulative number of data instance each algorithm consumes as the horizontal
+axis. We find our mini-batch MH testing can achieve the similar (or even better log
+likelihood/prediction accuracy) with consuming much fewer data points. Thus, we can assert that our
+mini-batch MH testing is much more efficient than the adaptive one. 
 
-In this experiment, we also illustrate that by appling the temperature, we can achieve slight faster convergence than the constant temperature one.
+In this experiment, we also illustrate that by applying the temperature, we can achieve slight
+faster convergence than the constant temperature one.
 
-\begin{figure}
+\begin{figure}[t]
     \centering
     \begin{subfigure}[b]{0.32\textwidth}
         \includegraphics[width=\textwidth]{./figures/acc_hyc.png}
@@ -622,18 +590,23 @@ In this experiment, we also illustrate that by appling the temperature, we can a
     \caption{Experiments of logistic regression}\label{fig:logistic}
 \end{figure}
 
-We use this experiment to illustarte another property of our mini-batch MH testing: when the size of mini-batch increase to a threshold, the accuracy / loglikelihood of sampled data at a fix iteration number will not improve with larger mini-batch size, see Fig.~4c. This is because the variance of $\Delta'$ decrease with large mini-batch, and the error of our mini-batch MH testing is proportional to our estimation error of variance of $\Delta'$. When the $var(\Delta')$ decrease to a threshold, the error of our mini-batch MH testing can be ignored.  
+We use this experiment to illustrate another property of our mini-batch MH testing: when the size of
+mini-batch increase to a threshold, the accuracy / log likelihood of sampled data at a fix iteration
+number will not improve with larger mini-batch size, see Fig.~4c. This is because the variance of
+$\Delta'$ decrease with large mini-batch, and the error of our mini-batch MH testing is proportional
+to our estimation error of variance of $\Delta'$. When the $var(\Delta')$ decrease to a threshold,
+the error of our mini-batch MH testing can be ignored.  
 
 {\color{blue}
-
-For additional details, see Appendix~\ref{app:logistic}.
+Daniel/Haoyu: For additional details, see Appendix~\ref{app:logistic}.
 }
 
 \subsection{Neural Network Optimization}\label{ssec:nets}
+
 In this experiment, we apply about mini-batch MH testing with SGHMC proposer to sample the parameter instances from a fully connected neural network. We use Higgs data set from University of California Irvine. It is a classification problem to distinguish between a signal process which produces Higgs bosons and a background process which does not. We build a 4 layers neural network to tackle this problem. The first layer is a input layer, the last layer is a softmax layer, the intermediate layers are linear followed by Sigmoid, norm, dropout, starting and ending with linear operation. 
 
 We choose the 
-\begin{figure}[ht]
+\begin{figure}[t]
   \centering
   \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
   %\includegraphics[width=0.5\linewidth]{empty}
@@ -656,14 +629,19 @@ ourselves: do NOT modify the \texttt{Learner.scala} code -- just make it a new `
 
 \section{Conclusions}\label{sec:conclusion}
 
+In this paper, we have derived a new MH test for minibatch MCMC methods. We demonstrated how a
+simple deconvolution process allows us to use a minibatch approximation to the full data tests. We
+experimentally show the benefits our MH test.
+
+Straightforward directions for future work include running additional experiments, with a particular
+focus on investigation of the variance precondition.  More elaborate extensions include combining
+our results with Hamiltonian Monte Carlo methods, providing a recipe for how to use our algorithm
+(following the general framework of~\cite{sgmcmc_2015}), or integrating parallel
+MCMC~\cite{conf/uai/AngelinoKWSA14,conf/icml/AhnSW14} concepts into our work.
+
 {\color{blue}
-Daniel: TODO
+Daniel: TODO, clean this up.
 }
-
-Straightforward directions for future work include more extensive experiments. More elaborate
-extensions could be combining our results with Hamiltonian Monte Carlo methods, or integrating
-parallel MCMC~\cite{conf/uai/AngelinoKWSA14} concepts into our work.
-
 
 \small
 \bibliography{nips_2016}
