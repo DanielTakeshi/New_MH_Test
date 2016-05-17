@@ -371,9 +371,10 @@ By expanding the definition of $\Delta'$ from Equation~\ref{eq:deltas}, we get
 \Delta' = \log p(\theta') - \log p(\theta_t) + \log q(\theta_t \mid \theta') - \log q(\theta' \mid \theta_t) +
 \sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta_t)).
 \]
-If we fix $\theta_t$ and $\theta'$, the randomness in our $\Delta'$ samples only comes from the
-minibatch. Since the minibatch is chosen randomly, the distribution of $\sum_{i=1}^n (\log p(x_i\mid
-\theta') - \log p(x_i\mid \theta_t))$ converge to a Gaussian by the Central Limit Theorem.
+During a given iteration, $\theta_t$ and $\theta'$ are fixed. Therefore, the randomness in $\Delta'$
+comes only from the minibatch. Since the minibatch is chosen randomly, the distribution of
+$\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta_t))$ converges to a Gaussian by the
+Central Limit Theorem.
 \end{proof}
 
 From Lemma~\ref{lem:gaussian}, since $\Delta'$ is a noisy approximation of $\Delta$, the
@@ -389,13 +390,17 @@ These two convolve to form $X$. The criteria to accept can be rewritten as
 \begin{equation}\label{eq:criteria}
 \Delta + X = \Delta + X_{\rm norm} + X_{\rm corr} \approx \Delta' + X_{\rm corr} >0.
 \end{equation}
-This deconvolution process is visualized in Figure~\ref{fig:part2}. {\color{blue} (Daniel: note that
-we will be fixing this figure, so the visualization should hopefully be a little clearer.)} We
-decompose $X$ this way so that we can estimate the two components separately.  Notice that if we
-increase the mini-batch size, this will cause the $X_{\rm noise}$ distribution to shrink and become
-narrower.
+This deconvolution process is visualized in Figure~\ref{fig:part2}. We decompose $X$ this way so
+that we can estimate $X_{\rm norm}$ from the data, and then add the correction $X_{\rm corr}$ later.
+Notice that we have some control over the true value of $X_{\rm norm}$, even though we cannot
+generally guarantee computing it exactly. In particular, increasing the minibatch size will cause
+the $X_{\rm norm}$ distribution to become narrower. {\color{blue} (Daniel: note that we will be
+fixing this figure, so the visualization should hopefully be a little clearer, along with the
+corresponding paragraph description. In particular, this paragraph needs an informal description of
+Algorithm~\ref{alg:our_algorithm}.)} Algorithm~\ref{alg:our_algorithm} concisely describes our MH
+test.
 
-Furthermore, since our proposed acceptance function $g(\Delta) = (1+ \exp(-\beta \Delta))^{-1}$ satisfies
+Since our proposed acceptance function $g(\Delta) = (1+ \exp(-\beta \Delta))^{-1}$ satisfies
 detailed balance (see Lemma~\ref{lem:detailed_balance}), if $\Delta$ is computed from the complete
 data, the distribution of the sampled data will match our target distribution $f$, the posterior,
 under standard MCMC assumptions (e.g., that the chain is run sufficiently long enough and mixes
@@ -404,57 +409,45 @@ probabilities be $P_a = g(\Delta) = \Pr(\Delta + X > 0)$ and $P_a' = \Pr(\Delta'
 0)$.  If our estimate of $X_{\rm norm}$ is exact, then $P_a' = P_a$, which follows by making the
 inequality in Equation~\ref{eq:criteria} an equality.
 
-Algorithm~\ref{alg:our_algorithm} concisely describes our MH test.
-
-Our mini-batch MH test can not only be used to perform MCMC, but also can be used to obtain parameter samples around MAP/ML by adding temperature $t$ to the likelihood function. Thus, the target distribution become $f = \left ( \prod_{i=1}^N p(x_i \mid \theta') \right )^{t_i}$. We can decrease the temperature at each iteration to decline the mixing rate, so that our samples will converge to the MAP/ML point. 
+It is also important to note that our minibatch MH test can also be used to obtain parameter
+estimates close to the MAP and/or ML estimaes by augmenting the likelihood function with a
+temperature term $T > 1$. Thus, the target distribution would become
+\begin{equation}\label{eq:temperature}
+f(\theta') = p(\theta')\left ( \prod_{i=1}^N p(x_i \mid \theta') \right)^{1/T}.
+\end{equation}
+We can decrease the temperature as the MCMC sampling proceeds, thus slowing the mixing rate and
+sharpening the peaks of the distribution, so that the samples coverge to the desired point estimate.
 
 {\color{blue}
-Daniel: I really need to make this clear and do the algorithm description.
+Daniel: Haoyu and I are going to make this section a lot more clearer, along with the algorithm
+description.
 }
 
-\begin{comment}
-though it really should be an approximation as we can't guarantee that our $X_{\rm norm}$ term is
-exactly the correct amount of noise), where the left hand side has distributions representing normal
-noise ($X_{\rm norm}$, which is labeled as ${\rm Noise}_U$, but they are the same thing) and a
-``correction'' term labeled $X_{\rm correction}$. Be aware that all of these ``additions'' are to be
-interpreted as convolutions when computing the sum of densities.
-
-I think it's becoming clear but I'm still trying to connect all of the steps.  During each iteration
-of MCMC, we compute $\Delta'$ and \emph{sample} (right?) an $X$ (which we can do by sampling $u$ and
-then doing $X = g^{-1}(u)$. This gives us $\Delta' + X$ but our MH test actually requires $X_{\rm
-correction}$, so first we must estimate $\sigma^2$, the variance of $X_{\rm noise} \sim
-\mathcal{N}(0, \sigma^2)$ (perhaps from the mini-batch data, somehow?) and then somehow ``remove''
-that component from $X$ to get $X_{\rm correction}$? Then we have our acceptance test. Is this
-right? Or, of course, we don't have to sample $X$ at all, but just figure out a way to sample
-$X_{\rm correction}$ directly.
-
-I think we talked about estimating $\sigma^2$. The variance $\sigma^2$ that we're concerned about is
-a scalar value based on the sum of log probabilities of different samples, so one way we could
-estimate the variance is by taking all samples of a mini-batch and seeing how much those individual
-$\log p(x_i \mid \theta)$ vary. Or we could look at $k$ mini-batches of data which will give us
-$\Delta_1, \ldots, \Delta_k$ and compute the empirical $\sigma^2$ (of course that defeats the
-purpose of using mini-batches).
-
-I agree with you that out MH test requires $X_{correction}$. My understanding
-is that we can actually estimate $X$ from the whole data set, and the probability distribution of
-$X_{norm}$ is what we proposed? So the determination of $X_{correction}$ is a deterministic
-deconvolution problem.
-\end{comment}
-
+\SetKwInOut{Input}{Input}
+\SetKwInOut{Output}{Output}
 
 \begin{algorithm}[t]
-\KwData{this text}
-\KwResult{how to write algorithm with \LaTeX2e } initialization\;
-\While{not at end of this document}{
-    read current\;
-    \eIf{understand}{
-        go to next section\;
-        current section becomes this one\;
+\Input{Samples $T$, number of $\Delta'$ estimates $K$, minibatch size $m$, pre-computed $X_{\rm corr}$ values.}
+\Output{A chain of $T$ samples $\{\theta_1, \ldots, \theta_T\}$ for either posterior inference or point estimation.}
+Initialize $\theta_1$\;
+\For{$t=\{2, \ldots, T\}$}{
+    Create a new empty list for $\Delta'$ estimates, $d = []$\;
+    \For{$k = \{1, \ldots, K\}$}{
+        Sample a random minibatch of size $m$ from the complete data\;
+        Compute $\Delta'$ from this minibatch (see Equation~\ref{eq:deltas}), and add $\Delta'$ to $d$\;
+    }
+    Compute ${\rm std}(d)$, the standard deviation of the $\Delta'$ elements from list $d$\;
+    Using a random minibatch of $m$ data points, compute a \emph{new} $\Delta'$; call it $\Delta_{\rm real}'$\;
+    Sample $u \sim {\rm Unif}[0,1]$ and extract the corresponding $X_{\rm corr}$ from pre-computed data\;
+    Re-scale the correction error: $X_{\rm corr} = X_{\rm corr} \cdot {\rm std}(d)$\;
+    {\color{blue} Daniel: TODO, check if we need some variance correction or something here.}\;
+    \eIf{$X_{\rm corr} + \Delta_{\rm real}' > 0$}{
+        Accept the candidate, $\theta_{t+1} = \theta'$\;
     }{
-        go back to the beginning of current section\;
+        Reject and re-use the old one, $\theta_{t+1} = \theta_t$\;
     }
 }
-\caption{A description of our MH test.}
+\caption{A description of our MH test. {\color{blue} Daniel: IN PROGRESS!}}
 \label{alg:our_algorithm}
 \end{algorithm}
 
