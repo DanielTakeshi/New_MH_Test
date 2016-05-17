@@ -264,32 +264,13 @@ do not need an MH test, in practice, they need one due to discretization of the 
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\textwidth]{john_bair_fig01}
+  \includegraphics[width=\textwidth]{mh_convolution_diagram}
   \caption{
-  To the left is the logistic distribution, representing a possible acceptance test. As $\Delta U$
-  approaches infinity, the acceptance rate approaches 1. To the right, we have a new variable $X$
-  and its density, along with an acceptance test $\Delta U + X$, which we describe in detail in
-  Section~\ref{sec:our_algorithm} (note that we use $\Delta$ instead of $\Delta U$ for simplicity).
   {\color{blue}
-  Daniel: I think that the diagram to the left should use the logistic function, i.e., replace
-  ``$\exp(\Delta U)$'' with ``$(1+\exp(\Delta U))^{-1}$.''
+  Daniel: this image is finalized, but change this caption.
   }
   }
-  \label{fig:part1}
-\end{figure}
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\textwidth]{john_bair_fig02}
-  \caption{
-  To the left, we have $\Delta U$ (which is simplified as $\Delta$ in
-  Section~\ref{sec:our_algorithm}), along with two noise terms that come from the new variable we
-  define $X$. The details are in Section~\ref{sec:our_algorithm}.
-  {\color{blue}
-  Daniel: I think this needs to be merged into Figure~\ref{fig:part1}.
-  }
-  }
-  \label{fig:part2}
+  \label{fig:deconvolution}
 \end{figure}
 
 In this section, we introduce our new Metropolis-Hastings test and show how to use it to achieve
@@ -356,7 +337,7 @@ F_X(x) = {\rm Pr}(X \le x) = {\rm Pr}(g^{-1}(u) \le x) = {\rm Pr}(u \le g(x)) = 
 \]
 as the density of the uniform random variable here is simply one. Thus, the criteria to accept the
 candidate $\theta'$ is equivalent to whether $\Delta > X$. Since $X$ is symmetric about zero, the
-acceptance criteria is equivalently expressed as $\Delta + X>0$, as shown in Figure~\ref{fig:part1}.
+acceptance criteria is equivalently expressed as $\Delta + X>0$.
 
 With large datasets, $\Delta$ is intractable to compute. An intuitive alternative is to use
 $\Delta'$ instead. The following lemma characterizes the distribution of $\Delta'$.
@@ -390,12 +371,12 @@ These two convolve to form $X$. The criteria to accept can be rewritten as
 \begin{equation}\label{eq:criteria}
 \Delta + X = \Delta + X_{\rm norm} + X_{\rm corr} \approx \Delta' + X_{\rm corr} >0.
 \end{equation}
-This deconvolution process is visualized in Figure~\ref{fig:part2}. We decompose $X$ this way so
-that we can estimate $X_{\rm norm}$ from the data, and then add the correction $X_{\rm corr}$ later.
-Notice that we have some control over the true value of $X_{\rm norm}$, even though we cannot
-generally guarantee computing it exactly. In particular, increasing the minibatch size will cause
-the $X_{\rm norm}$ distribution to become narrower. {\color{blue} (Daniel: note that we will be
-fixing this figure, so the visualization should hopefully be a little clearer, along with the
+This deconvolution process is visualized in Figure~\ref{fig:deconvolution}. We decompose $X$ this
+way so that we can estimate $X_{\rm norm}$ from the data, and then add the correction $X_{\rm corr}$
+later.  Notice that we have some control over the true value of $X_{\rm norm}$, even though we
+cannot generally guarantee computing it exactly. In particular, increasing the minibatch size will
+cause the $X_{\rm norm}$ distribution to become narrower. {\color{blue} (Daniel: note that we will
+be fixing this figure, so the visualization should hopefully be a little clearer, along with the
 corresponding paragraph description. In particular, this paragraph needs an informal description of
 Algorithm~\ref{alg:our_algorithm}.)} Algorithm~\ref{alg:our_algorithm} concisely describes our MH
 test.
