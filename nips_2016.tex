@@ -646,17 +646,15 @@ In this experiment, we also illustrate that by appling the temperature, we can a
   \caption{This will be a sequence of images for logistic regression.}
 \end{figure}
 
-We use this experiment to illustarte another property of our mini-batch MH testing: 
+We use this experiment to illustarte another property of our mini-batch MH testing: when the size of mini-batch increase to a threshold, the accuracy / loglikelihood of sampled data at a fix iteration number will not improve with larger mini-batch size, see Fig.~4c. This is because the variance of $\Delta'$ decrease with large mini-batch, and the error of our mini-batch MH testing is proportional to our estimation error of variance of $\Delta'$. When the $var(\Delta')$ decrease to a threshold, the error of our mini-batch MH testing can be ignored.  
 
 {\color{blue}
-Daniel: TODO
-Add the roofline description.
 
 For additional details, see Appendix~\ref{app:logistic}.
 }
 
 \subsection{Neural Network Optimization}\label{ssec:nets}
-
+In this experiment, we apply about mini-batch MH testing with SGHMC proposer to sample the parameter instances from 
 \begin{figure}[ht]
   \centering
   \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
