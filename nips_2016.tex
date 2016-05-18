@@ -204,7 +204,7 @@ helpful.
 
 Unfortunately, computing $f$ requires the use of all $N$ training data points. Moreover, it is
 difficult to design tests using substantially fewer than $N$ points that also satisfy detailed
-balance. To reconcile these competing objectives,~\cite{cutting_mh_2014} propose an adaptive
+balance. To reconcile these competing objectives,~\cite{cutting_mh_2014} proposes an adaptive
 minibatch MCMC algorithm which uses a sequential hypothesis test. During each iteration, the
 algorithm starts with a small minibatch of data and tests the hypothesis that the sample $\theta'$
 should be accepted or rejected based on the likelihood ratio. If the test cannot make a decision
@@ -246,17 +246,6 @@ Daniel: not totally confident on this paragraph, how much SGHMC/LD do we discuss
 
 
 \section{A New Metropolis-Hastings Test}\label{sec:our_algorithm}
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\textwidth]{mh_convolution_diagram}
-  \caption{
-  {\color{blue}
-  Daniel: this image is finalized, but change this caption.
-  }
-  }
-  \label{fig:deconvolution}
-\end{figure}
 
 In this section, we introduce our new Metropolis-Hastings test and show how to use it to achieve
 sufficient mixing and/or to reach better posterior modes. To start, we introduce two key values we
@@ -308,27 +297,26 @@ $g(\Delta) = \min\{1, e^\Delta \} = \min\left\{1, \frac{f(\theta')q(\theta_t \mi
 \exp(\Delta)g(-\Delta)$ and consequently, results in detailed balance.
 
 For our MH test, the key is that we use a different $g$, the logistic function: $g(\Delta) =
-(1+\exp(-\beta \Delta))^{-1}$. Again, straightforward arithmetic shows that it satisfies the
+(1+\exp(-\Delta))^{-1}$. Again, straightforward arithmetic shows that it satisfies the
 condition in Lemma~\ref{lem:detailed_balance}.  The logistic function is nice because we can easily
 sample from it using the following procedure. At any iteration with a current parameter $\theta_t$
 and a candidate sample $\theta'$, we can compute $\Delta$. Let $u$ be a uniform random variable $u
 \sim {\rm Unif}[0,1]$. We accept $\theta'$ if $g(\Delta) > u$, and reject otherwise. This process is
 equivalent to sampling a random variable $X$ with cumulative distribution function $F_X(x) = g(x)$,
-and accepting if $\Delta > X$ and rejecting otherwise. To see why, define $X = g^{-1}(u)$ where
-again, $g$ is the logistic function. The CDF of $X$ is precisely the logistic function because for
-arbitrary $X = x$, we have
+and accepting if $\Delta > X$ and rejecting otherwise. We can define $X = g^{-1}(u)$ so that its CDF
+is the logistic function, which follows because for arbitrary $X = x$, we have
 \[
 F_X(x) = {\rm Pr}(X \le x) = {\rm Pr}(g^{-1}(u) \le x) = {\rm Pr}(u \le g(x)) = \int_{0}^{g(x)} 1 dx = g(x),
 \]
-as the density of the uniform random variable here is simply one. Thus, the criteria to accept the
-candidate $\theta'$ is equivalent to whether $\Delta > X$. Since $X$ is symmetric about zero, the
-acceptance criteria is equivalently expressed as $\Delta + X>0$.
+as the density of $u$ is one. Thus, the criteria to accept the candidate $\theta'$ is equivalent to
+whether $\Delta > X$. Moreover, $X$ is symmetric about zero, so the acceptance criteria can also be
+expressed as $\Delta + X>0$.
 
 With large datasets, $\Delta$ is intractable to compute. An intuitive alternative is to use
 $\Delta'$ instead. The following lemma characterizes the distribution of $\Delta'$.
 
 \begin{lemma}\label{lem:gaussian}
-If the minibatch data is chosen randomly, then the distribution of $\Delta'$ is approximately Gaussian.
+If the minibatch data is chosen randomly and sufficiently large, then the distribution of $\Delta'$ is approximately Gaussian.
 \end{lemma}
 
 \begin{proof}
@@ -339,33 +327,83 @@ By expanding the definition of $\Delta'$ from Equation~\ref{eq:deltas}, we get
 \]
 During a given iteration, $\theta_t$ and $\theta'$ are fixed. Therefore, the randomness in $\Delta'$
 comes only from the minibatch. Since the minibatch is chosen randomly, the distribution of
-$\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta_t))$ converges to a Gaussian by the
-Central Limit Theorem.
+$\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta_t))$ converges to a Gaussian as $n
+\to \infty$ by the Central Limit Theorem.
 \end{proof}
 
+% Daniel: I decided to put the figure here, so it's closer to the text that references it.
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\textwidth]{mh_convolution_diagram}
+    \caption{
+    Three examples of $X_{\rm norm}$ and $X_{\rm corr}$ distributions that convolve to form the
+    standard logistic distribution ($\mu=0$ and $s=1$). The three distributions correspond to three
+    different standard deviation (SD) values of the $X_{\rm norm}$ distribution (the colors carry
+    over to the $X_{\rm corr}$ plot, whose SD values correspond to the $X_{\rm norm}$ SD values).
+    This figure must be viewed in color.
+    }
+    \label{fig:deconvolution}
+    \vspace{-10pt}
+\end{figure}
+
 From Lemma~\ref{lem:gaussian}, since $\Delta'$ is a noisy approximation of $\Delta$, the
-relationship can be expressed as
+relationship is expressed as
 \begin{equation}\label{eq:relationship}
 \Delta' = \Delta + \varepsilon, \quad \varepsilon \sim \mathcal{N}(0, \sigma^2),
 \end{equation}
-for a Gaussian noise term $\varepsilon$.  The extra noise in $\Delta'$ means we can no longer perform
-the $\Delta + X$ test, so we need to slightly change our acceptance criteria. We can decompose
-$X$ as $X = X_{\rm norm}+X_{\rm corr}$, where the first term is a zero-mean ``noise term'' which
-has the same variance as $\varepsilon$, and the second term is a zero-mean ``correction'' term.
-These two convolve to form $X$. The criteria to accept can be rewritten as
+for a Gaussian noise term $\varepsilon$.  The extra noise means we can no longer directly perform
+the $\Delta + X$ test, so we need to slightly change our acceptance criteria. We can decompose $X$
+as
+\begin{equation}\label{eq:deconvolution}
+X = X_{\rm norm}+X_{\rm corr},
+\end{equation}
+where the first term has the same distribution as $\varepsilon$ and the second term is a zero-mean
+``correction'' term.  These two add (i.e., convolve) to form $X$. The criteria to accept can be rewritten as
 \begin{equation}\label{eq:criteria}
 \Delta + X = \Delta + X_{\rm norm} + X_{\rm corr} \approx \Delta' + X_{\rm corr} >0.
 \end{equation}
-This deconvolution process is visualized in Figure~\ref{fig:deconvolution}. We decompose $X$ this
-way so that we can estimate $X_{\rm norm}$ from the data, and then add the correction $X_{\rm corr}$
-later.  Notice that we have some control over the true value of $X_{\rm norm}$, even though we
-cannot generally guarantee computing it exactly. In particular, increasing the minibatch size will
-cause the $X_{\rm norm}$ distribution to become narrower. {\color{blue} (Daniel: note that we will
-be fixing this figure, so the visualization should hopefully be a little clearer, along with the
-corresponding paragraph description. In particular, this paragraph needs an informal description of
-Algorithm~\ref{alg:our_algorithm}.)} Algorithm~\ref{alg:our_algorithm} concisely describes our MH
-test.
-         
+The approximation exists in Equation~\ref{eq:criteria} because, while we know the complete
+distribution of $X$, the $X_{\rm norm}$ distribution must be estimated from minibatches of data.
+Since $X_{\rm norm}$ is known a priori to be a zero-mean Gaussian, this task reduces to estimating
+its standard deviation.
+
+It is important to understand why we use Equations~\ref{eq:deconvolution} and~\ref{eq:criteria}. The
+deconvolution process allows us to use $\Delta' + X_{\rm corr}$ as a proxy for $\Delta + X$. It
+works because if we know the distribution of $\varepsilon$ (from Equation~\ref{eq:relationship},
+which again reduces to knowing its standard deviation), then we can pretend that our $\Delta'$ is in
+fact $\Delta$. To ``insert'' $\varepsilon$ into our test, we deconvolve $X$ so that one of its
+components, $X_{\rm norm}$, plays the part of $\varepsilon$. This raises two immediate tasks: during
+a given iteration, with current sample $\theta_t$ and proposed sample $\theta'$, how should we get
+the densities of $X_{\rm norm}$ and $X_{\rm corr}$?
+
+\begin{enumerate}[noitemsep]
+    \item To estimate the variance of $X_{\rm norm}$, we generate $K$ values of $\Delta'$, each
+    using a different random minibatch of $n$ data points (but each using the same $\theta_t$ and
+    $\theta'$ parameters). In our experiments (see Section~\ref{sec:experiments}), $K$ is usually
+    small, around five, and $n$ is usually a few hundred for the Central Limit Theorem to apply.
+    Using these $K$ values, we estimate the empirical standard deviation ${\rm std}(\Delta')$.
+
+    \item Once we have estimated ${\rm std}(\Delta')$, we can determine the distribution of
+    $X_{\rm corr}$ from standard deconvolution techniques. These rely on the well-known fact that
+    the Fourier transform of a convolution is the product of the Fourier transforms. For our
+    experiments, we pre-compute $X_{\rm corr}$ values and store them in matrices so that during MCMC
+    runs, we sample a standard uniform random variable and use that to directly obtain $X_{\rm
+    corr}$.
+\end{enumerate}
+
+Figure~\ref{fig:deconvolution} demonstrates this deconvolution process and provides three examples
+of densities for $X_{\rm norm}$ and $X_{\rm corr}$. We know that the densities of $X_{\rm norm}$ and
+$X_{\rm corr}$ convolve to form the density of a standard logistic random variable with mean $\mu=0$
+and scale $s=1$. If $X_{\rm norm}$ has small standard deviation, then the deconvolution to form
+$X_{\rm corr}$ will result in a wider distribution. Likewise, with a larger standard deviation for
+$X_{\rm norm}$, the $X_{\rm corr}$ distribution is narrower, but note that it becomes increasingly
+unstable with bumps in the distribution, because the logistic curve has fatter tails than the
+Gaussian curve. For this reason, we cap the standard deviation possibilities of $X_{\rm norm}$ at
+$\approx 1.2$. We also set the minimum standard deviation of $X_{\rm norm}$ to be 0.1, because below
+that, the $X_{\rm corr}$ distribution essentially matches the distribution of the logistic.
+
+Algorithm~\ref{alg:our_algorithm} concisely describes our MH test.
+
 Since our proposed acceptance function $g(\Delta) = (1+ \exp(-\beta \Delta))^{-1}$ satisfies
 detailed balance (see Lemma~\ref{lem:detailed_balance}), if $\Delta$ is computed from the complete
 data, the distribution of the sampled data will match our target distribution $f$, the posterior,
@@ -373,25 +411,21 @@ under standard MCMC assumptions (e.g., that the chain is run sufficiently long e
 well). Now consider the case of using minibatches of data. Let our true and estimated acceptance
 probabilities be $P_a = g(\Delta) = \Pr(\Delta + X > 0)$ and $P_a' = \Pr(\Delta' + X_{\rm corr} >
 0)$.  If our estimate of $X_{\rm norm}$ is exact, then $P_a' = P_a$, which follows by making the
-inequality in Equation~\ref{eq:criteria} an equality.
+approximation in Equation~\ref{eq:criteria} an equality.
 
 It is also important to note that our minibatch MH test can also be used to obtain parameter
-estimates close to the MAP and/or ML estimaes by augmenting the likelihood function with a
+estimates close to the MAP and/or ML estimates by augmenting the likelihood function with a
 temperature term $T > 1$. Thus, the target distribution would become
 \begin{equation}
 \label{eq:temperature} f(\theta') = p(\theta')\left ( \prod_{i=1}^N p(x_i \mid \theta')\right)^{\frac{1}{T}}.
 \end{equation}
 We can decrease the temperature as the MCMC sampling proceeds, thus slowing the mixing rate and
-sharpening the peaks of the distribution, so that the samples coverge to the desired point estimate.
-
-{\color{blue}
-Daniel: we really need to make this clear and do the algorithm description.
-}
+sharpening the peaks of the distribution, so that the samples converge to the desired point estimate.
 
 \begin{algorithm}[t]
 \KwData{$\{x_i\}$ under a target distribution}
-\KwResult{a serise of sampled $\{\theta_i\}$ under the posterior distribution} 
-set the $var(\Delta') = 1.0$ and deconvolve $X$ to get the disribution of $X_{corr}$\;
+\KwResult{A series of sampled $\{\theta_i\}$ under the posterior distribution} 
+set the $var(\Delta') = 1.0$ and deconvolve $X$ to get the distribution of $X_{corr}$\;
 \While{not enough sampled data}{
 	estimate the $sd(\Delta')$\;
     propose a candidate $\theta'$\;
@@ -406,6 +440,12 @@ set the $var(\Delta') = 1.0$ and deconvolve $X$ to get the disribution of $X_{co
 \caption{A description of our MH test.}
 \label{alg:our_algorithm}
 \end{algorithm}
+
+{\color{blue}
+Daniel: lots of things to do for this section, such as revising the Algorithm 1 description,
+breaking this up into subsections (it's a bit long), and also just making sure it is clear for
+readers to understand.
+}
 
 
 
