@@ -334,13 +334,12 @@ $\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta_t))$ converges to
 % Daniel: I decided to put the figure here, so it's closer to the text that references it.
 \begin{figure}[t]
     \centering
-    \includegraphics[width=\textwidth]{mh_convolution_diagram}
+    \includegraphics[width=1\textwidth]{mh_convolution_diagram_v2}
     \caption{
     Three examples of $X_{\rm norm}$ and $X_{\rm corr}$ distributions that convolve to form the
-    standard logistic distribution ($\mu=0$ and $s=1$). The three distributions correspond to three
-    different standard deviation (SD) values of the $X_{\rm norm}$ distribution (the colors carry
-    over to the $X_{\rm corr}$ plot, whose SD values correspond to the $X_{\rm norm}$ SD values).
-    This figure must be viewed in color.
+    standard logistic distribution ($\mu=0$, $s=1$); we use three standard deviation (SD) values of
+    $X_{\rm norm}$. The red $X_{\rm norm}$ and $X_{\rm corr}$ curves convolve to form the logistic,
+    etc. The $y$-axis is capped at 0.5 for readability. This figure must be viewed in color.
     }
     \label{fig:deconvolution}
     \vspace{-10pt}
@@ -578,10 +577,15 @@ three scenarios: with our mini-batch MH testing (see Fig.~3b), without our mini-
 (see Fig.~3c), and with the standard MH testing (see Fig.~3d). 
 
 \begin{figure}[t]
-  \centering
-  \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
-  %\includegraphics[width=0.5\linewidth]{empty}
-  \caption{This will be a sequence of images for the Gaussian mixture.}
+    \centering
+    \includegraphics[width=1\linewidth]{cloud_v01.png}
+    \caption{
+    {\color{blue}
+    Daniel: I'll fix the caption later. Basically, true log posterior, standard/adaptive procedures,
+    and our method, using MB=200 out of the 10k samples here. All three used the same proposal
+    distribution, a RW with a Gaussian of 0.03.
+    }
+    }
 \end{figure}
 
 From the figures above, we find that with the help of our mini-batch MH testing we can obtain the
