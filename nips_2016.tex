@@ -245,15 +245,15 @@ For our new MH test, we use two key values, $\Delta$ and $\Delta'$:
 \begin{equation}\label{eq:deltas}
 \Delta = \log \left( \frac{p(\theta')  \prod_{i=1}^N p(x_i \mid \theta')  q(\theta_t \mid
 \theta')}{p(\theta_t)\prod_{i=1}^N p(x_i \mid \theta_t)  q(\theta' \mid
-\theta_t)} \right);\;  \Delta' = \log \left( \frac{p(\theta') \prod_{i=1}^n p(x_i \mid \theta') q(\theta_t \mid
-\theta')}{p(\theta_t) \prod_{i=1}^n p(x_i \mid \theta_t) q(\theta' \mid
-\theta_t)} \right)
+\theta_t)} \right);\;  \Delta' = \log \left( \frac{p(\theta') (\prod_{i=1}^n p(x_i \mid
+\theta'))^{\frac{N}{n}} q(\theta_t \mid \theta')}{p(\theta_t) (\prod_{i=1}^n p(x_i \mid
+\theta_t))^{\frac{N}{n}} q(\theta' \mid \theta_t)} \right)
 \end{equation}
 where $p$ and $q$ have similar definitions as in Equation~\ref{eq:traditional}. Thus, $\Delta$ and
 $\Delta'$ are the likelihood ratios in log space. Note that the only difference between $\Delta$ and
-$\Delta'$ is that they use $N$ and $n$ data terms $x_i$, respectively. We assume $n \ll N$ (so
-$\Delta'$ is substantially faster to compute) and that the $n$ data points $x_i$ represent a random
-minibatch of data.
+$\Delta'$ is that they use $N$ and $n$ data terms $x_i$, respectively, and that the latter uses an
+$N/n$ scaling term. We assume $n \ll N$ (so $\Delta'$ is substantially faster to compute) and that
+the $n$ data points $x_i$ represent a random minibatch of data.
 
 \subsection{The Full Data Test}\label{ssec:deltas_full}
 
@@ -318,7 +318,7 @@ If the minibatch data is chosen randomly and sufficiently large, then the distri
 By expanding the definition of $\Delta'$ from Equation~\ref{eq:deltas}, we get
 \[
 \Delta' = \log p(\theta') - \log p(\theta_t) + \log q(\theta_t \mid \theta') - \log q(\theta' \mid \theta_t) +
-\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta_t)).
+\frac{N}{n}\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta_t)).
 \]
 During a given iteration, $\theta_t$ and $\theta'$ are fixed. Therefore, the randomness in $\Delta'$
 comes only from the minibatch. Since the minibatch is chosen randomly, the distribution of
@@ -332,9 +332,9 @@ $\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta_t))$ converges to
     \includegraphics[width=1\textwidth]{mh_convolution_diagram_v2}
     \caption{
     Three examples of $X_{\rm norm}$ and $X_{\rm corr}$ distributions that convolve to form the
-    standard logistic distribution ($\mu=0$, $s=1$); we use three standard deviation (SD) values of
-    $X_{\rm norm}$. The red $X_{\rm norm}$ and $X_{\rm corr}$ curves convolve to form the logistic,
-    etc. The $y$-axis is capped at 0.5 for readability. This figure must be viewed in color.
+    standard logistic distribution. We use three standard deviation values of $X_{\rm norm}$. The
+    two red curves convolve to form the logistic, etc. The $y$-axis is capped at 0.5 for
+    readability. This figure must be viewed in color.
     }
     \label{fig:deconvolution}
     %\vspace{-10pt}
@@ -357,7 +357,8 @@ to accept is now
 \begin{equation}\label{eq:criteria}
 \Delta + X = \Delta + X_{\rm norm} + X_{\rm corr} \approx \Delta' + X_{\rm corr} >0.
 \end{equation}
-The approximation exists because $X_{\rm norm}$ is an estimate of $\varepsilon$.
+The approximation exists because $X_{\rm norm}$ is an estimate of $\varepsilon$. If $X_{\rm norm}$
+is exact, then we get the same MH test with $\Delta'$ as we do with the full data version $\Delta$.
 
 It is important to understand why we use Equations~\ref{eq:deconvolution} and~\ref{eq:criteria}. The
 deconvolution process allows us to use $\Delta' + X_{\rm corr}$ as a proxy for $\Delta + X$. It
@@ -367,96 +368,104 @@ Equation~\ref{eq:relationship}), then we can pretend that our $\Delta'$ is in fa
 ``insert'' $\varepsilon$ into our test, we deconvolve $X$ so that one of its components, $X_{\rm
 norm}$, plays the part of $\varepsilon$. In light of our revised MH test, the previous discussion
 raises the question: in an iteration of MCMC with current $\theta_t$ and proposed $\theta'$, how do
-we know the distribution of $X_{\rm corr}$? We need the correct distribution to sample $X_{\rm
-corr}$ appropriately. This procedure consists of two major steps.
+we know the distribution of $X_{\rm corr}$? We need the correct distribution to sample the
+\emph{values} of $X_{\rm corr}$ appropriately. This procedure consists of two major steps.
 
 \begin{enumerate}[noitemsep]
     \item We first need to estimate the standard deviation of $X_{\rm norm}$. We generate $K$ values
     of $\Delta'$, each using a different random minibatch of $n$ data points, but each using the
     same $\theta_t$ and $\theta'$. In our experiments (see Section~\ref{sec:experiments}), $K$ is
-    usually small, around 5-10, and $n$ is usually a few hundred for the Central Limit Theorem to
-    apply.  Using these $K$ values, we use the empirical standard deviation ${\rm std}(\Delta')$.
+    small, around 5-10, and $n$ is usually a few hundred for the Central Limit Theorem to apply.
+    Using these $K$ values, we use the empirical standard deviation ${\rm std}(\Delta')$.
 
-    \item Once we have ${\rm std}(\Delta')$, we can determine the distribution of
-    $X_{\rm corr}$ from standard deconvolution techniques. These rely on the well-known fact that
-    the Fourier transform of a convolution is the product of the Fourier transforms. In practice,
-    we pre-compute distributions of $X_{\rm corr}$ for different ${\rm std}(\Delta')$ values to
-    facilitate the sampling process.
+    \item Once we have ${\rm std}(\Delta')$, we can determine the distribution of $X_{\rm corr}$
+    from standard deconvolution techniques. These rely on the well-known fact that the Fourier
+    transform of a convolution is the product of the Fourier transforms. In practice, we pre-compute
+    distributions of $X_{\rm corr}$ for different ${\rm std}(\Delta')$ values to facilitate the
+    sampling process.
 \end{enumerate}
 
-Figure~\ref{fig:deconvolution} demonstrates this deconvolution process and provides three examples
-of densities for $X_{\rm norm}$ and $X_{\rm corr}$. We know that the densities of $X_{\rm norm}$ and
-$X_{\rm corr}$ convolve to form the density of a standard logistic random variable with mean $\mu=0$
-and scale $s=1$. If $X_{\rm norm}$ has small standard deviation, then the deconvolution to form
-$X_{\rm corr}$ will result in a wider distribution. Likewise, with a larger standard deviation for
-$X_{\rm norm}$, the $X_{\rm corr}$ distribution is narrower, but note that it becomes increasingly
-unstable with bumps in the distribution, because the logistic curve has fatter tails than the
-Gaussian curve. For this reason, we cap the standard deviation possibilities of $X_{\rm norm}$ at
-$\approx 1.2$. We also set the minimum standard deviation of $X_{\rm norm}$ to be 0.1, because below
-that, the $X_{\rm corr}$ distribution essentially matches the distribution of the logistic.
+Algorithm~\ref{alg:our_algorithm} describes our MH test within the MCMC algorithm.
 
+\subsection{Discussions and Practical Considerations of the New MH Test}\label{ssec:discussion}
 
-Algorithm~\ref{alg:our_algorithm} concisely describes our MH test.
-
-Since our proposed acceptance function $g(\Delta) = (1+ \exp(-\beta \Delta))^{-1}$ satisfies
-detailed balance (see Lemma~\ref{lem:detailed_balance}), if $\Delta$ is computed from the complete
-data, the distribution of the sampled data will match our target distribution $f$, the posterior,
-under standard MCMC assumptions (e.g., that the chain is run sufficiently long enough and mixes
-well). Now consider the case of using minibatches of data. Let our true and estimated acceptance
-probabilities be $P_a = g(\Delta) = \Pr(\Delta + X > 0)$ and $P_a' = \Pr(\Delta' + X_{\rm corr} >
-0)$.  If our estimate of $X_{\rm norm}$ is exact, then $P_a' = P_a$, which follows by making the
-approximation in Equation~\ref{eq:criteria} an equality.
-
-It is also important to note that our minibatch MH test can also be used to obtain parameter
-estimates close to the MAP and/or ML estimates by augmenting the likelihood function with a
-temperature term $T > 1$. Thus, the target distribution would become
-\begin{equation}
-\label{eq:temperature} f(\theta') = p(\theta')\left ( \prod_{i=1}^N p(x_i \mid \theta')\right)^{\frac{1}{T}}.
-\end{equation}
-We can decrease the temperature as the MCMC sampling proceeds, thus slowing the mixing rate and
-sharpening the peaks of the distribution, so that the samples converge to the desired point estimate.
-
+\SetKwInOut{Input}{Input}
+\SetKwInOut{Output}{Output}
 \begin{algorithm}[t]
-\KwData{$\{x_i\}$ under a target distribution}
-\KwResult{A series of sampled $\{\theta_i\}$ under the posterior distribution} 
-pre-compute the distribution of $X_{corr}$ under the different value of $var(\Delta')$\;
-\While{not enough sampled data}{
-	estimate the $sd(\Delta')$\;
-	choose the distribution of $X_corr$ from the pre-computed distribution family\;
-    propose a candidate $\theta'$\;
-    compute the noisy $\Delta'$\;
-    sample a $x$ from $X_{corr}$\;
-    \eIf{$x + \Delta' > 0$}{
-        Accept the $\theta'$;
+\Input{Number of samples $T$, number of $\Delta'$ estimates $K$, minibatch size $m$, pre-computed $X_{\rm
+corr}$ distributions, $\{x_i\}_{i=1}^n$ values from a target distribution, and initial sample $\theta_0$.}
+\Output{A chain of $T$ samples $\{\theta_1, \ldots, \theta_T\}$ for either posterior inference or
+point estimation.}
+\For{$t=\{1, \ldots, T\}$}{
+    Propose a candidate $\theta'$ and create an empty list for $\Delta'$ estimates, $d = []$\;
+    \For{$k = \{1, \ldots, K\}$}{
+        Sample a random minibatch of size $m$ from the complete data\;
+        Compute $\Delta'$ from this minibatch (see Equation~\ref{eq:deltas}), and add $\Delta'$ to $d$\;
+    }
+    Compute ${\rm std}(d)$, the standard deviation estimate of $\Delta'$ from list $d$\;
+    \eIf{${\rm std}(d) \ge 1.2$}{
+        Skip loop (set $\theta_{t+1}=\theta_t$) and apply variance preconditioning fix (if desired)\;
     }{
-        Reject the $\theta'$;
+        Choose the closest $X_{\rm corr}$ distribution, and sample a value $X_c$ from it\;
+        Using another random minibatch of $m$ data points, compute a \emph{new} $\Delta'$ (call it $\Delta_{\rm real}'$)\;
+        \eIf{$X_c + \Delta_{\rm real}' > 0$}{
+            Accept the candidate, $\theta_{t+1} = \theta'$\;
+        }{
+            Reject and re-use the old one, $\theta_{t+1} = \theta_t$\;
+        }
     }
 }
-\caption{A description of our MH test. {\color{blue} TODO}}
+\caption{A description of our MH test within the MCMC algorithm.}
 \label{alg:our_algorithm}
 %\vspace{-10pt}
 \end{algorithm}
 
-{\color{blue}
-Daniel: lots of things to do for this section, such as revising the Algorithm 1 description,
-breaking this up into subsections (it's a bit long), and also just making sure it is clear for
-readers to understand.
-}
+\textbf{The Convolution}. Figure~\ref{fig:deconvolution} demonstrates
+Equation~\ref{eq:deconvolution} and provides three (color-coded) examples of densities for $X_{\rm
+norm}$ and $X_{\rm corr}$. The density of $X$, a logistic random variable with mean $\mu = 0$ and
+scale $s=1$, is known, as are the $X_{\rm norm}$ densities for different standard deviations. The
+deconvolution provides us with the $X_{\rm corr}$ distributions. Note, however, that as the standard
+deviation of $X_{\rm norm}$ increases, the $X_{\rm corr}$ distribution becomes increasingly unstable
+and ``bumpier'', because the logistic curve has fatter tails than Gaussians. For this reason, we cap
+the standard deviation possibilities of $X_{\rm norm}$ at $\approx 1.2$ in our experiments. In our
+experiments, we discretize the possible standard deviations of $X_{\rm norm}$, and we also limit the
+densities to consider the range $[-10,10]$ (as shown in Figure~\ref{eq:deconvolution}).
+
+\textbf{Variance Preconditioning}. Returning to the discussion from Section~\ref{sec:introduction},
+our test requires a variance check. Equation~\ref{eq:deconvolution} means that the variance of $X$,
+which is $\pi^2/3\approx 3.29$ is an upper bound on the variances of $X_{\rm norm}$. Therefore, the
+test cannot work if the variance of $X_{\rm norm}$ is too large. Since the standard deviation of $X$
+is about $\sqrt{3.29}\approx 1.81$, this bounds ${\rm std}(X_{\rm norm})$ (as well as ${\rm
+std}(\Delta')$). From the discussion above, we bound the standard deviation at 1.2 so that $X_{\rm
+corr}$ can handle the remaining noise. Recall from Section~\ref{ssec:deltas_minibatch} that we
+estimate the ${\rm std}(X_{\rm norm})$ each iteration. If the variance/standard deviation test
+fails, then we can (a) skip the iteration, (b) increase the minibatch size, (c) change the proposal
+to decrease step sizes, or (d) increase temperature, as we now discuss.
+
+\textbf{Temperature}. One way to satisfy the variance precondition is to increase the temperature of
+the target distribution. For a temperature $T>1$, the augmented target distribution would become
+\begin{equation}\label{eq:log_temperature}
+\log p(\theta \mid x_1,\ldots,x_N) \approx \log p(\theta) + \frac{1}{T}\frac{N}{n} \sum_{i=1}^n\log p(x_i \mid \theta).
+\end{equation}
+with an extra $1/T$ term augmented. As the temperature increases, the values of $\Delta'$ get
+smaller, thus reducing variance. The flatter posterior results in easier mixing of the samples, and
+as the samples approach a mode, one can decrease the temperature to sharpen the posterior peaks.
 
 
 
 
 \section{Theoretical Results}\label{sec:theory}
 
-In this section, we explore the convergence properties of our algorithm.  Define our estimate of
-$X_{\rm norm}$ as $X_{\rm norm}'$, and let $X_{\xi} = X_{\rm norm} - X_{\rm norm}'$, so that
-$\Delta' = \Delta + X_{\rm norm} + X_\xi$. We assume the standard derivation of $X_{\rm norm}$ is less than $\pi/\sqrt{3}$, so that we can always apply deconvolution process in Eq~\cite{eq:deconvolution} without using a temperature. We also denote $F_X$ as the CDF of $X$.  Let the
-transition kernel of complete data at sampling step $i$ be $T_i$, and let the transition kernel of
-minibatch data at sampling step $i$ is $T_i'$.  We show that the distance of $T_i$ and $T_i'$ is
-proportional to our estimate error $X_{\xi}$. We also define the stationary distribution obtained
-by $T_i$ is $\pi$.  We show the by decreasing the step size, the distribution of our sampled data
-converges to $\pi$. We use something called the \emph{total variation distance} between two kernels,
-denoted as $\| \cdot \|$.
+In this section, we explore the convergence properties of our algorithm. Let our true and estimated
+acceptance probabilities be $P_a = g(\Delta) = \Pr(\Delta + X > 0)$ and $P_a' = \Pr(\Delta' + X_{\rm
+corr} > 0)$. Define our estimate of $X_{\rm norm}$ as $X_{\rm norm}'$, and let $X_{\xi} = X_{\rm
+norm} - X_{\rm norm}'$, so that $\Delta' = \Delta + X_{\rm norm} + X_\xi$. We assume the standard derivation of $X_{\rm norm}$ is less than $\pi/\sqrt{3}$, so that we can always apply deconvolution process in Eq~\cite{eq:deconvolution} without using a temperature. We also denote $F_X$ as
+the CDF of $X$.  Let the transition kernel of complete data at sampling step $i$ be $T_i$, and let
+the transition kernel of minibatch data at sampling step $i$ is $T_i'$.  We show that the distance
+of $T_i$ and $T_i'$ is proportional to our estimate error $X_{\xi}$. We also define the stationary
+distribution obtained by $T_i$ is $\pi$.  We show the by decreasing the step size, the distribution
+of our sampled data converges to $\pi$. We use something called the \emph{total variation distance}
+between two kernels, denoted as $\| \cdot \|$.
 
 \begin{lemma}\label{lem:theory1}
 If $|X_\xi| < \zeta$ and $\nabla F_X < k$, then $\|T_i-T_i'\| \le 2\zeta k$.
