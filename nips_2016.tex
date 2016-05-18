@@ -468,7 +468,7 @@ We use some additional terms from standard Markov chain theory~\cite{Meyn2009}. 
 \emph{transition kernels} of MCMC on complete and minibatch data at step $i$ be $P_i$ and $P_i'$,
 respectively. When these kernels (e.g., $P_i$) are applied on a probability distribution $D_1$, they
 generate a new distribution $D_2$, which we write as $P_i \circ D_1 = D_2$. Define $\pi$ to be the
-stationary distribution obtained by $P_i$.  Finally, we indicate the \emph{total variation distance}
+stationary distribution obtained by $P_i$, and $\pi_i'$ to be the stationary distribution obtained by $P_i'$.  Finally, we indicate the \emph{total variation distance}
 between two kernels using $\| \cdot \|$, e.g., $\|P_i-P_i'\|$.
 
 Our first result shows that the distance between $P_i$ and $P_i'$ is proportional to our estimation
@@ -489,8 +489,8 @@ our proposer.
 \begin{lemma}\label{lem:theory2}
 For one step sampling from $\theta_t$ to $\theta'$, if the jumping step $|\theta_t - \theta'| <
 \epsilon$, and the gradient of the log-likelihood is bounded by a constant factor, i.e. $|\nabla
-(\log \Pr(x_i\mid \theta))| < k$, the variance of $\Delta'$ is bounded by $4\epsilon^2 k^2 m$, where
-$m$ is the minibatch size.
+(\log \Pr(x_i\mid \theta))| < k$, the variance of $\Delta'$ is bounded by $4\epsilon^2 k^2 (m-\frac{m(m-1)}{N-1})$, where
+$m$ is the minibatch size, and $N$ is the total data size.
 \end{lemma}
 
 \begin{proof}
@@ -504,7 +504,7 @@ $\zeta=\epsilon C$, where $C$ is a constant factor.
 We finally introduce Theorem~\ref{thm:theory3} to characterize the convergence of our samples.
 
 \begin{theorem}\label{thm:theory3}
-Assume $\pi$ satisfies $\|T \circ D_0 - \pi\| \leq \eta \|D_0 - \pi\|$, where $\eta \in [0, 1)$ for
+Assume $\pi$ satisfies $\|P_i \circ D_0 - \pi\| \leq \eta \|D_0 - \pi\|$, where $\eta \in [0, 1)$ for
 all distributions $D_0$. Also assume there exists $0 < \rho_t < 1$ such that $\|P'_i(x, \cdot) -
 \pi_i'\| \leq 2\rho_i$. We can get $\| P_t' \circ P_{t-1}' \circ \cdots \circ P_1' \circ D_0 - \pi
 \| \leq \sum_{s=1}^t \{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\} \rho_s \alpha_s + \alpha_t $, where
@@ -704,15 +704,15 @@ as desired.
 
 From Lemma~\ref{lem:gaussian}, only the $\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid
 \theta_t))$ term brings randomness into $\Delta'$. To simplify the subsequent notation, we define
-$g_i(\theta) = \log p(x_i\mid \theta)$. Then by Taylor's Theorem:
+$g_i(\theta) = \log p(x_i\mid \theta)$, and $q_i = g_i(\theta') - g_i(\theta_t)$. Then by Taylor's Theorem:
 \[
-|g(\theta') - g(\theta_t)| = |\nabla g(\theta_t)^T(\theta' - \theta_t) + o(\theta' - \theta_t)^2| \leq 2\epsilon k.
+|q| = |g(\theta') - g(\theta_t)| = |\nabla g(\theta_t)^T(\theta' - \theta_t) + o(\theta' - \theta_t)^2| \leq 2\epsilon k.
 \]
 Thus, with given the $\theta$, and $\theta'$, the variance of $\Delta'$ can be write as:
-\[
-{\rm Var}(\Delta') = {\rm Var}\left[\sum_{i=1}^n g_i(\theta') - g_i(\theta_t)\right] \leq
-\sum_{i=1}^n  {\rm Var}(g_i(\theta') - g_i(\theta_t)) \leq  4\epsilon^2 k^2m,
-\]
+\begin{align*}
+{\rm Var}(\Delta') & = {\rm Var}\left[\sum_{i=1}^m g_i(\theta') - g_i(\theta_t)\right] = {\rm Var}(\sum_i^m q_i) = m {\rm Var} (q_i) + m(m-1) {\rm Cov}_{i \neq j}(q_i,q_j) \\
+&= m{\rm Var}(q_i) - \frac{m(m-1)}{N-1} {\rm Var}(q_i) \leq 4(m - \frac{m(m-1)}{N-1})k^2 \epsilon^2, \\
+\end{align*}
 as desired.
 
 \subsection{Proof of Theorem~\ref{thm:theory3}}\label{app:theory3}
