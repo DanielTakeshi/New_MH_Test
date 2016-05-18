@@ -460,15 +460,15 @@ In this section, we explore the convergence properties of our algorithm. Let our
 acceptance probabilities be $P_a = g(\Delta) = \Pr(\Delta + X > 0)$ and $P_a' = \Pr(\Delta' + X_{\rm
 corr} > 0)$. Define our estimate of $X_{\rm norm}$ as $X_{\rm norm}'$, and let $X_{\xi} = X_{\rm
 norm} - X_{\rm norm}'$, so that $\Delta' = \Delta + X_{\rm norm} + X_\xi$. We assume the standard derivation of $X_{\rm norm}$ is less than $\pi/\sqrt{3}$, so that we can always apply deconvolution process in Eq~\cite{eq:deconvolution} without using a temperature. We also denote $F_X$ as
-the CDF of $X$.  Let the transition kernel of complete data at sampling step $i$ be $T_i$, and let
-the transition kernel of minibatch data at sampling step $i$ is $T_i'$.  We show that the distance
-of $T_i$ and $T_i'$ is proportional to our estimate error $X_{\xi}$. We also define the stationary
-distribution obtained by $T_i$ is $\pi$.  We show the by decreasing the step size, the distribution
+the CDF of $X$.  Let the transition kernel of complete data at sampling step $i$ be $P_i$, and let
+the transition kernel of minibatch data at sampling step $i$ is $P_i'$. When $P_i$ is apply on one distribution $D$, it generates a new distribution $D'$, we define the transition operation between $P_i$ and $D$ as ``$\circ$''. We show that the distance
+of $P_i$ and $P_i'$ is proportional to our estimate error $X_{\xi}$. We also define the stationary
+distribution obtained by $P_i$ is $\pi$.  We show the by decreasing the step size, the distribution
 of our sampled data converges to $\pi$. We use something called the \emph{total variation distance}
 between two kernels, denoted as $\| \cdot \|$.
 
 \begin{lemma}\label{lem:theory1}
-If $|X_\xi| < \zeta$ and $\nabla F_X < k$, then $\|T_i-T_i'\| \le 2\zeta k$.
+If $|X_\xi| < \zeta$ and $\nabla F_X < k$, then $\|P_i-P_i'\| \le 2\zeta k$.
 \end{lemma}
 
 \begin{proof}
@@ -494,9 +494,9 @@ proportional to the standard deviation of $\Delta'$, i.e. $\epsilon$. Thus, we c
 $\zeta=\epsilon C$, where $C$ is a constant factor.
 
 \begin{theorem}\label{thm:theory3}
-Assume the stationary distribution $\pi$ satisfies $\|T \circ P_0 - \pi\| \leq \eta \|P_0 - \pi\|$,
-where $\eta \in [0, 1)$ for all distribution $P_0$. And assume there exists $\rho_t < 1$ such that
-$\|T'_i(x, \cdot) - \pi_i'\| \leq 2\rho_i$. We can get $\| T_t' \circ T_{t-1}' \circ \cdots \circ T_1' P_0
+Assume the stationary distribution $\pi$ satisfies $\|T \circ D_0 - \pi\| \leq \eta \|D_0 - \pi\|$,
+where $\eta \in [0, 1)$ for all distribution $D_0$. And assume there exists $\rho_t < 1$ such that
+$\|P'_i(x, \cdot) - \pi_i'\| \leq 2\rho_i$. We can get $\| P_t' \circ P_{t-1}' \circ \cdots \circ P_1' D_0
 - \pi_0 \| \leq \sum_{s=1}^t \{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\} \rho_s \alpha_s + \alpha_t $,
 where $\alpha_i = \frac{\epsilon_i C }{1-\eta}$.
 \end{theorem}
@@ -506,10 +506,10 @@ See Appendix~\ref{app:theory3}.
 \end{proof}
 
 Theorem~\ref{thm:theory3} indicates that the difference between the target and sampled distributions
-consists of two components: $\rho_i$, which is determined by how efficient of $T'_i$, and the
+consists of two components: $\rho_i$, which is determined by how efficient of $P'_i$, and the
 $\alpha_i$s, which are determined by error of our transition kernel. Both are related to the step
-size. If step size is large, the $T'_i$ is very efficient, but the error of $T'_i$ increases.
-Otherwise, if step size is too small, the $T_i'$ is low efficient, but the error of $T'_i$ is low.
+size. If step size is large, the $P'_i$ is very efficient, but the error of $P'_i$ increases.
+Otherwise, if step size is too small, the $P_i'$ is low efficient, but the error of $P'_i$ is low. 
 
 
 
@@ -698,11 +698,11 @@ smaller absolute value) and the Triangle Inequality.  Since $|X_\xi| < \zeta$, $
 2k\zeta$.
 
 Next, we show the transition kernels at each step are bounded if we use the same proposer, i.e.
-$\|T_i - T'_i\| \leq 2k\zeta$. We write $T_i(\theta_t \mid \theta') = P_a(\theta_t, \theta')
+$\|P_i - P'_i\| \leq 2k\zeta$. We write $P_i(\theta_t \mid \theta') = P_a(\theta_t, \theta')
 q(\theta'\mid \theta_t) + (1-P_a(\theta_t,\theta')) \delta_D(\theta' - \theta_t)$, where $\delta_D$
 is the Dirac delta function. The total variation distance between two proposal kernels is
 \begin{align*}
-\|T_i - T'_i \| &= \int_{\theta'} \left| \int_{\theta_t}((P_a-P_a') q(\theta'|\theta_t) + (1-P_a - 1+P_a') \delta_D(\theta_t -\theta')) d\theta_t  \right| d\theta' \\
+\|P_i - P'_i \| &= \int_{\theta'} \left| \int_{\theta_t}((P_a-P_a') q(\theta'|\theta_t) + (1-P_a - 1+P_a') \delta_D(\theta_t -\theta')) d\theta_t  \right| d\theta' \\
 & = \int_{\theta'} \left| \int_{\theta_t} (P_a- P_a')(q(\theta'|\theta_t) - \delta_D(\theta_t - \theta')) d\theta_t \right|  d\theta'\\ 
 & \leq 2 \zeta k \int_{\theta'} \left| \int_{\theta_t}(q(\theta'|\theta_t) + q(\theta_t|\theta'))  d\theta_t \right| d\theta'= 2 \zeta k,
 \end{align*}
@@ -725,15 +725,15 @@ as desired.
 
 \subsection{Proof of Theorem~\ref{thm:theory3}}\label{app:theory3}
 
-First, by Theorem 1 in~\cite{cutting_mh_2014}, $\|T \circ P_0 - \pi\| \leq \eta \|P_0
-- \pi\|$ and $\|T-T'_i\| \leq \epsilon_i C$, the norm between the stationary distribution is $\|\pi
+First, by Theorem 1 in~\cite{cutting_mh_2014}, $\|P_i \circ D_0 - \pi\| \leq \eta \|D_0
+- \pi\|$ and $\|P_i-P'_i\| \leq \epsilon_i C$, the norm between the stationary distribution is $\|\pi
 - \pi_i'\|\leq \frac{\epsilon_i C}{1-\eta}$.
 
-Second, by Theorem 3.6 in~\cite{yang2013sequential}, we have  $\| T_t' \circ T_{t-1}' \circ \cdots
-\circ T_1' P_0 - \pi_t \| \leq \sum_{s=1}^t \{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\} \rho_s
+Second, by Theorem 3.6 in~\cite{yang2013sequential}, we have  $\| P_t' \circ P_{t-1}' \circ \cdots
+\circ P_1' D_0 - \pi_t \| \leq \sum_{s=1}^t \{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\} \rho_s
 \alpha_s$, where $\alpha = \frac{\epsilon_i C}{1-\eta}$. Thus, we get:
 \begin{align*}
- \| T_t' \circ \cdots \circ T_1' P_0 - \pi_0 \| &\leq \|T_t' \circ \cdots \circ T_1' P_0 - \pi_t\| + \|\pi_t - \pi_0\| \\
+ \| P_t' \circ \cdots \circ P_1' D_0 - \pi_0 \| &\leq \|P_t' \circ \cdots \circ P_1' D_0 - \pi_t\| + \|\pi_t - \pi_0\| \\
  &\leq \sum_{s=1}^t \left\{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\right\} \rho_s \alpha_s + \alpha_t,
 \end{align*}
 as desired.
