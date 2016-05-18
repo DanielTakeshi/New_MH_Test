@@ -450,7 +450,7 @@ readers to understand.
 
 In this section, we explore the convergence properties of our algorithm.  Define our estimate of
 $X_{\rm norm}$ as $X_{\rm norm}'$, and let $X_{\xi} = X_{\rm norm} - X_{\rm norm}'$, so that
-$\Delta' = \Delta + X_{\rm norm} + X_\xi$.  We also denote $F_X$ as the CDF of $X$.  Let the
+$\Delta' = \Delta + X_{\rm norm} + X_\xi$. We assume the standard derivation of $X_{\rm norm}$ is less than $\pi/\sqrt{3}$, so that we can always apply deconvolution process in Eq~\cite{eq:deconvolution} without using a temperature. We also denote $F_X$ as the CDF of $X$.  Let the
 transition kernel of complete data at sampling step $i$ be $T_i$, and let the transition kernel of
 minibatch data at sampling step $i$ is $T_i'$.  We show that the distance of $T_i$ and $T_i'$ is
 proportional to our estimate error $X_{\xi}$. We also define the stationary distribution obtained
@@ -466,9 +466,8 @@ If $|X_\xi| < \zeta$ and $\nabla F_X < k$, then $\|T_i-T_i'\| \le 2\zeta k$.
 See Appendix~\ref{app:theory1}.
 \end{proof}
 
-Since the accuracy of our transition kernel is related to the accuracy of our $X_{\rm norm}$
-estimate, we can show that error of our estimation is roughly proportional to the step size of our
-proposer.
+Thus, the accuracy of our transition kernel is related to the accuracy of our $X_{\rm norm}$
+estimate. We now show that error of our estimation is roughly proportional to the step size of our proposer.
 
 \begin{lemma}\label{lem:theory2}
 For one step sampling from $\theta_t$ to $\theta'$, if the jumping step  $|\theta_t - \theta'| <
@@ -482,7 +481,7 @@ See Appendix~\ref{app:theory2}.
 \end{proof}
 
 Since ${\rm Var}(\Delta') < \epsilon^2 k^2 m $, we can assume the maximum value of $X_{\xi}$ is
-proportional to the standard deviation of $\Delta$, i.e. $\epsilon$. Thus, we can assume
+proportional to the standard deviation of $\Delta'$, i.e. $\epsilon$. Thus, we can assume
 $\zeta=\epsilon C$, where $C$ is a constant factor.
 
 \begin{theorem}\label{thm:theory3}
