@@ -512,8 +512,7 @@ $\alpha_i = \frac{\epsilon_i C }{1-\eta}$.
 \end{theorem}
 
 \begin{proof}
-See Appendix~\ref{app:theory3}. {\color{blue} Daniel: Haoyu, please fix the Typos in Theorem 1
-or introduce them (e.g., what is $\pi_i$?}
+See Appendix~\ref{app:theory3}.
 \end{proof}
 
 Theorem~\ref{thm:theory3} indicates that the difference between the target and sampled distributions
@@ -527,19 +526,14 @@ The reverse happens with a step size too small.
 
 \section{Experiments}\label{sec:experiments}
 
-In this section, we use three experiments to reveal the benefits of our mini-batch MH testing. For
-the first experiment, we illustrate that our mini-batch MH testing can obtain the posterior
-distribution which is very close to the ideal one. For the second experiment, we use Logistic
-regression to reveal that our mini-batch sampler is much more efficient than adaptive minibatch
-approach. The third experiment shows that with the help of temperature, our mini-batch MH testing
-can be used to obtain the parameters which are close to MAP. 
+We conduct three sets of experiments to explore the benefits of our minibatch MH test and to
+benchmark it with previous work. In Section~\ref{ssec:gaussians}, we show that our test enables
+samples to converge to the posterior distribution of a Gaussian mixture model. In
+Section~\ref{ssec:logistic}, we analyze the efficiency of our sampler on logistic regression. In
+Section~\ref{ssec:nets}, we show that our minibatch MH can obtain good MAP estimates for deep
+learning.
 
 \subsection{Mixture of Gaussians}\label{ssec:gaussians}
-
-{\color{blue}
-Daniel: TODO Have to show that with more data, the posterior peaks (because it is referenced by the
-introduction).
-}
 
 We start with a simple mixture of Gaussians, which have tied means:
 \[
