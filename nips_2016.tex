@@ -154,7 +154,7 @@ posterior inference. As the dataset size grows, the posterior distribution
 sharpens and often concentrates to a few sharp peaks. Samples from
 this distribution will come from those peaks, and will easily become
 stuck in one of them (see Section~\ref{ssec:gaussians}).  The samples are not exploring
-the posterior parameter space, and are unlikely to concentrate at a
+the posterior parameter %vspace, and are unlikely to concentrate at a
 strong local optimum. They therefore fail to accurately represent a
 sample of the posterior because of inadequate search (i.e.,
 mixing). We argue that it is much more natural to sample the
@@ -258,7 +258,7 @@ will use frequently, $\Delta$ and $\Delta'$:
 \theta_t)} \right)
 \end{equation}
 where $p$ and $q$ have similar definitions as in Equation~\ref{eq:traditional}, so the terms here
-consider the likelihood ratios in log space. The only difference between $\Delta$ and $\Delta'$ is
+consider the likelihood ratios in log %vspace. The only difference between $\Delta$ and $\Delta'$ is
 that they use $N$ and $n$ terms in the likelihood ratio, respectively. We assume $n \ll N$ (so
 $\Delta'$ is substantially faster to compute) and that the $n$ data points $x_i$ represent a random
 minibatch of data.
@@ -342,7 +342,7 @@ $\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta_t))$ converges to
     etc. The $y$-axis is capped at 0.5 for readability. This figure must be viewed in color.
     }
     \label{fig:deconvolution}
-    \vspace{-10pt}
+    %\vspace{-10pt}
 \end{figure}
 
 From Lemma~\ref{lem:gaussian}, since $\Delta'$ is a noisy approximation of $\Delta$, the
@@ -437,8 +437,9 @@ pre-compute the distribution of $X_{corr}$ under the different value of $var(\De
         Reject the $\theta'$;
     }
 }
-\caption{A description of our MH test.}
+\caption{A description of our MH test. {\color{blue} TODO}}
 \label{alg:our_algorithm}
+%\vspace{-10pt}
 \end{algorithm}
 
 {\color{blue}
@@ -582,10 +583,26 @@ three scenarios: with our mini-batch MH testing (see Fig.~3b), without our mini-
     \caption{
     {\color{blue}
     Daniel: I'll fix the caption later. Basically, true log posterior, standard/adaptive procedures,
-    and our method, using MB=200 out of the 10k samples here. All three used the same proposal
-    distribution, a RW with a Gaussian of 0.03.
+    and our method, using MB=200 out of the 10k samples here (also 10k passes over data). All three
+    used the same proposal distribution, a RW with a Gaussian of 0.03. Temperature is at 110.
     }
     }
+    %\vspace{-10pt}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=1\linewidth]{adaptive_and_ours_information_v01.png}
+    \caption{
+    {\color{blue}
+    Daniel: I'll fix the caption later. First plot is capped at 1k but the first bin goes up to
+    8000. For the SDs, I skipped the ones that didn't satisfy the requirement (a.k.a. repeating the
+    previous sample). The third is when I re-ran the experiments but with different minibatches, to
+    see how much I would have to repeat. These values were all with one run, though, I might
+    consider just taking several (about five?) and doing error bar stuff.
+    }
+    }
+    %\vspace{-10pt}
 \end{figure}
 
 From the figures above, we find that with the help of our mini-batch MH testing we can obtain the
@@ -631,6 +648,7 @@ mini-batch MH testing is much more efficient than the adaptive one.
         \label{fig:logistic_roof}
     \end{subfigure}
     \caption{Experiments of logistic regression}\label{fig:logistic}
+    %\vspace{-10pt}
 \end{figure}
 
 We use this experiment to illustrate another property of our mini-batch MH testing: when the size of
@@ -652,10 +670,11 @@ We choose the Adaptive Gradient Descent method ~\cite{adapGrad} as the compariso
 
 Figure~5 illustrates our experiment results.  
 \begin{figure}[t]
-  \centering
-  \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
-  %\includegraphics[width=0.5\linewidth]{empty}
-  \caption{This will hopefully show results for neural networks on BIDMach.}
+    \centering
+    \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
+    %\includegraphics[width=0.5\linewidth]{empty}
+    \caption{This will hopefully show results for neural networks on BIDMach.}
+    %\vspace{-10pt}
 \end{figure}
 
 
