@@ -463,40 +463,19 @@ by $T_i$ is $\pi$.  We show the by decreasing the step size, the distribution of
 converges to $\pi$. We use something called the \emph{total variation distance} between two kernels,
 denoted as $\| \cdot \|$.
 
-\begin{lemma}
+\begin{lemma}\label{lem:theory1}
 If $|X_\xi| < \zeta$ and $\nabla F_X < k$, then $\|T_i-T_i'\| \le 2\zeta k$.
 \end{lemma}
 
 \begin{proof}
-We first prove that the difference in our acceptance rates is bounded: $|P_a - P_a'| \leq 2\zeta k$
-for some small constant $\zeta > 0$. Given $X_\xi = \xi$ the distance $|P_a - P_a'|$ is:
-\begin{align*}
-|P_a - P_a'| &= |\Pr(\Delta + X >0) - \Pr(\Delta' + X_{\rm corr} > 0)|\\
-& = | \Pr (\Delta + X > 0) - \Pr (\Delta + X_{\rm norm} + \xi + X_{\rm corr} >0) |    \\
-&= |\Pr (\Delta + X > 0) -\Pr(\Delta + X + \xi >0)| = |F_X(-\Delta)- F_X(-\Delta - \xi)| \\
-&= |\nabla F(-\Delta) \xi + o(\xi^2)| \leq  |\nabla F(-\Delta) \xi| +| o(\xi^2)| \leq 2|\nabla F(-\Delta)| |\xi| \leq 2k \xi,
-\end{align*}
-where the last line uses Taylor's Theorem ($o(\xi^2)$ represents higher-order terms that have
-smaller absolute value) and the Triangle Inequality.  Since $|X_\xi| < \zeta$, $|P_a - P_a'| <
-2k\zeta$.
-
-Next, we show the transition kernels at each step are bounded if we use the same proposer, i.e.
-$\|T_i - T'_i\| \leq 2k\zeta$. We write $T_i(\theta_t \mid \theta') = P_a(\theta_t, \theta')
-q(\theta'\mid \theta_t) + (1-P_a(\theta_t,\theta')) \delta_D(\theta' - \theta_t)$, where $\delta_D$
-is the Dirac delta function. The total variation distance between two proposal kernels is
-\begin{align*}
-\|T_i - T'_i \| &= \int_{\theta'} \left| \int_{\theta_t}((P_a-P_a') q(\theta'|\theta_t) + (1-P_a - 1+P_a') \delta_D(\theta_t -\theta')) d\theta_t  \right| d\theta' \\
-& = \int_{\theta'} \left| \int_{\theta_t} (P_a- P_a')(q(\theta'|\theta_t) - \delta_D(\theta_t - \theta')) d\theta_t \right|  d\theta'\\ 
-& \leq 2 \zeta k \int_{\theta'} \left| \int_{\theta_t}(q(\theta'|\theta_t) + q(\theta_t|\theta'))  d\theta_t \right| d\theta'= 2 \zeta k,
-\end{align*}
-as desired.
+See Appendix~\ref{app:theory1}.
 \end{proof}
 
 Since the accuracy of our transition kernel is related to the accuracy of our $X_{\rm norm}$
 estimate, we can show that error of our estimation is roughly proportional to the step size of our
 proposer.
 
-\begin{lemma}
+\begin{lemma}\label{lem:theory2}
 For one step sampling from $\theta_t$ to $\theta'$, if the jumping step  $|\theta_t - \theta'| <
 \epsilon$, and the gradient of the log-likelihood is bounded by a constant factor, i.e. $|\nabla
 (\log \Pr(x_i| \theta))| < k$, the variance of $\Delta'$ is bounded by $4\epsilon^2 k^2 m$, where
@@ -504,25 +483,14 @@ $m$ is the minibatch size.
 \end{lemma}
 
 \begin{proof}
-From Lemma~\ref{lem:gaussian}, only the $\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid
-\theta_t))$ term brings randomness into $\Delta'$. To simplify the subsequent notation, we define
-$g_i(\theta) = \log p(x_i\mid \theta)$. Then by Taylor's Theorem:
-\[
-|g(\theta') - g(\theta_t)| = |\nabla g(\theta_t) (\theta' - \theta_t) + o(\theta' - \theta_t)^2| \leq 2\epsilon k.
-\]
-Thus, with given the $\theta$, and $\theta'$, the variance of $\Delta'$ can be write as:
-\[
-{\rm Var}(\Delta') = {\rm Var}\left[\sum_{i=1}^n g_i(\theta') - g_i(\theta_t)\right] \leq
-\sum_{i=1}^n  {\rm Var}(g_i(\theta') - g_i(\theta_t)) \leq  4\epsilon^2 m k^2,
-\]
-as desired.
+See Appendix~\ref{app:theory2}.
 \end{proof}
 
 Since ${\rm Var}(\Delta') < \epsilon^2 k^2 m $, we can assume the maximum value of $X_{\xi}$ is
 proportional to the standard deviation of $\Delta$, i.e. $\epsilon$. Thus, we can assume
 $\zeta=\epsilon C$, where $C$ is a constant factor.
 
-\begin{theorem}
+\begin{theorem}\label{thm:theory3}
 Assume the stationary distribution $\pi$ satisfies $\|T \circ P_0 - \pi\| \leq \eta \|P_0 - \pi\|$,
 where $\eta \in [0, 1)$ for all distribution $P_0$. And assume there exists $\rho_t < 1$ such that
 $\|T'_i(x, \cdot) - \pi_i'\| \leq 2\rho_i$. We can get $\| T_t' \circ T_{t-1}' \circ \cdots \circ T_1' P_0
@@ -531,21 +499,14 @@ where $\alpha_i = \frac{\epsilon_i C }{1-\eta}$.
 \end{theorem}
 
 \begin{proof}
-First, by Theorem 1 in~\cite{cutting_mh_2014}, $\|T \circ P_0 - \pi\| \leq \eta \|P_0
-- \pi\|$ and $\|T-T'_i\| \leq \epsilon_i C$, the norm between the stationary distribution is $\|\pi
-- \pi_i'\|\leq \frac{\epsilon_i C}{1-\eta}$.
-
-Second, by Theorem 3.6 in~\cite{yang2013sequential}, we have  $\| T_t' \circ T_{t-1}' \circ \cdots
-\circ T_1' P_0 - \pi_t \| \leq \sum_{s=1}^t \{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\} \rho_s
-\alpha_s$, where $\alpha = \frac{\epsilon_i C}{1-\eta}$. Thus, we get:
-\begin{align*}
- \| T_t' \circ \cdots \circ T_1' P_0 - \pi_0 \| &\leq \|T_t' \circ \cdots \circ T_1' P_0 - \pi_t\| + \|\pi_t - \pi_0\| \\
- &\leq \sum_{s=1}^t \left\{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\right\} \rho_s \alpha_s + \alpha_t,
-\end{align*}
-as desired.
+See Appendix~\ref{app:theory3}.
 \end{proof}
 
-The Theorem above indicates that the difference of the target distribution and the sampled distribution have two components: $\rho_i$ which are determined by how efficient of $T'_i$, and $\alpha_i$ which are determined by error of our transition kernel. Both of these two terms are related to the step size. If step size is large, the $T'_i$ is very efficient, but the error of $T'_i$ increases. Otherwise, if step size is too small, the $T_i'$ is low efficient, but the error of $T'_i$ is low.
+Theorem~\ref{thm:theory3} indicates that the difference between the target and sampled distributions
+consists of two components: $\rho_i$, which is determined by how efficient of $T'_i$, and the
+$\alpha_i$s, which are determined by error of our transition kernel. Both are related to the step
+size. If step size is large, the $T'_i$ is very efficient, but the error of $T'_i$ increases.
+Otherwise, if step size is too small, the $T_i'$ is low efficient, but the error of $T'_i$ is low.
 
 
 
@@ -711,10 +672,71 @@ Daniel: TODO, clean this up.
 In this appendix, we describe the following topics, with an emphasis on clarity and understanding:
 
 \begin{itemize}[noitemsep]
+    \item Some proof details on results in Section~\ref{sec:theory}.
     \item Detailed discussion of the experiment from Section~\ref{ssec:gaussians}.
     \item Detailed discussion of the experiment from Section~\ref{ssec:logistic}.
     \item Detailed discussion of the experiment from Section~\ref{ssec:nets}.
 \end{itemize}
+
+\section{Proofs}\label{app:proofs}
+
+\subsection{Proof of Lemma~\ref{lem:theory1}}\label{app:theory1}
+
+We first prove that the difference in our acceptance rates is bounded: $|P_a - P_a'| \leq 2\zeta k$
+for some small constant $\zeta > 0$. Given $X_\xi = \xi$ the distance $|P_a - P_a'|$ is:
+\begin{align*}
+|P_a - P_a'| &= |\Pr(\Delta + X >0) - \Pr(\Delta' + X_{\rm corr} > 0)|\\
+& = | \Pr (\Delta + X > 0) - \Pr (\Delta + X_{\rm norm} + \xi + X_{\rm corr} >0) |    \\
+&= |\Pr (\Delta + X > 0) -\Pr(\Delta + X + \xi >0)| = |F_X(-\Delta)- F_X(-\Delta - \xi)| \\
+&= |\nabla F(-\Delta) \xi + o(\xi^2)| \leq  |\nabla F(-\Delta) \xi| +| o(\xi^2)| \leq 2|\nabla F(-\Delta)| |\xi| \leq 2k \xi,
+\end{align*}
+where the last line uses Taylor's Theorem ($o(\xi^2)$ represents higher-order terms that have
+smaller absolute value) and the Triangle Inequality.  Since $|X_\xi| < \zeta$, $|P_a - P_a'| <
+2k\zeta$.
+
+Next, we show the transition kernels at each step are bounded if we use the same proposer, i.e.
+$\|T_i - T'_i\| \leq 2k\zeta$. We write $T_i(\theta_t \mid \theta') = P_a(\theta_t, \theta')
+q(\theta'\mid \theta_t) + (1-P_a(\theta_t,\theta')) \delta_D(\theta' - \theta_t)$, where $\delta_D$
+is the Dirac delta function. The total variation distance between two proposal kernels is
+\begin{align*}
+\|T_i - T'_i \| &= \int_{\theta'} \left| \int_{\theta_t}((P_a-P_a') q(\theta'|\theta_t) + (1-P_a - 1+P_a') \delta_D(\theta_t -\theta')) d\theta_t  \right| d\theta' \\
+& = \int_{\theta'} \left| \int_{\theta_t} (P_a- P_a')(q(\theta'|\theta_t) - \delta_D(\theta_t - \theta')) d\theta_t \right|  d\theta'\\ 
+& \leq 2 \zeta k \int_{\theta'} \left| \int_{\theta_t}(q(\theta'|\theta_t) + q(\theta_t|\theta'))  d\theta_t \right| d\theta'= 2 \zeta k,
+\end{align*}
+as desired.
+
+\subsection{Proof of Lemma~\ref{lem:theory2}}\label{app:theory2}
+
+From Lemma~\ref{lem:gaussian}, only the $\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid
+\theta_t))$ term brings randomness into $\Delta'$. To simplify the subsequent notation, we define
+$g_i(\theta) = \log p(x_i\mid \theta)$. Then by Taylor's Theorem:
+\[
+|g(\theta') - g(\theta_t)| = |\nabla g(\theta_t) (\theta' - \theta_t) + o(\theta' - \theta_t)^2| \leq 2\epsilon k.
+\]
+Thus, with given the $\theta$, and $\theta'$, the variance of $\Delta'$ can be write as:
+\[
+{\rm Var}(\Delta') = {\rm Var}\left[\sum_{i=1}^n g_i(\theta') - g_i(\theta_t)\right] \leq
+\sum_{i=1}^n  {\rm Var}(g_i(\theta') - g_i(\theta_t)) \leq  4\epsilon^2 m k^2,
+\]
+as desired.
+
+\subsection{Proof of Theorem~\ref{thm:theory3}}\label{app:theory3}
+
+First, by Theorem 1 in~\cite{cutting_mh_2014}, $\|T \circ P_0 - \pi\| \leq \eta \|P_0
+- \pi\|$ and $\|T-T'_i\| \leq \epsilon_i C$, the norm between the stationary distribution is $\|\pi
+- \pi_i'\|\leq \frac{\epsilon_i C}{1-\eta}$.
+
+Second, by Theorem 3.6 in~\cite{yang2013sequential}, we have  $\| T_t' \circ T_{t-1}' \circ \cdots
+\circ T_1' P_0 - \pi_t \| \leq \sum_{s=1}^t \{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\} \rho_s
+\alpha_s$, where $\alpha = \frac{\epsilon_i C}{1-\eta}$. Thus, we get:
+\begin{align*}
+ \| T_t' \circ \cdots \circ T_1' P_0 - \pi_0 \| &\leq \|T_t' \circ \cdots \circ T_1' P_0 - \pi_t\| + \|\pi_t - \pi_0\| \\
+ &\leq \sum_{s=1}^t \left\{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\right\} \rho_s \alpha_s + \alpha_t,
+\end{align*}
+as desired.
+
+
+
 
 \section{Gaussian Mixture Experiment Details}\label{app:gaussian}
 
