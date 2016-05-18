@@ -448,40 +448,48 @@ the target distribution. For a temperature $T>1$, the augmented target distribut
 \log p(\theta \mid x_1,\ldots,x_N) \approx \log p(\theta) + \frac{1}{T}\frac{N}{n} \sum_{i=1}^n\log p(x_i \mid \theta).
 \end{equation}
 with an extra $1/T$ term augmented. As the temperature increases, the values of $\Delta'$ get
-smaller, thus reducing variance. The flatter posterior results in easier mixing of the samples, and
-as the samples approach a mode, one can decrease the temperature to sharpen the posterior peaks.
+smaller, thus reducing variance. The flatter posterior results in easier mixing.
 
 
 
 
 \section{Theoretical Results}\label{sec:theory}
 
-In this section, we explore the convergence properties of our algorithm. Let our true and estimated
-acceptance probabilities be $P_a = g(\Delta) = \Pr(\Delta + X > 0)$ and $P_a' = \Pr(\Delta' + X_{\rm
-corr} > 0)$. Define our estimate of $X_{\rm norm}$ as $X_{\rm norm}'$, and let $X_{\xi} = X_{\rm
-norm} - X_{\rm norm}'$, so that $\Delta' = \Delta + X_{\rm norm} + X_\xi$. We assume the standard derivation of $X_{\rm norm}$ is less than $\pi/\sqrt{3}$, so that we can always apply deconvolution process in Eq~\cite{eq:deconvolution} without using a temperature. We also denote $F_X$ as
-the CDF of $X$.  Let the transition kernel of complete data at sampling step $i$ be $P_i$, and let
-the transition kernel of minibatch data at sampling step $i$ is $P_i'$. When $P_i$ is apply on one distribution $D$, it generates a new distribution $D'$, we define the transition operation between $P_i$ and $D$ as ``$\circ$''. We show that the distance
-of $P_i$ and $P_i'$ is proportional to our estimate error $X_{\xi}$. We also define the stationary
-distribution obtained by $P_i$ is $\pi$.  We show the by decreasing the step size, the distribution
-of our sampled data converges to $\pi$. We use something called the \emph{total variation distance}
-between two kernels, denoted as $\| \cdot \|$.
+In this section, we explore the convergence properties of our MH test. We first introduce some
+notation. Let our true and approximated acceptance probabilities be $P_a = g(\Delta) = \Pr(\Delta +
+X > 0)$ and $P_a' = \Pr(\Delta' + X_{\rm corr} > 0)$.  Define $X_{\xi} = \varepsilon - X_{\rm norm}$
+which means, invoking Equations~\ref{eq:relationship} and~\ref{eq:deconvolution}, that $X_\xi$ is
+the random variable characterizing the accuracy of our $X_{\rm norm}$.  Thus, $\Delta' = \Delta +
+X_{\rm norm} + X_\xi$. We assume the standard deviation of $X_{\rm norm}$ is less than
+$\pi/\sqrt{3}$, so that we can use Equation~\ref{eq:deconvolution}. We denote $F_X(x)$ as the CDF of
+$X$. (Note that $X$ is a \emph{scalar} random variable.)
+
+We use some additional terms from standard Markov chain theory~\cite{Meyn2009}. Let the
+\emph{transition kernels} of MCMC on complete and minibatch data at step $i$ be $P_i$ and $P_i'$,
+respectively. When these kernels (e.g., $P_i$) are applied on a probability distribution $D_1$, they
+generate a new distribution $D_2$, which we write as $P_i \circ D_1 = D_2$. Define $\pi$ to be the
+stationary distribution obtained by $P_i$.  Finally, we indicate the \emph{total variation distance}
+between two kernels using $\| \cdot \|$, e.g., $\|P_i-P_i'\|$.
+
+Our first result shows that the distance between $P_i$ and $P_i'$ is proportional to our estimation
+error $X_{\xi}$.
 
 \begin{lemma}\label{lem:theory1}
-If $|X_\xi| < \zeta$ and $\nabla F_X < k$, then $\|P_i-P_i'\| \le 2\zeta k$.
+If $|X_\xi| < \zeta$ and $|\nabla F_X(x)| < \ell$ for all $x$, then $\|P_i-P_i'\| \le 2\zeta \ell$.
 \end{lemma}
 
 \begin{proof}
 See Appendix~\ref{app:theory1}.
 \end{proof}
 
-Thus, the accuracy of our transition kernel is related to the accuracy of our $X_{\rm norm}$
-estimate. We now show that error of our estimation is roughly proportional to the step size of our proposer.
+Thus, the accuracy of our transition kernel $P_i'$ is related to the quality of our estimated
+$X_{\rm norm}$. We next show that ${\rm Var}(\Delta')$ is roughly proportional to the step size of
+our proposer.
 
 \begin{lemma}\label{lem:theory2}
-For one step sampling from $\theta_t$ to $\theta'$, if the jumping step  $|\theta_t - \theta'| <
+For one step sampling from $\theta_t$ to $\theta'$, if the jumping step $|\theta_t - \theta'| <
 \epsilon$, and the gradient of the log-likelihood is bounded by a constant factor, i.e. $|\nabla
-(\log \Pr(x_i| \theta))| < k$, the variance of $\Delta'$ is bounded by $4\epsilon^2 k^2 m$, where
+(\log \Pr(x_i\mid \theta))| < k$, the variance of $\Delta'$ is bounded by $4\epsilon^2 k^2 m$, where
 $m$ is the minibatch size.
 \end{lemma}
 
@@ -489,28 +497,30 @@ $m$ is the minibatch size.
 See Appendix~\ref{app:theory2}.
 \end{proof}
 
-Since ${\rm Var}(\Delta') < \epsilon^2 k^2 m $, we can assume the maximum value of $X_{\xi}$ is
+Since ${\rm Var}(\Delta') < 4\epsilon^2 k^2 m $, we can assume the maximum value of $X_{\xi}$ is
 proportional to the standard deviation of $\Delta'$, i.e. $\epsilon$. Thus, we can assume
 $\zeta=\epsilon C$, where $C$ is a constant factor.
 
+We finally introduce Theorem~\ref{thm:theory3} to characterize the convergence of our samples.
+
 \begin{theorem}\label{thm:theory3}
-Assume the stationary distribution $\pi$ satisfies $\|T \circ D_0 - \pi\| \leq \eta \|D_0 - \pi\|$,
-where $\eta \in [0, 1)$ for all distribution $D_0$. And assume there exists $\rho_t < 1$ such that
-$\|P'_i(x, \cdot) - \pi_i'\| \leq 2\rho_i$. We can get $\| P_t' \circ P_{t-1}' \circ \cdots \circ P_1' D_0
-- \pi_0 \| \leq \sum_{s=1}^t \{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\} \rho_s \alpha_s + \alpha_t $,
-where $\alpha_i = \frac{\epsilon_i C }{1-\eta}$.
+Assume $\pi$ satisfies $\|T \circ D_0 - \pi\| \leq \eta \|D_0 - \pi\|$, where $\eta \in [0, 1)$ for
+all distributions $D_0$. Also assume there exists $0 < \rho_t < 1$ such that $\|P'_i(x, \cdot) -
+\pi_i'\| \leq 2\rho_i$. We can get $\| P_t' \circ P_{t-1}' \circ \cdots \circ P_1' \circ D_0 - \pi
+\| \leq \sum_{s=1}^t \{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\} \rho_s \alpha_s + \alpha_t $, where
+$\alpha_i = \frac{\epsilon_i C }{1-\eta}$.
 \end{theorem}
 
 \begin{proof}
-See Appendix~\ref{app:theory3}.
+See Appendix~\ref{app:theory3}. {\color{blue} Daniel: Haoyu, please fix the Typos in Theorem 1
+or introduce them (e.g., what is $\pi_i$?}
 \end{proof}
 
 Theorem~\ref{thm:theory3} indicates that the difference between the target and sampled distributions
-consists of two components: $\rho_i$, which is determined by how efficient of $P'_i$, and the
-$\alpha_i$s, which are determined by error of our transition kernel. Both are related to the step
-size. If step size is large, the $P'_i$ is very efficient, but the error of $P'_i$ increases.
-Otherwise, if step size is too small, the $P_i'$ is low efficient, but the error of $P'_i$ is low. 
-
+consists of two components: $\rho_i$, which is determined by the efficiency of $P'_i$, and the
+$\alpha_i$s, which are determined by the error of our transition kernels. These involve competing
+objectives: the larger the step size size, the more efficient the $P_i'$ but its error increases.
+The reverse happens with a step size too small.
 
 
 
@@ -667,26 +677,26 @@ In this appendix, we describe the following topics, with an emphasis on clarity 
 
 \subsection{Proof of Lemma~\ref{lem:theory1}}\label{app:theory1}
 
-We first prove that the difference in our acceptance rates is bounded: $|P_a - P_a'| \leq 2\zeta k$
-for some small constant $\zeta > 0$. Given $X_\xi = \xi$ the distance $|P_a - P_a'|$ is:
+We first prove that the difference in our acceptance rates is bounded: $|P_a - P_a'| \leq 2\zeta
+\ell$ for some small constant $\zeta > 0$. Given $X_\xi = \xi$ the distance $|P_a - P_a'|$ is:
 \begin{align*}
 |P_a - P_a'| &= |\Pr(\Delta + X >0) - \Pr(\Delta' + X_{\rm corr} > 0)|\\
 & = | \Pr (\Delta + X > 0) - \Pr (\Delta + X_{\rm norm} + \xi + X_{\rm corr} >0) |    \\
 &= |\Pr (\Delta + X > 0) -\Pr(\Delta + X + \xi >0)| = |F_X(-\Delta)- F_X(-\Delta - \xi)| \\
-&= |\nabla F(-\Delta) \xi + o(\xi^2)| \leq  |\nabla F(-\Delta) \xi| +| o(\xi^2)| \leq 2|\nabla F(-\Delta)| |\xi| \leq 2k \xi,
+&= |\nabla F(-\Delta) \xi + o(\xi^2)| \leq  |\nabla F(-\Delta) \xi| +| o(\xi^2)| \leq 2|\nabla F(-\Delta)| |\xi| \leq 2\ell \xi,
 \end{align*}
 where the last line uses Taylor's Theorem ($o(\xi^2)$ represents higher-order terms that have
 smaller absolute value) and the Triangle Inequality.  Since $|X_\xi| < \zeta$, $|P_a - P_a'| <
-2k\zeta$.
+2 \zeta \ell$.
 
 Next, we show the transition kernels at each step are bounded if we use the same proposer, i.e.
-$\|P_i - P'_i\| \leq 2k\zeta$. We write $P_i(\theta_t \mid \theta') = P_a(\theta_t, \theta')
+$\|P_i - P'_i\| \leq 2\zeta \ell$. We write $P_i(\theta_t \mid \theta') = P_a(\theta_t, \theta')
 q(\theta'\mid \theta_t) + (1-P_a(\theta_t,\theta')) \delta_D(\theta' - \theta_t)$, where $\delta_D$
 is the Dirac delta function. The total variation distance between two proposal kernels is
 \begin{align*}
 \|P_i - P'_i \| &= \int_{\theta'} \left| \int_{\theta_t}((P_a-P_a') q(\theta'|\theta_t) + (1-P_a - 1+P_a') \delta_D(\theta_t -\theta')) d\theta_t  \right| d\theta' \\
 & = \int_{\theta'} \left| \int_{\theta_t} (P_a- P_a')(q(\theta'|\theta_t) - \delta_D(\theta_t - \theta')) d\theta_t \right|  d\theta'\\ 
-& \leq 2 \zeta k \int_{\theta'} \left| \int_{\theta_t}(q(\theta'|\theta_t) + q(\theta_t|\theta'))  d\theta_t \right| d\theta'= 2 \zeta k,
+& \leq 2 \zeta \ell \int_{\theta'} \left| \int_{\theta_t}(q(\theta'|\theta_t) + q(\theta_t|\theta')) d\theta_t \right| d\theta'= 2 \zeta \ell,
 \end{align*}
 as desired.
 
@@ -696,12 +706,12 @@ From Lemma~\ref{lem:gaussian}, only the $\sum_{i=1}^n (\log p(x_i\mid \theta') -
 \theta_t))$ term brings randomness into $\Delta'$. To simplify the subsequent notation, we define
 $g_i(\theta) = \log p(x_i\mid \theta)$. Then by Taylor's Theorem:
 \[
-|g(\theta') - g(\theta_t)| = |\nabla g(\theta_t) (\theta' - \theta_t) + o(\theta' - \theta_t)^2| \leq 2\epsilon k.
+|g(\theta') - g(\theta_t)| = |\nabla g(\theta_t)^T(\theta' - \theta_t) + o(\theta' - \theta_t)^2| \leq 2\epsilon k.
 \]
 Thus, with given the $\theta$, and $\theta'$, the variance of $\Delta'$ can be write as:
 \[
 {\rm Var}(\Delta') = {\rm Var}\left[\sum_{i=1}^n g_i(\theta') - g_i(\theta_t)\right] \leq
-\sum_{i=1}^n  {\rm Var}(g_i(\theta') - g_i(\theta_t)) \leq  4\epsilon^2 m k^2,
+\sum_{i=1}^n  {\rm Var}(g_i(\theta') - g_i(\theta_t)) \leq  4\epsilon^2 k^2m,
 \]
 as desired.
 
