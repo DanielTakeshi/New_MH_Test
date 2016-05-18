@@ -595,7 +595,7 @@ transition kernel will declines with even constant step size as discribed in Sec
 In this experiment, we use logistic regression to classify the MNIST
 dataset~\cite{lecun-mnisthandwrittendigit-2010}. For simplification, we only train the binary
 classifier for digits 1 vs 7. The dataset consisted of 12007 training data and 1000 testing data.
-Similarly, we use random walk as the proposer. We compare our mini-batch MH testing with the
+Similarly, we use random walk as the proposer. We initilize the temperature as 3000, and decrease it by $t_i = t_0 / (i + 1)^{0.5}$, where $i$ represent the $t^{th}$ iteration. Thus, the standard derivation of $\Delta'$ is smaller than the threshold $\pi/\sqrt{3}$.  We compare our mini-batch MH testing with the
 adaptive mini-batch MH testing. Figure 4 shows the log likelihood value and prediction accuracy over
 training process. Since the adaptive MH testing method needs to increase the mini-batch size
 adaptively, we use the cumulative number of data instance each algorithm consumes as the horizontal
@@ -603,8 +603,6 @@ axis. We find our mini-batch MH testing can achieve the similar (or even better 
 likelihood/prediction accuracy) with consuming much fewer data points. Thus, we can assert that our
 mini-batch MH testing is much more efficient than the adaptive one. 
 
-In this experiment, we also illustrate that by applying the temperature, we can achieve slight
-faster convergence than the constant temperature one.
 
 \begin{figure}[t]
     \centering
@@ -643,26 +641,17 @@ Daniel/Haoyu: For additional details, see Appendix~\ref{app:logistic}.
 
 \subsection{Neural Network Optimization}\label{ssec:nets}
 
-In this experiment, we apply about mini-batch MH testing with SGHMC proposer to sample the parameter instances from a fully connected neural network. We use Higgs data set from University of California Irvine. It is a classification problem to distinguish between a signal process which produces Higgs bosons and a background process which does not. We build a 4 layers neural network to tackle this problem. The first layer is a input layer, the last layer is a softmax layer, the intermediate layers are linear followed by Sigmoid, norm, dropout, starting and ending with linear operation. 
+In this experiment, we apply about mini-batch MH testing with SGHMC (Stochastic Gradient Hamiltonian Monte Carlo, \cite{sghmc_2014}) proposer to sample the parameter instances from a fully connected neural network. We use Higgs data set from University of California Irvine. It is a classification problem to distinguish between a signal process which produces Higgs bosons and a background process which does not. We build a 4 layers neural network to tackle this problem. The first layer is a input layer, the last layer is a softmax layer, the intermediate layers are linear followed by Sigmoid, norm, dropout, starting and ending with linear operation. 
 
-We choose the 
+We choose the Adaptive Gradient Descent method ~\cite{adapGrad} as the comparison baseline. Since the frequencies of the features are quite different, we use the same strategy in the Adaptive Gradient to rescale the gradient before apply SGHMC. We implement our system within the open-source BIDMach project~\cite{canny2013bidmach}.  
+
+Figure~5 illustrates our experiment results.  
 \begin{figure}[t]
   \centering
   \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
   %\includegraphics[width=0.5\linewidth]{empty}
   \caption{This will hopefully show results for neural networks on BIDMach.}
 \end{figure}
-
-{\color{blue}
-Daniel: TODO
-1) describe the data background
-2) describe the SGHMC proposer, and our other hyperparams
-3) show the results and analysis
-For additional details, see Appendix~\ref{app:nnet}.
-}
-
-We implement our system within the open-source BIDMach project~\cite{canny2013bidmach}. Note to
-ourselves: do NOT modify the \texttt{Learner.scala} code -- just make it a new ``Model''.
 
 
 
