@@ -425,13 +425,14 @@ sharpening the peaks of the distribution, so that the samples converge to the de
 \begin{algorithm}[t]
 \KwData{$\{x_i\}$ under a target distribution}
 \KwResult{A series of sampled $\{\theta_i\}$ under the posterior distribution} 
-set the $var(\Delta') = 1.0$ and deconvolve $X$ to get the distribution of $X_{corr}$\;
+pre-compute the distribution of $X_{corr}$ under the different value of $var(\Delta')$\;
 \While{not enough sampled data}{
 	estimate the $sd(\Delta')$\;
+	choose the distribution of $X_corr$ from the pre-computed distribution family\;
     propose a candidate $\theta'$\;
     compute the noisy $\Delta'$\;
     sample a $x$ from $X_{corr}$\;
-    \eIf{$x*sd(\Delta') + \Delta' > 0$}{
+    \eIf{$x + \Delta' > 0$}{
         Accept the $\theta'$;
     }{
         Reject the $\theta'$;
