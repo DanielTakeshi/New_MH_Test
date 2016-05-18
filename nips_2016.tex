@@ -183,14 +183,14 @@ To be precise, the contributions of this paper are as follows:
 
 \section{Preliminaries and Related Work}\label{sec:related_work}
 
-In the standard MCMC method~\cite{gilks1996markov,brooks2011handbook} for Bayesian inference with
-parameter $\theta$ and conditionally independent data, the goal is to compute the target
-distribution $p(\theta \mid x_1, \ldots, x_N)$.  To do so, one generates a chain of (correlated)
-samples $\theta_1, \ldots, \theta_T$ for large $T$ and approximates $p$ using the sample counts.
-Each iteration $t$ has a current $\theta_t$, and a \emph{proposal distribution} $q(\theta' \mid
+In standard MCMC methods~\cite{gilks1996markov,brooks2011handbook} for Bayesian inference with
+parameter $\theta$ and conditionally independent data, the goal is to compute the distribution
+$p(\theta \mid x_1, \ldots, x_N)$.  To do so, one generates a chain of (correlated) samples
+$\theta_1, \ldots, \theta_T$ for large $T$ and approximates $p$ using the sample counts.  Each
+iteration $t$ has a current $\theta_t$, and a \emph{proposal distribution} $q(\theta' \mid
 \theta_t)$ determines a new candidate $\theta'$. With probability $P_a$, the sample is accepted, so
-$\theta_{t+1} = \theta'$. Otherwise, $\theta_{t+1} = \theta_t$. This can be implemented by drawing
-a uniform random variable $u \sim {\rm Unif}[0,1]$ and accepting if $u < P_a$. Traditionally, $P_a$ is
+$\theta_{t+1} = \theta'$. Otherwise, $\theta_{t+1} = \theta_t$. This is done by drawing a uniform
+random variable $u \sim {\rm Unif}[0,1]$ and accepting if $u < P_a$. Traditionally, $P_a$ is
 \begin{equation}\label{eq:traditional}
 P_a = \min\left\{ 1, \frac{f(\theta')q(\theta_t \mid \theta')}{f(\theta_t)q(\theta' \mid \theta_t)}
 \right\} = \min\left\{ 1, \frac{p(\theta')\prod_{i=1}^N p(x_i \mid \theta')q(\theta_t \mid
@@ -210,32 +210,26 @@ algorithm starts with a small minibatch of data and tests the hypothesis that th
 should be accepted or rejected based on the likelihood ratio. If the test cannot make a decision
 over a certain confidence threshold, then they increase the minibatch size and test again. This
 process repeats until a decision.  The downside of this algorithm is the need to keep incrementing
-the mini-batch size in one iteration; in the worst case, all $N$ data points may be needed in a
-single iteration. 
+the mini-batch size; in the worst case, all $N$ data points may be needed in a single iteration.  A
+similar approach from~\cite{icml2014c1_bardenet14} has slightly more robust theoretical properties,
+but comes at the cost of more computational time.
 
-A similar approach from~\cite{icml2014c1_bardenet14} has slightly more robust theoretical
-properties, but comes at the cost of more computational time. The work
-of~\cite{conf/uai/MaclaurinA14} presents another minibatch MCMC method, but which gets the
-\emph{exact} posterior, with the only requirement being that there needs to be a lower bound on the
-log likelihood for each data point. They augment the likelihood with auxiliary random variables, but
-this can hurt mixing.
+The work of~\cite{conf/uai/MaclaurinA14} presents another minibatch MCMC method which gets the
+\emph{exact} posterior, so long as there exists a (cheap) lower bound on the log likelihood for each
+data point. Their approach is only a starting point, however, and it can be difficult to derive
+these lower bounds in general cases. The extra auxiliary variables they introduce also hurt mixing.
 
-There is a separate line of work related to optimizing MCMC about simulating the physics of a
-probability distribution. By viewing random variables as ``particles'' in a system, it is possible
-to apply Hamiltonian Monte Carlo (HMC)~\cite{mcmc_hamiltonian_2010} methods which generate both high
-quality and distant proposals, getting the best of both worlds. These require a full gradient
-computation of the posterior, which means they also suffer from the problem of needing to know the
-likelihood at each point. Stochastic versions of HMC~\cite{sghmc_2014,stochastic_thermostats_2014}
-use a minibatch of data each iteration but require controlling the noise from sampling so the sample
-sequence does not diverge. A similar approach is to use Langevin
-Dynamics~\cite{langevin_2011,conf/icml/AhnBW12}, which does not use the momentum terms in HMC.
-
-Minibatch SGHMC and Langevin Dynamics are orthogonal to our work; two ways of attempting
-to solve the same problem of MCMC methods with big datasets. We could augment their methods with our
-MH test, to get the benefit of their high quality proposals. Note that while their methods in theory
-do not need an MH test, in practice, they need one due to discretization of the system. Furthermore,
-tests may also be needed for when the algorithms are run with a constant step size. {\color{blue}
-Daniel: not totally confident on this paragraph, how much SGHMC/LD do we discuss?}
+There is a separate line of MCMC work on simulating the physics of a probability distribution. By
+viewing random variables as particles in a system, one can apply Hamiltonian Monte Carlo
+(HMC)~\cite{mcmc_hamiltonian_2010} methods which generate the best case scenario for proposals: high
+quality \emph{and} distant.  HMC methods require a full gradient computation of the posterior, which
+means they also face the problem of computing the likelihood at each point. Stochastic versions of
+HMC~\cite{sghmc_2014,stochastic_thermostats_2014} use a minibatch of data each iteration but require
+controlling the noise from sampling to avoid divergence. Langevin
+Dynamics~\cite{langevin_2011,conf/icml/AhnBW12} is a similar approach which does not use the
+momentum terms in HMC.  Minibatch SGHMC and Langevin Dynamics are orthogonal to our work and are
+other ways of attempting to solve the same problem of MCMC methods on big data. We can combine our
+methods with these results, as we demonstrate in Section~\ref{ssec:nets}.
 
 %% Daniel: for a further discussion on the 'Firefly' paper, see this blog post:
 %% https://xianblog.wordpress.com/2014/04/02/firefly-monte-carlo/
