@@ -241,9 +241,7 @@ methods with these results, as we demonstrate in Section~\ref{ssec:nets}.
 
 \section{A New Metropolis-Hastings Test}\label{sec:our_algorithm}
 
-In this section, we introduce our new Metropolis-Hastings test and show how to use it to achieve
-sufficient mixing and/or to reach better posterior modes. To start, we introduce two key values we
-will use frequently, $\Delta$ and $\Delta'$:
+For our new MH test, we use two key values, $\Delta$ and $\Delta'$:
 \begin{equation}\label{eq:deltas}
 \Delta = \log \left( \frac{p(\theta')  \prod_{i=1}^N p(x_i \mid \theta')  q(\theta_t \mid
 \theta')}{p(\theta_t)\prod_{i=1}^N p(x_i \mid \theta_t)  q(\theta' \mid
@@ -251,11 +249,13 @@ will use frequently, $\Delta$ and $\Delta'$:
 \theta')}{p(\theta_t) \prod_{i=1}^n p(x_i \mid \theta_t) q(\theta' \mid
 \theta_t)} \right)
 \end{equation}
-where $p$ and $q$ have similar definitions as in Equation~\ref{eq:traditional}, so the terms here
-consider the likelihood ratios in log %vspace. The only difference between $\Delta$ and $\Delta'$ is
-that they use $N$ and $n$ terms in the likelihood ratio, respectively. We assume $n \ll N$ (so
+where $p$ and $q$ have similar definitions as in Equation~\ref{eq:traditional}. Thus, $\Delta$ and
+$\Delta'$ are the likelihood ratios in log space. Note that the only difference between $\Delta$ and
+$\Delta'$ is that they use $N$ and $n$ data terms $x_i$, respectively. We assume $n \ll N$ (so
 $\Delta'$ is substantially faster to compute) and that the $n$ data points $x_i$ represent a random
 minibatch of data.
+
+\subsection{The Full Data Test}\label{ssec:deltas_full}
 
 To motivate the use of $\Delta$, we turn to Lemma~\ref{lem:detailed_balance}.
 
@@ -272,8 +272,8 @@ $\theta'$ and then accepting it, so $p(\theta' \mid \theta_t) = q(\theta' \mid \
 Similarly, $p(\theta_t \mid \theta') = q(\theta_t \mid \theta')g(-\Delta).$ Notice that the
 probability of accepting a transition from $\theta'$ to $\theta_t$ is $g(-\Delta)$ because this
 inverts the fraction inside the logarithm term of $\Delta$.  By assumption, we can expand $g(\Delta)
-= \exp(\Delta)g(-\Delta)$ in $p(\theta' \mid \theta_t)$. Doing this, and combining that with the
-definition of $p(\theta_t \mid \theta')$, we get
+= \exp(\Delta)g(-\Delta)$ in $p(\theta' \mid \theta_t)$. Doing this, and combining the result with
+the definition of $p(\theta_t \mid \theta')$, we get
 \begin{equation}\label{eq:combined}
 g(-\Delta) = \frac{p(\theta' \mid \theta_t)}{q(\theta' \mid \theta_t)\exp(\Delta)} = \frac{p(\theta_t \mid \theta')}{q(\theta_t \mid \theta')}.
 \end{equation}
@@ -285,17 +285,16 @@ Cancellations result in $f(\theta') p(\theta_t \mid \theta') = f(\theta_t) p(\th
 \theta_t)$. Thus, detailed balance is satisfied.
 \end{proof}
 
-Some straightforward arithmetic shows that the standard Metropolis-Hastings acceptance function
-$g(\Delta) = \min\{1, e^\Delta \} = \min\left\{1, \frac{f(\theta')q(\theta_t \mid
-\theta')}{f(\theta_t)q(\theta' \mid \theta_t)}\right\}$ satisfies the condition $g(\Delta) =
-\exp(\Delta)g(-\Delta)$ and consequently, results in detailed balance.
+As a sanity check, the standard Metropolis-Hastings acceptance function $g(\Delta) = \min\{1,
+e^\Delta \} = \min\left\{1, \frac{f(\theta')q(\theta_t \mid \theta')}{f(\theta_t)q(\theta' \mid
+\theta_t)}\right\}$ satisfies the condition $g(\Delta) = \exp(\Delta)g(-\Delta)$.
 
 For our MH test, the key is that we use a different $g$, the logistic function: $g(\Delta) =
-(1+\exp(-\Delta))^{-1}$. Again, straightforward arithmetic shows that it satisfies the
-condition in Lemma~\ref{lem:detailed_balance}.  The logistic function is nice because we can easily
-sample from it using the following procedure. At any iteration with a current parameter $\theta_t$
-and a candidate sample $\theta'$, we can compute $\Delta$. Let $u$ be a uniform random variable $u
-\sim {\rm Unif}[0,1]$. We accept $\theta'$ if $g(\Delta) > u$, and reject otherwise. This process is
+(1+\exp(-\Delta))^{-1}$. Straightforward arithmetic shows that it satisfies the condition in
+Lemma~\ref{lem:detailed_balance}.  The logistic function is nice because we can easily sample from
+it using the following procedure. At any iteration with a current parameter $\theta_t$ and a
+candidate sample $\theta'$, we can compute $\Delta$. Let $u$ be a uniform random variable $u \sim
+{\rm Unif}[0,1]$. We accept $\theta'$ if $g(\Delta) > u$, and reject otherwise. This process is
 equivalent to sampling a random variable $X$ with cumulative distribution function $F_X(x) = g(x)$,
 and accepting if $\Delta > X$ and rejecting otherwise. We can define $X = g^{-1}(u)$ so that its CDF
 is the logistic function, which follows because for arbitrary $X = x$, we have
@@ -306,8 +305,10 @@ as the density of $u$ is one. Thus, the criteria to accept the candidate $\theta
 whether $\Delta > X$. Moreover, $X$ is symmetric about zero, so the acceptance criteria can also be
 expressed as $\Delta + X>0$.
 
-With large datasets, $\Delta$ is intractable to compute. An intuitive alternative is to use
-$\Delta'$ instead. The following lemma characterizes the distribution of $\Delta'$.
+\subsection{The Minibatch Version}\label{ssec:deltas_minibatch}
+
+With large datasets, $\Delta$ is intractable to compute. An intuitive fix is to instead use the
+minibatch version $\Delta'$. The following lemma characterizes the distribution of $\Delta'$.
 
 \begin{lemma}\label{lem:gaussian}
 If the minibatch data is chosen randomly and sufficiently large, then the distribution of $\Delta'$ is approximately Gaussian.
@@ -345,43 +346,42 @@ relationship is expressed as
 \Delta' = \Delta + \varepsilon, \quad \varepsilon \sim \mathcal{N}(0, \sigma^2),
 \end{equation}
 for a Gaussian noise term $\varepsilon$.  The extra noise means we can no longer directly perform
-the $\Delta + X$ test, so we need to slightly change our acceptance criteria. We can decompose $X$
-as
+the $\Delta + X$ test, so we need to slightly change our acceptance criteria. Our insight is to
+decompose $X$ as
 \begin{equation}\label{eq:deconvolution}
 X = X_{\rm norm}+X_{\rm corr},
 \end{equation}
-where the first term has the same distribution as $\varepsilon$ and the second term is a zero-mean
-``correction'' term.  These two add (i.e., convolve) to form $X$. The criteria to accept can be rewritten as
+where we assume $X_{\rm norm}$ is a zero-mean Gaussian and $X_{\rm corr}$ is a zero-mean
+``correction'' term.  These two add (i.e., their distributions convolve) to form $X$. The criteria
+to accept is now
 \begin{equation}\label{eq:criteria}
 \Delta + X = \Delta + X_{\rm norm} + X_{\rm corr} \approx \Delta' + X_{\rm corr} >0.
 \end{equation}
-The approximation exists in Equation~\ref{eq:criteria} because, while we know the complete
-distribution of $X$, the $X_{\rm norm}$ distribution must be estimated from minibatches of data.
-Since $X_{\rm norm}$ is known a priori to be a zero-mean Gaussian, this task reduces to estimating
-its standard deviation.
+The approximation exists because $X_{\rm norm}$ is an estimate of $\varepsilon$.
 
 It is important to understand why we use Equations~\ref{eq:deconvolution} and~\ref{eq:criteria}. The
 deconvolution process allows us to use $\Delta' + X_{\rm corr}$ as a proxy for $\Delta + X$. It
-works because if we know the distribution of $\varepsilon$ (from Equation~\ref{eq:relationship},
-which again reduces to knowing its standard deviation), then we can pretend that our $\Delta'$ is in
-fact $\Delta$. To ``insert'' $\varepsilon$ into our test, we deconvolve $X$ so that one of its
-components, $X_{\rm norm}$, plays the part of $\varepsilon$. This raises two immediate tasks: during
-a given iteration, with current sample $\theta_t$ and proposed sample $\theta'$, how should we get
-the densities of $X_{\rm norm}$ and $X_{\rm corr}$?
+works because if we know the distribution\footnote{Computing the distributions of $\varepsilon$ and
+$X_{\rm norm}$ reduces to finding their standard deviations.} of $\varepsilon$ (from
+Equation~\ref{eq:relationship}), then we can pretend that our $\Delta'$ is in fact $\Delta$. To
+``insert'' $\varepsilon$ into our test, we deconvolve $X$ so that one of its components, $X_{\rm
+norm}$, plays the part of $\varepsilon$. In light of our revised MH test, the previous discussion
+raises the question: in an iteration of MCMC with current $\theta_t$ and proposed $\theta'$, how do
+we know the distribution of $X_{\rm corr}$? We need the correct distribution to sample $X_{\rm
+corr}$ appropriately. This procedure consists of two major steps.
 
 \begin{enumerate}[noitemsep]
-    \item To estimate the variance of $X_{\rm norm}$, we generate $K$ values of $\Delta'$, each
-    using a different random minibatch of $n$ data points (but each using the same $\theta_t$ and
-    $\theta'$ parameters). In our experiments (see Section~\ref{sec:experiments}), $K$ is usually
-    small, around five, and $n$ is usually a few hundred for the Central Limit Theorem to apply.
-    Using these $K$ values, we estimate the empirical standard deviation ${\rm std}(\Delta')$.
+    \item We first need to estimate the standard deviation of $X_{\rm norm}$. We generate $K$ values
+    of $\Delta'$, each using a different random minibatch of $n$ data points, but each using the
+    same $\theta_t$ and $\theta'$. In our experiments (see Section~\ref{sec:experiments}), $K$ is
+    usually small, around 5-10, and $n$ is usually a few hundred for the Central Limit Theorem to
+    apply.  Using these $K$ values, we use the empirical standard deviation ${\rm std}(\Delta')$.
 
-    \item Once we have estimated ${\rm std}(\Delta')$, we can determine the distribution of
+    \item Once we have ${\rm std}(\Delta')$, we can determine the distribution of
     $X_{\rm corr}$ from standard deconvolution techniques. These rely on the well-known fact that
-    the Fourier transform of a convolution is the product of the Fourier transforms. For our
-    experiments, we pre-compute $X_{\rm corr}$ values and store them in matrices so that during MCMC
-    runs, we sample a standard uniform random variable and use that to directly obtain $X_{\rm
-    corr}$.
+    the Fourier transform of a convolution is the product of the Fourier transforms. In practice,
+    we pre-compute distributions of $X_{\rm corr}$ for different ${\rm std}(\Delta')$ values to
+    facilitate the sampling process.
 \end{enumerate}
 
 Figure~\ref{fig:deconvolution} demonstrates this deconvolution process and provides three examples
@@ -394,6 +394,7 @@ unstable with bumps in the distribution, because the logistic curve has fatter t
 Gaussian curve. For this reason, we cap the standard deviation possibilities of $X_{\rm norm}$ at
 $\approx 1.2$. We also set the minimum standard deviation of $X_{\rm norm}$ to be 0.1, because below
 that, the $X_{\rm corr}$ distribution essentially matches the distribution of the logistic.
+
 
 Algorithm~\ref{alg:our_algorithm} concisely describes our MH test.
 
