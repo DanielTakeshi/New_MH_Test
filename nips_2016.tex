@@ -210,7 +210,7 @@ algorithm starts with a small minibatch of data and tests the hypothesis that th
 should be accepted or rejected based on the likelihood ratio. If the test cannot make a decision
 over a certain confidence threshold, then they increase the minibatch size and test again. This
 process repeats until a decision.  The downside of this algorithm is the need to keep incrementing
-the mini-batch size; in the worst case, all $N$ data points may be needed in a single iteration.  A
+the minibatch size; in the worst case, all $N$ data points may be needed in a single iteration.  A
 similar approach from~\cite{icml2014c1_bardenet14} has slightly more robust theoretical properties,
 but comes at the cost of more computational time.
 
@@ -455,21 +455,24 @@ smaller, thus reducing variance. The flatter posterior results in easier mixing.
 
 \section{Theoretical Results}\label{sec:theory}
 
-In this section, we explore the convergence properties of our MH test. We first introduce some
-notation. Let our true and approximated acceptance probabilities be $P_a = g(\Delta) = \Pr(\Delta +
-X > 0)$ and $P_a' = \Pr(\Delta' + X_{\rm corr} > 0)$.  Define $X_{\xi} = \varepsilon - X_{\rm norm}$
-which means, invoking Equations~\ref{eq:relationship} and~\ref{eq:deconvolution}, that $X_\xi$ is
-the random variable characterizing the accuracy of our $X_{\rm norm}$.  Thus, $\Delta' = \Delta +
-X_{\rm norm} + X_\xi$. We assume the standard deviation of $X_{\rm norm}$ is less than
-$\pi/\sqrt{3}$, so that we can use Equation~\ref{eq:deconvolution}. We denote $F_X(x)$ as the CDF of
-$X$.
+In this section, we explore the convergence properties of our MH test. Due to space constraints, all
+our proofs are in Appendix~\ref{app:proofs}.
+
+We first introduce some notation. Let our true and approximated acceptance probabilities be $P_a =
+g(\Delta) = \Pr(\Delta + X > 0)$ and $P_a' = \Pr(\Delta' + X_{\rm corr} > 0)$.  Define $X_{\xi} =
+\varepsilon - X_{\rm norm}$ which means, invoking Equations~\ref{eq:relationship}
+and~\ref{eq:deconvolution}, that $X_\xi$ is the random variable characterizing the accuracy of our
+$X_{\rm norm}$.  Thus, $\Delta' = \Delta + X_{\rm norm} + X_\xi$. We assume the standard deviation
+of $X_{\rm norm}$ is less than $\pi/\sqrt{3}$, so that we can use Equation~\ref{eq:deconvolution}.
+We denote $F_X(x)$ as the CDF of $X$.
 
 We use some additional terms from standard Markov chain theory~\cite{Meyn2009}. Let the
 \emph{transition kernels} of MCMC on complete and minibatch data at step $i$ be $P_i$ and $P_i'$,
 respectively. When these kernels (e.g., $P_i$) are applied on a probability distribution $D_1$, they
 generate a new distribution $D_2$, which we write as $P_i \circ D_1 = D_2$. Define $\pi$ to be the
-stationary distribution obtained by $P_i$, and $\pi_i'$ to be the stationary distribution obtained by $P_i'$.  Finally, we indicate the \emph{total variation distance}
-between two kernels using $\| \cdot \|$, e.g., $\|P_i-P_i'\|$.
+stationary distribution obtained by $P_i$, and $\pi_i'$ to be the stationary distribution obtained
+by $P_i'$.  Finally, we indicate the \emph{total variation distance} between two kernels using $\|
+\cdot \|$, e.g., $\|P_i-P_i'\|$.
 
 Our first result shows that the distance between $P_i$ and $P_i'$ is proportional to our estimation
 error $X_{\xi}$.
@@ -478,9 +481,9 @@ error $X_{\xi}$.
 If $|X_\xi| < \zeta$ and $|\nabla F_X(x)| < \ell$ for all $x$, then $\|P_i-P_i'\| \le 2\zeta \ell$.
 \end{lemma}
 
-\begin{proof}
-See Appendix~\ref{app:theory1}.
-\end{proof}
+%% \begin{proof}
+%% See Appendix~\ref{app:theory1}.
+%% \end{proof}
 
 Thus, the accuracy of our transition kernel $P_i'$ is related to the quality of our estimated
 $X_{\rm norm}$. We next show that ${\rm Var}(\Delta')$ is roughly proportional to the step size of
@@ -493,9 +496,9 @@ For one step sampling from $\theta_t$ to $\theta'$, if the jumping step $|\theta
 $m$ is the minibatch size, and $N$ is the total data size.
 \end{lemma}
 
-\begin{proof}
-See Appendix~\ref{app:theory2}.
-\end{proof}
+%% \begin{proof}
+%% See Appendix~\ref{app:theory2}.
+%% \end{proof}
 
 Since ${\rm Var}(\Delta') < 4\epsilon^2 k^2 m $, we can assume the maximum value of $X_{\xi}$ is
 proportional to the standard deviation of $\Delta'$, i.e. $\epsilon$. Thus, we can assume
@@ -511,9 +514,9 @@ all distributions $D_0$. Also assume there exists $0 < \rho_t < 1$ such that $\|
 $\alpha_i = \frac{\epsilon_i C }{1-\eta}$.
 \end{theorem}
 
-\begin{proof}
-See Appendix~\ref{app:theory3}.
-\end{proof}
+%% \begin{proof}
+%% See Appendix~\ref{app:theory3}.
+%% \end{proof}
 
 Theorem~\ref{thm:theory3} indicates that the difference between the target and sampled distributions
 consists of two components: $\rho_i$, which is determined by the efficiency of $P'_i$, and the
@@ -586,33 +589,33 @@ other methods do.
 Figure~\ref{fig:gauss_mix_2} (to the left) shows a histogram of the final minibatch sizes used by
 the adaptive subsampling method each iteration (capped at 600 for readability).  Usually, the method
 can make a decision with 200 samples. Occasionally, however, it must use all 10000 points, resulting
-in roughly 50 times more computation. For this particular experiment, that happened eight times.  In
+in more computation (some of it wasted). For this particular experiment, that happened eight times.  In
 contrast, our method keeps the minibatch size fixed at 200, but requires that ${\rm std}(\Delta') <
 1.2$. Figure~\ref{fig:gauss_mix_2} (in the middle) shows a histogram of the estimated ${\rm
 std}(\Delta')$ values each iteration. Only 75 iterations resulted in ${\rm std}(\Delta') \ge 1.2$
 and for those, we skipped the rest of the iteration (setting $\theta_{t+1}=\theta_t$). To smooth the
 ${\rm std}(\Delta')$ values, we use moving average updates. The third plot in
 Figure~\ref{fig:gauss_mix_2} investigates the number of times ${\rm std}(\Delta') \ge 1.2$. For six
-minibatch sizes (50, 100, 150, 200, 250, and 300), we ran MCMC with our MH test five times and the
-number of violations averaged. As minibatch sizes increases, the number of violations decreases,
+minibatch sizes (50, 100, 150, 200, 250, and 300), we ran MCMC with our MH test five times and
+averaged the number of violations. As minibatch sizes increases, the number of violations decreases,
 showing that our test is more applicable.
 
 
 \subsection{Logistic Regression}\label{ssec:logistic}
 
-In this experiment, we use logistic regression to classify the MNIST
-dataset~\cite{lecun-mnisthandwrittendigit-2010}. For simplification, we only train the binary
-classifier for digits 1 vs 7. The dataset consisted of 12007 training data and 1000 testing data.
-Similarly, we use random walk as the proposer. We initilize the temperature as 3000, and decrease it
-by $t_i = t_0 / (i + 1)^{0.5}$, where $i$ represent the $t^{th}$ iteration. Thus, the standard
-derivation of $\Delta'$ is smaller than the threshold $\pi/\sqrt{3}$.  We compare our mini-batch MH
-testing with the adaptive mini-batch MH testing. Figure 4 shows the log likelihood value and
-prediction accuracy over training process. Since the adaptive MH testing method needs to increase
-the mini-batch size adaptively, we use the cumulative number of data instance each algorithm
-consumes as the horizontal axis. We find our mini-batch MH testing can achieve the similar (or even
-better log likelihood/prediction accuracy) with consuming much fewer data points. Thus, we can
-assert that our mini-batch MH testing is much more efficient than the adaptive one. 
+We next use logistic regression for the binary classification of 1s versus 7s in the MNIST
+dataset~\cite{lecun-mnisthandwrittendigit-2010}. The data has 12007 and 1000 training and testing
+points, respectively (we used a random subset of the test data). The propose is again a random walk
+with covariance matrix $0.1I$ for the $784\times 784$ identity matrix $I$. We initialize the
+posterior temperature at $T_0=3000$, and decrease it according to $T_i = T_0 /\sqrt{i + 1}$ for
+iteration $i \ge 1$. We set the minibatch size $m=50$ and compare our minibatch MH test with the
+adaptive minibatch.
 
+Figure~\ref{fig:logistic_fig} shows the prediction accuracy and log likelihood on the test set as a
+function of the cumulative training data points processed. Our test increments the cumulative data
+by a fixed amount per iteration, but the adaptive method may require more data per iteration.  We
+see that our minibatch MH test is more efficient; it has similar or better performance while
+consuming fewer data points.
 
 \begin{figure}[t]
     \centering
@@ -622,20 +625,18 @@ assert that our mini-batch MH testing is much more efficient than the adaptive o
     %\vspace{-10pt}
 \end{figure}
 
-We use this experiment to illustrate another property of our mini-batch MH testing: when the size of
-mini-batch increase to a threshold, the accuracy / log likelihood of sampled data at a fix iteration
-number will not improve with larger mini-batch size, see Fig.~4c. This is because the variance of
-$\Delta'$ decrease with large mini-batch, and the error of our mini-batch MH testing is proportional
+We use this experiment to illustrate another property of our minibatch MH testing: when the size of
+minibatch increase to a threshold, the accuracy / log likelihood of sampled data at a fix iteration
+number will not improve with larger minibatch size, see Fig.~4c. This is because the variance of
+$\Delta'$ decrease with large minibatch, and the error of our minibatch MH testing is proportional
 to our estimation error of variance of $\Delta'$. When the ${\rm Var}(\Delta')$ decrease to a
-threshold, the error of our mini-batch MH testing can be ignored.  
-
-Figure~\ref{fig:logistic_fig} shows our results ... {\color{blue} Daniel: TODO finish description}
+threshold, the error of our minibatch MH testing can be ignored.
 
 
 
 \subsection{Neural Network Optimization}\label{ssec:nets}
 
-In this experiment, we apply about mini-batch MH testing with SGHMC (Stochastic Gradient Hamiltonian
+In this experiment, we apply about minibatch MH testing with SGHMC (Stochastic Gradient Hamiltonian
 Monte Carlo~\cite{sghmc_2014}) proposer to sample the parameter instances from a fully connected
 neural network. We use Higgs data set from University of California Irvine. It is a classification
 problem to distinguish between a signal process which produces Higgs bosons and a background process
@@ -866,7 +867,7 @@ We test use the following settings:
     \item The covariance of the Gaussian random walk is ${\rm diag}(0.1, 0.1)$.
     \item We use 10000 iterations. One iteration involves one $\theta'$ proposal and a test to
     accept/reject.
-    \item The mini-batch size is set at 100, so it is one percent of the total data. For the
+    \item The minibatch size is set at 100, so it is one percent of the total data. For the
     adaptive sampling approach, this is the amount that the minibatch size would keep increasing if
     we needed more precision. Our approach, of courses, keeps the size fixed.
     \item For adaptive sampling, the tolerance for deciding on a test is 0.05. The temperature for
@@ -960,7 +961,13 @@ ones more often.
 
 \section{Logistic Regression Experiment Details}\label{app:logistic}
 
-We applied our mini-batch Metropolis Hastings algorithm to a Bayesian logistic regression model, comparing with the adaptive sampling method. We tested both our method and the adaptive sampling method using a random walk proposer $q(\theta \mid \theta_t) = N (\theta_t, \sigma^2)$. Since the random walk proposer does not contain any information about the target distribution, it only relies on the Metropolis-Hastings test to converge to the correct distribution. Therefore, random walk proposer is the ideal choice for illustrating our algorithm and comparing with the adaptive sampling method.
+We applied our minibatch Metropolis Hastings algorithm to a Bayesian logistic regression model,
+comparing with the adaptive sampling method. We tested both our method and the adaptive sampling
+method using a random walk proposer $q(\theta \mid \theta_t) = N (\theta_t, \sigma^2)$. Since the
+random walk proposer does not contain any information about the target distribution, it only relies
+on the Metropolis-Hastings test to converge to the correct distribution. Therefore, random walk
+proposer is the ideal choice for illustrating our algorithm and comparing with the adaptive sampling
+method.
 
 \section{Neural Network Experiment Details}\label{app:nnet}
 
