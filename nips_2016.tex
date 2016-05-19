@@ -637,23 +637,29 @@ in our minibatch MH test is negligible.
 
 \subsection{Neural Network Optimization}\label{ssec:nets}
 
-In this experiment, we apply about minibatch MH testing with SGHMC (Stochastic Gradient Hamiltonian
-Monte Carlo~\cite{sghmc_2014}) proposer to sample the parameter instances from a fully connected
-neural network. We use Higgs data set from University of California Irvine. We build a 4 layers neural network to tackle this problem. The first layer is a
-input layer, the last layer is a softmax layer, the intermediate layers are linear followed by
-Sigmoid, norm, dropout, starting and ending with linear operation. 
+In this experiment, we apply our minibatch MH test with a Stochastic Gradient Hamiltonian
+Monte Carlo (SGHMC)~\cite{sghmc_2014} proposer to sample the parameter instances from a fully connected
+neural network. We use the Higgs data set from the UCI dataset~\cite{Lichman:2013}. The network we
+use for this binary classification problem has four layers and is fully connected. The first layer
+is the input, the last layer is the softmax, and the intermediate layers apply the sigmoid
+activation unit.  We also employ dropout and batch normalization~\cite{icml2015_ioffe15}.
 
-We choose the Adaptive Gradient Descent method~\cite{adapGrad} as the comparison baseline. Since
-the frequencies of the features are quite different, we use the same strategy in the Adaptive
-Gradient to rescale the gradient before apply SGHMC. We implement our system within the open-source
-BIDMach project~\cite{canny2013bidmach}.  
+For our comparison baseline, we train the same network architecture using the Adaptive Gradient
+Descent method~\cite{adapGrad}. Since the frequencies of the features are quite different, we use
+the same strategy in the Adaptive Gradient to rescale the gradient before apply SGHMC. We implement
+our MH test and Adaptive Gradient in the open-source BIDMach project~\cite{canny2013bidmach}.  
 
-Figure~\ref{fig:nnet_fig} illustrates our experiment results. Fig~\ref{fig:nnet_fig}a reveals that SGHMC with our mini batch MH testing achieves high log likelihood than the baseline. But by comparing the SGHMC with and without our mini batch testing, the benefits are limited. Because we decrease the stepsize quickly, so accept rate of SGHMC is very high that the benefits of testing are not obvious.
+Figure~\ref{fig:nnet_fig} illustrates our experiment results and reveals that SGHMC with our
+minibatch MH test achieves higher log likelihood than the baseline. By comparing SGHMC with and
+without our minibatch MH test, we see that our MH test has limited benefit. Because we decrease the
+step size quickly, the acceptance rate of SGHMC is already high, so there is little need to test.
+% Daniel's note: Haoyu said he cannot increase the step size without it violating the variance
+% condition.
 
 \begin{figure}[t]
     \centering
     \includegraphics[width=1\linewidth]{exp3}
-    \caption{Log likelihood vs number of passes for optimization of neural network}
+    \caption{Log likelihood versus number of passes for optimization of neural network.}
     \label{fig:nnet_fig}
     \vspace{-10pt}
 \end{figure}
