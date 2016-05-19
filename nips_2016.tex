@@ -211,8 +211,8 @@ should be accepted or rejected based on the likelihood ratio. If the test cannot
 over a certain confidence threshold, then they increase the minibatch size and test again. This
 process repeats until a decision.  The downside of this algorithm is the need to keep incrementing
 the minibatch size; in the worst case, all $N$ data points may be needed in a single iteration.  A
-similar approach from~\cite{icml2014c1_bardenet14} has slightly more robust theoretical properties,
-but comes at the cost of more computational time.
+similar approach from~\cite{icml2014c1_bardenet14} has slightly more robust theoretical properties
+based on concentration inequalities, but comes at the cost of more computational time.
 
 The work of~\cite{conf/uai/MaclaurinA14} presents another minibatch MCMC method which gets the
 \emph{exact} posterior, so long as there exists a (cheap) lower bound on the likelihood for each
@@ -694,7 +694,7 @@ MCMC~\cite{conf/uai/AngelinoKWSA14,conf/icml/AhnSW14} concepts.
 In this appendix, we describe the following topics, with an emphasis on clarity and understanding:
 
 \begin{itemize}[noitemsep]
-    \item Some proof details on results in Section~\ref{sec:theory}.
+    \item Proofs for material in Section~\ref{sec:theory}.
     \item More information on Section~\ref{ssec:gaussians}.
     \item More information on Section~\ref{ssec:logistic}.
     \item More information on Section~\ref{ssec:nets}.
@@ -843,31 +843,63 @@ posterior, one that (weakly) peaks in between the two true modes.
 
 
 \section{Logistic Regression Experiment Details}\label{app:logistic}
-In this section, we go over the details of our logistic regression experiment. The feature vector is the pix value of one image, which are normalized between 0 and 1.0. For simplification, we only have digits one (i.e. output $y = 1$) and seven (i.e. output $y = -1$). The probability of the $i^{th}$ output $y_i \in \{-1,+1\}$ with the input vector $x_i$ is $p(y_i \mid x_i) = \frac{1}{1+\exp (-y_i \theta^T x_i)}$, where $\theta$ are the parameters. We use the uniform prior distribution to represent that we do not have more information about $\theta$.
 
-The proposer is random walk proposer, which can be modelled as: $\theta' = \theta_i + \mathcal{N}(0, \sigma^2I)$, where $\theta_i$ is the previous parameter vector, $\theta'$ is the proposed parameter vector, and we choose the variance $\sigma^2 = 0.01$. We initialize the $\theta$ to be all ones, so that we need sample more to access to the MAP.
+In this section, we go over some details of our logistic regression experiment. The feature vector
+for an image consists of its pixel values, normalized between 0 and 1. For simplicity, we only
+consider the binary classification case, so we only use digits one (denoted as output $y = 1$) and
+seven (denoted as $y = -1$). The probability of the $i^{\rm th}$ output $y_i \in \{-1,+1\}$ with the
+input vector $x_i$ is
+\begin{equation}
+p(y_i \mid x_i) = \frac{1}{1+\exp (-y_i \theta^T x_i)},
+\end{equation}
+where $\theta$ is the 784-length parameter vector.
 
-For our minibatch MH testing, in order to control the ${\rm Sd} (\Delta') \leq 1.2$, we initialize the temperature $T_0 = 3000$, and decrease it by rule: $T_i =  T_0 /(i + 1)^{3} \mbox{ for } i \leq N/2 \mbox{ and } = T_0 /(i + 1)^{0.2} \mbox{ for } i >N/2 $, where $N=4000$ is total number of iteration. If the estimation of ${\rm Sd} (\Delta') > 1.2$, we ignore the current iterartion. The our estimation of ${\rm Sd} (\Delta')$ versus iteration number can be found in Fig.~\cite{fig:appendixExp2}. We choose our minibatch size equal to 50.
+For our experiment, we impose a uniform prior to represent our lack of knowledge about $\theta$.  We
+use a random walk proposer, which can be modeled as $\theta' = \theta_i + \mathcal{N}(0,
+\sigma^2I)$, where $\theta_i$ is the current sample, $\theta'$ is the proposed sample, and we choose
+the variance to be a constant $\sigma^2 = 0.01$ for all components. We initialize $\theta_0$ to be a
+vector of all ones, and set our minibatch size as $m=50$.
+
+For our minibatch MH test, in order to enforce the ${\rm std}(\Delta') < 1.2$ condition, we
+initialize the temperature $T_0 = 3000$, and decrease it by the rule $T_i =  T_0 /(i + 1)^{3} \mbox{
+for } i \leq N/2 \mbox{ and } = T_0 /(i + 1)^{0.2} \mbox{ for } i >N/2 $, where $N=4000$ is
+the total number of iterations. If our estimated ${\rm std}(\Delta') \ge 1.2$, we ignore the
+current iteration. Figure~\ref{fig:appendixExp2} plots our estimated ${\rm std}(\Delta')$ values
+versus iteration count. 
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=1\linewidth]{./figures/appendixExp2}
-  \caption{Addition results for logistic regression experiment}
+  \caption{Additional results for the logistic regression experiment.}
   \label{fig:appendixExp2}
 \end{figure}
 
-For adaptive MH testing, all the parameters are the same except they do not have the temperature term. The minibatch size of adaptive MH testing is initialized as 50, but it may increase. The Fig.~\cite{fig:appendixExp2}. shows the histogram of the actual minibatch size in adaptive MH testing.
+For adaptive MH testing, our experimental settings are the same as with our MH test, except we do
+not impose a temperature. The minibatch size of adaptive MH testing is also initialized as 50, but
+it may increase by that amount each iteration. Figure~\ref{fig:appendixExp2} shows the histogram of
+the actual minibatch size at the end of each iteration in adaptive MH testing.
 
 
 \section{Neural Network Experiment Details}\label{app:nnet}
 
-In this section, we show the details of our neural network experiment. We use four-layer fully connected neural network to solve this classification problem. The first layer is an input layer, the last layer is softmax layer, each intermediate layer is linear, sigmoid, and batch normailization. We use the SGHMC as the proposer for our minibatch MH testing. For the baseline, we use a tuned adaptive gradient descent optimizer, whose stepsize changes by $0.01 /(i+1)^{0.4}$. All of methods have minibatch size equal to 200. The total number of data instance is 1,000,000.  
+For our neural network experiment, we use the architecture discussed in Section~\ref{ssec:nets}. We
+use the SGHMC as the proposer for our minibatch MH testing. For the baseline, we use a tuned
+adaptive gradient descent optimizer, whose step size changes by $0.01 /(i+1)^{0.4}$. Both methods
+have minibatch sizes set at $m=200$. There are one million total data instances $x_i$.
 
-For SGHMC, we use the simplified update equation ~\cite{sghmc_2014}:
-\[\Delta \theta = v \mbox{ , } \Delta v = -\eta \nabla U(\theta) - \alpha v + \mathcal{N}(0, 2(\alpha -\hat{\beta}) \eta), \]
-where $v$ is auxiliary momentum variables, $\theta$ is our parameters, $\nabla U(\theta)$ is the gradient. We set the hyperparameter $\eta_i = 0.01 /(i+1)^{0.4}$, and $\alpha=0.1$. We use empirical Fisher information $V(\theta)$ to estimate value of $\hat{\beta}$, so that $\hat{\beta}=\frac{1}{2}\eta V(\theta)$ ~\cite{conf/icml/AhnBW12}.
+For SGHMC, we use the simplified update equations~\cite{sghmc_2014}:
+\begin{equation}
+\Delta \theta = v, \quad \quad\Delta v = -\eta \nabla U(\theta) - \alpha v + \mathcal{N}(0, 2(\alpha
+-\hat{\beta}) \eta),
+\end{equation}
+where $v$ represents auxiliary momentum variables, and $\nabla U(\theta)$ is the gradient of the
+system. We set the hyperparameters to be $\eta_i = 0.01 /(i+1)^{0.4}$, and $\alpha=0.1$. We use the
+empirical Fisher~\cite{conf/icml/AhnBW12} information $V(\theta)$ to estimate the value of
+$\hat{\beta}$, so that $\hat{\beta}=\frac{1}{2}\eta V(\theta)$.
 
-In order to control the ${\rm Sd}(\Delta')$, we initialize temperature as 1000, and set temperature at iteration $i$ is $T_i = 1000/(i+1)^{0.5}$. But if temperature is smaller than one, we will just use one as its value.
+In order to control ${\rm std}(\Delta')$, we initialize the temperature at 1000, and adjust it
+at iteration $i$ according to $T_i = \max\{1, 1000/(i+1)^{0.5}\}$.
+
 % Daniel: here are example LaTeX codes for figures and tables if we want to use them.
 %\begin{figure}[h]
 %  \centering
