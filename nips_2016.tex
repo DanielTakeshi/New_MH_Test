@@ -65,8 +65,8 @@ framexleftmargin=20pt}
   \texttt{seita@berkeley.edu}
   \And
   Xinlei Pan \\
-  Department of Bioengineering \\
-  University of California, Berkeley \\
+  Graduate Program in Bioengineering \\
+  UC Berkeley-UC San Francisco \\
   \texttt{xinleipan@berkeley.edu}
   \And 
   Biye Jiang \\
@@ -215,7 +215,7 @@ similar approach from~\cite{icml2014c1_bardenet14} has slightly more robust theo
 but comes at the cost of more computational time.
 
 The work of~\cite{conf/uai/MaclaurinA14} presents another minibatch MCMC method which gets the
-\emph{exact} posterior, so long as there exists a (cheap) lower bound on the log likelihood for each
+\emph{exact} posterior, so long as there exists a (cheap) lower bound on the likelihood for each
 data point. Their approach is only a starting point, however, and it can be difficult to derive
 these lower bounds in general cases. The extra auxiliary variables they introduce also hurt mixing.
 
@@ -462,7 +462,7 @@ which means, invoking Equations~\ref{eq:relationship} and~\ref{eq:deconvolution}
 the random variable characterizing the accuracy of our $X_{\rm norm}$.  Thus, $\Delta' = \Delta +
 X_{\rm norm} + X_\xi$. We assume the standard deviation of $X_{\rm norm}$ is less than
 $\pi/\sqrt{3}$, so that we can use Equation~\ref{eq:deconvolution}. We denote $F_X(x)$ as the CDF of
-$X$. (Note that $X$ is a \emph{scalar} random variable.)
+$X$.
 
 We use some additional terms from standard Markov chain theory~\cite{Meyn2009}. Let the
 \emph{transition kernels} of MCMC on complete and minibatch data at step $i$ be $P_i$ and $P_i'$,
@@ -512,8 +512,7 @@ $\alpha_i = \frac{\epsilon_i C }{1-\eta}$.
 \end{theorem}
 
 \begin{proof}
-See Appendix~\ref{app:theory3}. {\color{blue} Daniel: Haoyu, please fix the Typos in Theorem 1
-or introduce them (e.g., what is $\pi_i$?}
+See Appendix~\ref{app:theory3}.
 \end{proof}
 
 Theorem~\ref{thm:theory3} indicates that the difference between the target and sampled distributions
@@ -527,40 +526,44 @@ The reverse happens with a step size too small.
 
 \section{Experiments}\label{sec:experiments}
 
-In this section, we use three experiments to reveal the benefits of our mini-batch MH testing. For
-the first experiment, we illustrate that our mini-batch MH testing can obtain the posterior
-distribution which is very close to the ideal one. For the second experiment, we use Logistic
-regression to reveal that our mini-batch sampler is much more efficient than adaptive minibatch
-approach. The third experiment shows that with the help of temperature, our mini-batch MH testing
-can be used to obtain the parameters which are close to MAP. 
+We conduct three sets of experiments to explore the benefits of our minibatch MH test and to
+benchmark it with previous work. In Section~\ref{ssec:gaussians}, we show that our test enables
+samples to converge to the posterior distribution of a heated Gaussian mixture model. In
+Section~\ref{ssec:logistic}, we analyze its efficiency on logistic regression. In
+Section~\ref{ssec:nets}, we apply the test for deep learning.
+Appendices~\ref{app:gaussian},~\ref{app:logistic}, and~\ref{app:nnet} contain more detailed
+information on these respective experiments.
 
 \subsection{Mixture of Gaussians}\label{ssec:gaussians}
 
-{\color{blue}
-Daniel: TODO Have to show that with more data, the posterior peaks (because it is referenced by the
-introduction).
-}
+We start with a simple Gaussian mixture model, borrowing an experiment from~\cite{langevin_2011}.
+The parameter is 2-D, $\theta = (\theta_1,\theta_2)$, and the parameter/data generation process is
+\begin{equation}\label{eq:data_generation}
+(\theta_1,\theta_2) \sim \mathcal{N}((0,0), {\rm diag}(\sigma_1^2, \sigma_2^2));\quad \quad x_i \sim
+0.5 \cdot \mathcal{N}(\theta_1, \sigma_x^2) + 0.5 \cdot \mathcal{N}(\theta_1+\theta_2, \sigma_x^2).
+\end{equation}
+We set $\sigma_1^2 = 10, \sigma_2^2 = 1$ and $\sigma_x^2=2$. Fixing $\theta = (0,1)$, we draw 10000
+data points so that the target distribution is $p(\theta)\prod_{i=1}^{10000}p(x_i\mid \theta)$, with
+the prior based on the $\theta$ generation process in Equation~\ref{eq:data_generation}. This turns
+out to be a rather sharp posterior, so to make our test applicable, we apply a temperature $T=110$
+to reduce ${\rm std}(\Delta')$. Taking logs, we get the new target as shown in the far left of
+Figure~\ref{fig:gauss_mix_1}.
 
-We start with a simple mixture of Gaussians, which have tied means:
-\[
-\theta_1 \sim N(0, \sigma_1^2); \theta_2 \sim N(0, \sigma_2^2); x_i \sim \frac{1}{2}N(\theta_1, \sigma_x^2) + \frac{1}{2} N(\theta_2, \sigma_x^2)
-\]
-where $\sigma_1^2 = 10, \sigma_2^2 = 1$ and $\sigma_x^2=2$. 200 data points are generated from the
-model with $\theta_1 = 0$ and $\theta_2 = 1$. The theoretical posterior distribution can be seen in
-Fig.~3a. We use random walk as the proposer. We set the step size 0.1 as a constant. We compare
-three scenarios: with our mini-batch MH testing (see Fig.~3b), without our mini-batch MH testing
-(see Fig.~3c), and with the standard MH testing (see Fig.~3d). 
+We run MCMC with our MH test with $m=200$. We also run this using standard full-batch MCMC
+(``standard sampling'') with the standard MH test, and the method from~\cite{cutting_mh_2014}
+(``adaptive sampling''). For the latter, we also use $m=200$ and increment minibatches by that
+amount within an iteration if necessary. The tolerance for making a decision is $\epsilon=0.1$. To
+make comparisons easier, all three use the same random walk proposer with covariance $\Sigma={\rm
+diag}(0.03, 0.03)$. This is a poor proposer, but it is sufficient for our purposes as the quality of
+the samples will be due to the MH test. All methods are run 10000 times to collect 10000 samples.
 
 \begin{figure}[t]
     \centering
     \includegraphics[width=1\linewidth]{cloud_v01.png}
     \caption{
-    {\color{blue}
-    Daniel: I'll fix the caption later. Basically, true log posterior, standard/adaptive procedures,
-    and our method, using MB=200 out of the 10k samples here (also 10k passes over data). All three
-    used the same proposal distribution, a RW with a Gaussian of 0.03. Temperature is at 110.
+    The log posterior contours (temperature 110) and three scatter plots of sampled $\theta$ values.
     }
-    }
+    \label{fig:gauss_mix_1}
     %\vspace{-10pt}
 \end{figure}
 
@@ -568,42 +571,54 @@ three scenarios: with our mini-batch MH testing (see Fig.~3b), without our mini-
     \centering
     \includegraphics[width=1\linewidth]{adaptive_and_ours_information_v01.png}
     \caption{
-    {\color{blue}
-    Daniel: I'll fix the caption later. First plot is capped at 1k but the first bin goes up to
-    8000. For the SDs, I skipped the ones that didn't satisfy the requirement (a.k.a. repeating the
-    previous sample). The third is when I re-ran the experiments but with different minibatches, to
-    see how much I would have to repeat. These values were all with one run, though, I might
-    consider just taking several (about five?) and doing error bar stuff.
+    Histograms of minibatch sizes and ${\rm std}(\Delta')$ values, along with ``${\rm std}(\Delta')$
+    violations'' (right).
     }
-    }
+    \label{fig:gauss_mix_2}
     %\vspace{-10pt}
 \end{figure}
 
-From the figures above, we find that with the help of our mini-batch MH testing we can obtain the
-sampled distribution which are very close to target one. We feature draw our estimation of standard
-derivation of $X_{\rm norm}$ over iterations, see Fig.~3e. We find with even constant step size, the
-standard derivation decreases, because the gradient of posterior distribution declines and make the
-scale of $\Delta'$ deminished when the sampled point is apporching MAP. Thus, the error our
-transition kernel will declines with even constant step size as discribed in Sect.~ 4.
+Figure~\ref{fig:gauss_mix_1} shows three scatter plots of the resulting $\theta$ samples for the
+three methods, with darker regions indicating a greater density of points. All three methods obtain
+the same rough form of the posterior, so our MH test can indeed obtain the posterior just as the
+other methods do.
+
+Figure~\ref{fig:gauss_mix_2} (to the left) shows a histogram of the final minibatch sizes used by
+the adaptive subsampling method each iteration (capped at 600 for readability).  Usually, the method
+can make a decision with 200 samples. Occasionally, however, it must use all 10000 points, resulting
+in roughly 50 times more computation. For this particular experiment, that happened eight times.  In
+contrast, our method keeps the minibatch size fixed at 200, but requires that ${\rm std}(\Delta') <
+1.2$. Figure~\ref{fig:gauss_mix_2} (in the middle) shows a histogram of the estimated ${\rm
+std}(\Delta')$ values each iteration. Only 75 iterations resulted in ${\rm std}(\Delta') \ge 1.2$
+and for those, we skipped the rest of the iteration (setting $\theta_{t+1}=\theta_t$). To smooth the
+${\rm std}(\Delta')$ values, we use moving average updates. The third plot in
+Figure~\ref{fig:gauss_mix_2} investigates the number of times ${\rm std}(\Delta') \ge 1.2$. For six
+minibatch sizes (50, 100, 150, 200, 250, and 300), we ran MCMC with our MH test five times and the
+number of violations averaged. As minibatch sizes increases, the number of violations decreases,
+showing that our test is more applicable.
+
 
 \subsection{Logistic Regression}\label{ssec:logistic}
 
 In this experiment, we use logistic regression to classify the MNIST
 dataset~\cite{lecun-mnisthandwrittendigit-2010}. For simplification, we only train the binary
 classifier for digits 1 vs 7. The dataset consisted of 12007 training data and 1000 testing data.
-Similarly, we use random walk as the proposer. We initilize the temperature as 3000, and decrease it by $t_i = t_0 / (i + 1)^{0.5}$, where $i$ represent the $t^{th}$ iteration. Thus, the standard derivation of $\Delta'$ is smaller than the threshold $\pi/\sqrt{3}$.  We compare our mini-batch MH testing with the
-adaptive mini-batch MH testing. Figure 4 shows the log likelihood value and prediction accuracy over
-training process. Since the adaptive MH testing method needs to increase the mini-batch size
-adaptively, we use the cumulative number of data instance each algorithm consumes as the horizontal
-axis. We find our mini-batch MH testing can achieve the similar (or even better log
-likelihood/prediction accuracy) with consuming much fewer data points. Thus, we can assert that our
-mini-batch MH testing is much more efficient than the adaptive one. 
+Similarly, we use random walk as the proposer. We initilize the temperature as 3000, and decrease it
+by $t_i = t_0 / (i + 1)^{0.5}$, where $i$ represent the $t^{th}$ iteration. Thus, the standard
+derivation of $\Delta'$ is smaller than the threshold $\pi/\sqrt{3}$.  We compare our mini-batch MH
+testing with the adaptive mini-batch MH testing. Figure 4 shows the log likelihood value and
+prediction accuracy over training process. Since the adaptive MH testing method needs to increase
+the mini-batch size adaptively, we use the cumulative number of data instance each algorithm
+consumes as the horizontal axis. We find our mini-batch MH testing can achieve the similar (or even
+better log likelihood/prediction accuracy) with consuming much fewer data points. Thus, we can
+assert that our mini-batch MH testing is much more efficient than the adaptive one. 
 
 
 \begin{figure}[t]
     \centering
     \includegraphics[width=1\linewidth]{exp2.png}
     \caption{Experiment results of Logistic regression}
+    \label{fig:logistic_fig}
     %\vspace{-10pt}
 \end{figure}
 
@@ -611,25 +626,36 @@ We use this experiment to illustrate another property of our mini-batch MH testi
 mini-batch increase to a threshold, the accuracy / log likelihood of sampled data at a fix iteration
 number will not improve with larger mini-batch size, see Fig.~4c. This is because the variance of
 $\Delta'$ decrease with large mini-batch, and the error of our mini-batch MH testing is proportional
-to our estimation error of variance of $\Delta'$. When the $var(\Delta')$ decrease to a threshold,
-the error of our mini-batch MH testing can be ignored.  
+to our estimation error of variance of $\Delta'$. When the ${\rm Var}(\Delta')$ decrease to a
+threshold, the error of our mini-batch MH testing can be ignored.  
 
-{\color{blue}
-Daniel/Haoyu: For additional details, see Appendix~\ref{app:logistic}.
-}
+Figure~\ref{fig:logistic_fig} shows our results ... {\color{blue} Daniel: TODO finish description}
+
+
 
 \subsection{Neural Network Optimization}\label{ssec:nets}
 
-In this experiment, we apply about mini-batch MH testing with SGHMC (Stochastic Gradient Hamiltonian Monte Carlo, \cite{sghmc_2014}) proposer to sample the parameter instances from a fully connected neural network. We use Higgs data set from University of California Irvine. It is a classification problem to distinguish between a signal process which produces Higgs bosons and a background process which does not. We build a 4 layers neural network to tackle this problem. The first layer is a input layer, the last layer is a softmax layer, the intermediate layers are linear followed by Sigmoid, norm, dropout, starting and ending with linear operation. 
+In this experiment, we apply about mini-batch MH testing with SGHMC (Stochastic Gradient Hamiltonian
+Monte Carlo~\cite{sghmc_2014}) proposer to sample the parameter instances from a fully connected
+neural network. We use Higgs data set from University of California Irvine. It is a classification
+problem to distinguish between a signal process which produces Higgs bosons and a background process
+which does not. We build a 4 layers neural network to tackle this problem. The first layer is a
+input layer, the last layer is a softmax layer, the intermediate layers are linear followed by
+Sigmoid, norm, dropout, starting and ending with linear operation. 
 
-We choose the Adaptive Gradient Descent method ~\cite{adapGrad} as the comparison baseline. Since the frequencies of the features are quite different, we use the same strategy in the Adaptive Gradient to rescale the gradient before apply SGHMC. We implement our system within the open-source BIDMach project~\cite{canny2013bidmach}.  
+We choose the Adaptive Gradient Descent method~\cite{adapGrad} as the comparison baseline. Since
+the frequencies of the features are quite different, we use the same strategy in the Adaptive
+Gradient to rescale the gradient before apply SGHMC. We implement our system within the open-source
+BIDMach project~\cite{canny2013bidmach}.  
 
-Figure~5 illustrates our experiment results.  
+Figure~\ref{fig:nnet_fig} illustrates our experiment results.  
+
 \begin{figure}[t]
     \centering
     \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
     %\includegraphics[width=0.5\linewidth]{empty}
     \caption{This will hopefully show results for neural networks on BIDMach.}
+    \label{fig:nnet_fig}
     %\vspace{-10pt}
 \end{figure}
 
@@ -640,17 +666,13 @@ Figure~5 illustrates our experiment results.
 
 In this paper, we have derived a new MH test for minibatch MCMC methods. We demonstrated how a
 simple deconvolution process allows us to use a minibatch approximation to the full data tests. We
-experimentally show the benefits our MH test.
+experimentally show the benefits of our test on Gaussian mixtures, logistic regression, and deep
+learning.  Straightforward directions for future work include running more experiments with a
+particular focus on investigation of the variance precondition.  More elaborate extensions include
+combining our results with Hamiltonian Monte Carlo methods, providing a recipe for how to use our
+algorithm (following the framework of~\cite{sgmcmc_2015}), or integrating parallel
+MCMC~\cite{conf/uai/AngelinoKWSA14,conf/icml/AhnSW14} concepts.
 
-Straightforward directions for future work include running additional experiments, with a particular
-focus on investigation of the variance precondition.  More elaborate extensions include combining
-our results with Hamiltonian Monte Carlo methods, providing a recipe for how to use our algorithm
-(following the general framework of~\cite{sgmcmc_2015}), or integrating parallel
-MCMC~\cite{conf/uai/AngelinoKWSA14,conf/icml/AhnSW14} concepts into our work.
-
-{\color{blue}
-Daniel: TODO, clean this up.
-}
 
 \small
 \bibliography{nips_2016}
@@ -708,10 +730,12 @@ $g_i(\theta) = \log p(x_i\mid \theta)$, and $q_i = g_i(\theta') - g_i(\theta_t)$
 \[
 |q| = |g(\theta') - g(\theta_t)| = |\nabla g(\theta_t)^T(\theta' - \theta_t) + o(\theta' - \theta_t)^2| \leq 2\epsilon k.
 \]
-Thus, with given the $\theta$, and $\theta'$, the variance of $\Delta'$ can be write as:
+Thus, given $\theta$ and $\theta'$, the variance of $\Delta'$ can be written as:
 \begin{align*}
-{\rm Var}(\Delta') & = {\rm Var}\left[\sum_{i=1}^m g_i(\theta') - g_i(\theta_t)\right] = {\rm Var}(\sum_i^m q_i) = m {\rm Var} (q_i) + m(m-1) {\rm Cov}_{i \neq j}(q_i,q_j) \\
-&= m{\rm Var}(q_i) - \frac{m(m-1)}{N-1} {\rm Var}(q_i) \leq 4(m - \frac{m(m-1)}{N-1})k^2 \epsilon^2, \\
+{\rm Var}(\Delta') &= {\rm Var}\left[\sum_{i=1}^m g_i(\theta') - g_i(\theta_t)\right] = {\rm Var}\left(\sum_i^m q_i\right) \\
+&= m {\rm Var} (q_i) + m(m-1) {\rm Cov}_{i \neq j}(q_i,q_j) \\
+&= m{\rm Var}(q_i) - \frac{m(m-1)}{N-1} {\rm Var}(q_i) \\
+&\leq 4\left(m - \frac{m(m-1)}{N-1}\right)k^2 \epsilon^2,
 \end{align*}
 as desired.
 
