@@ -215,7 +215,7 @@ similar approach from~\cite{icml2014c1_bardenet14} has slightly more robust theo
 but comes at the cost of more computational time.
 
 The work of~\cite{conf/uai/MaclaurinA14} presents another minibatch MCMC method which gets the
-\emph{exact} posterior, so long as there exists a (cheap) lower bound on the log likelihood for each
+\emph{exact} posterior, so long as there exists a (cheap) lower bound on the likelihood for each
 data point. Their approach is only a starting point, however, and it can be difficult to derive
 these lower bounds in general cases. The extra auxiliary variables they introduce also hurt mixing.
 
@@ -462,7 +462,7 @@ which means, invoking Equations~\ref{eq:relationship} and~\ref{eq:deconvolution}
 the random variable characterizing the accuracy of our $X_{\rm norm}$.  Thus, $\Delta' = \Delta +
 X_{\rm norm} + X_\xi$. We assume the standard deviation of $X_{\rm norm}$ is less than
 $\pi/\sqrt{3}$, so that we can use Equation~\ref{eq:deconvolution}. We denote $F_X(x)$ as the CDF of
-$X$. (Note that $X$ is a \emph{scalar} random variable.)
+$X$.
 
 We use some additional terms from standard Markov chain theory~\cite{Meyn2009}. Let the
 \emph{transition kernels} of MCMC on complete and minibatch data at step $i$ be $P_i$ and $P_i'$,
