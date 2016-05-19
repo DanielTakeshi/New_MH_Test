@@ -639,9 +639,7 @@ in our minibatch MH test is negligible.
 
 In this experiment, we apply about minibatch MH testing with SGHMC (Stochastic Gradient Hamiltonian
 Monte Carlo~\cite{sghmc_2014}) proposer to sample the parameter instances from a fully connected
-neural network. We use Higgs data set from University of California Irvine. It is a classification
-problem to distinguish between a signal process which produces Higgs bosons and a background process
-which does not. We build a 4 layers neural network to tackle this problem. The first layer is a
+neural network. We use Higgs data set from University of California Irvine. We build a 4 layers neural network to tackle this problem. The first layer is a
 input layer, the last layer is a softmax layer, the intermediate layers are linear followed by
 Sigmoid, norm, dropout, starting and ending with linear operation. 
 
@@ -650,14 +648,14 @@ the frequencies of the features are quite different, we use the same strategy in
 Gradient to rescale the gradient before apply SGHMC. We implement our system within the open-source
 BIDMach project~\cite{canny2013bidmach}.  
 
-Figure~\ref{fig:nnet_fig} illustrates our experiment results.  
+Figure~\ref{fig:nnet_fig} illustrates our experiment results. Fig~\ref{fig:nnet_fig}a reveals that SGHMC with our mini batch MH testing achieves high log likelihood than the baseline. But by comparing the SGHMC with and without our mini batch testing, the benefits are limited. Because we decrease the stepsize quickly, so accept rate of SGHMC is very high that the benefits of testing are not obvious.
 
 \begin{figure}[t]
     \centering
     \includegraphics[width=1\linewidth]{exp3}
-    \caption{TODO This will hopefully show results for neural networks on BIDMach.}
+    \caption{Log likelihood vs number of passes for optimization of neural network}
     \label{fig:nnet_fig}
-    %\vspace{-10pt}
+    \vspace{-10pt}
 \end{figure}
 
 
