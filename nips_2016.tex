@@ -528,34 +528,42 @@ The reverse happens with a step size too small.
 
 We conduct three sets of experiments to explore the benefits of our minibatch MH test and to
 benchmark it with previous work. In Section~\ref{ssec:gaussians}, we show that our test enables
-samples to converge to the posterior distribution of a Gaussian mixture model. In
+samples to converge to the posterior distribution of a heated Gaussian mixture model. In
 Section~\ref{ssec:logistic}, we analyze its efficiency on logistic regression. In
 Section~\ref{ssec:nets}, we apply the test for deep learning.
 Appendices~\ref{app:gaussian},~\ref{app:logistic}, and~\ref{app:nnet} contain more detailed
-information on these experiments.
+information on these respective experiments.
 
 \subsection{Mixture of Gaussians}\label{ssec:gaussians}
 
-We start with a simple mixture of Gaussians, which have tied means:
-\[
-\theta_1 \sim N(0, \sigma_1^2); \theta_2 \sim N(0, \sigma_2^2); x_i \sim \frac{1}{2}N(\theta_1, \sigma_x^2) + \frac{1}{2} N(\theta_2, \sigma_x^2)
-\]
-where $\sigma_1^2 = 10, \sigma_2^2 = 1$ and $\sigma_x^2=2$. 200 data points are generated from the
-model with $\theta_1 = 0$ and $\theta_2 = 1$. The theoretical posterior distribution can be seen in
-Fig.~3a. We use random walk as the proposer. We set the step size 0.1 as a constant. We compare
-three scenarios: with our mini-batch MH testing (see Fig.~3b), without our mini-batch MH testing
-(see Fig.~3c), and with the standard MH testing (see Fig.~3d). 
+We start with a simple Gaussian mixture model, borrowing an experiment from~\cite{langevin_2011}.
+The parameter is 2-D, $\theta = (\theta_1,\theta_2)$, and the parameter/data generation process is
+\begin{equation}\label{eq:data_generation}
+(\theta_1,\theta_2) \sim \mathcal{N}((0,0), {\rm diag}(\sigma_1^2, \sigma_2^2));\quad \quad x_i \sim
+0.5 \cdot \mathcal{N}(\theta_1, \sigma_x^2) + 0.5 \cdot \mathcal{N}(\theta_1+\theta_2, \sigma_x^2).
+\end{equation}
+We set $\sigma_1^2 = 10, \sigma_2^2 = 1$ and $\sigma_x^2=2$. Fixing $\theta = (0,1)$, we draw 10000
+data points so that the target distribution is $p(\theta)\prod_{i=1}^{10000}p(x_i\mid \theta)$, with
+the prior based on the $\theta$ generation process in Equation~\ref{eq:data_generation}. This turns
+out to be a rather sharp posterior, so to make our test applicable, we apply a temperature $T=110$
+to reduce ${\rm std}(\Delta')$. Taking logs, we get the new target as shown in the far left of
+Figure~\ref{fig:gauss_mix_1}.
+
+We run MCMC with our MH test with $m=200$. We also run this using standard full-batch MCMC
+(``standard sampling'') with the standard MH test, and the method from~\cite{cutting_mh_2014}
+(``adaptive sampling''). For the latter, we also use $m=200$ and increment minibatches by that
+amount within an iteration if necessary. The tolerance for making a decision is $\epsilon=0.1$. To
+make comparisons easier, all three use the same random walk proposer with covariance $\Sigma={\rm
+diag}(0.03, 0.03)$. This is a poor proposer, but it is sufficient for our purposes as the quality of
+the samples will be due to the MH test. All methods are run 10000 times to collect 10000 samples.
 
 \begin{figure}[t]
     \centering
     \includegraphics[width=1\linewidth]{cloud_v01.png}
     \caption{
-    {\color{blue}
-    Daniel: I'll fix the caption later. Basically, true log posterior, standard/adaptive procedures,
-    and our method, using MB=200 out of the 10k samples here (also 10k passes over data). All three
-    used the same proposal distribution, a RW with a Gaussian of 0.03. Temperature is at 110.
+    The log posterior contours (temperature 110) and three scatter plots of sampled $\theta$ values.
     }
-    }
+    \label{fig:gauss_mix_1}
     %\vspace{-10pt}
 \end{figure}
 
@@ -563,23 +571,32 @@ three scenarios: with our mini-batch MH testing (see Fig.~3b), without our mini-
     \centering
     \includegraphics[width=1\linewidth]{adaptive_and_ours_information_v01.png}
     \caption{
-    {\color{blue}
-    Daniel: I'll fix the caption later. First plot is capped at 1k but the first bin goes up to
-    8000. For the SDs, I skipped the ones that didn't satisfy the requirement (a.k.a. repeating the
-    previous sample). The third is when I re-ran the experiments but with different minibatches, to
-    see how much I would have to repeat. These values were all with one run, though, I might
-    consider just taking several (about five?) and doing error bar stuff.
+    Histograms of minibatch sizes and ${\rm std}(\Delta')$ values, along with ``${\rm std}(\Delta')$
+    violations'' (right).
     }
-    }
+    \label{fig:gauss_mix_2}
     %\vspace{-10pt}
 \end{figure}
 
-From the figures above, we find that with the help of our mini-batch MH testing we can obtain the
-sampled distribution which are very close to target one. We feature draw our estimation of standard
-derivation of $X_{\rm norm}$ over iterations, see Fig.~3e. We find with even constant step size, the
-standard derivation decreases, because the gradient of posterior distribution declines and make the
-scale of $\Delta'$ deminished when the sampled point is apporching MAP. Thus, the error our
-transition kernel will declines with even constant step size as discribed in Section~\ref{sec:theory}.
+Figure~\ref{fig:gauss_mix_1} shows three scatter plots of the resulting $\theta$ samples for the
+three methods, with darker regions indicating a greater density of points. All three methods obtain
+the same rough form of the posterior, so our MH test can indeed obtain the posterior just as the
+other methods do.
+
+Figure~\ref{fig:gauss_mix_2} (to the left) shows a histogram of the final minibatch sizes used by
+the adaptive subsampling method each iteration (capped at 600 for readability).  Usually, the method
+can make a decision with 200 samples. Occasionally, however, it must use all 10000 points, resulting
+in roughly 50 times more computation. For this particular experiment, that happened eight times.  In
+contrast, our method keeps the minibatch size fixed at 200, but requires that ${\rm std}(\Delta') <
+1.2$. Figure~\ref{fig:gauss_mix_2} (in the middle) shows a histogram of the estimated ${\rm
+std}(\Delta')$ values each iteration. Only 75 iterations resulted in ${\rm std}(\Delta') \ge 1.2$
+and for those, we skipped the rest of the iteration (setting $\theta_{t+1}=\theta_t$). To smooth the
+${\rm std}(\Delta')$ values, we use moving average updates. The third plot in
+Figure~\ref{fig:gauss_mix_2} investigates the number of times ${\rm std}(\Delta') \ge 1.2$. For six
+minibatch sizes (50, 100, 150, 200, 250, and 300), we ran MCMC with our MH test five times and the
+number of violations averaged. As minibatch sizes increases, the number of violations decreases,
+showing that our test is more applicable.
+
 
 \subsection{Logistic Regression}\label{ssec:logistic}
 
@@ -649,17 +666,13 @@ Figure~\ref{fig:nnet_fig} illustrates our experiment results.
 
 In this paper, we have derived a new MH test for minibatch MCMC methods. We demonstrated how a
 simple deconvolution process allows us to use a minibatch approximation to the full data tests. We
-experimentally show the benefits our MH test.
+experimentally show the benefits of our test on Gaussian mixtures, logistic regression, and deep
+learning.  Straightforward directions for future work include running more experiments with a
+particular focus on investigation of the variance precondition.  More elaborate extensions include
+combining our results with Hamiltonian Monte Carlo methods, providing a recipe for how to use our
+algorithm (following the framework of~\cite{sgmcmc_2015}), or integrating parallel
+MCMC~\cite{conf/uai/AngelinoKWSA14,conf/icml/AhnSW14} concepts.
 
-Straightforward directions for future work include running additional experiments, with a particular
-focus on investigation of the variance precondition.  More elaborate extensions include combining
-our results with Hamiltonian Monte Carlo methods, providing a recipe for how to use our algorithm
-(following the general framework of~\cite{sgmcmc_2015}), or integrating parallel
-MCMC~\cite{conf/uai/AngelinoKWSA14,conf/icml/AhnSW14} concepts into our work.
-
-{\color{blue}
-Daniel: TODO, clean this up!
-}
 
 \small
 \bibliography{nips_2016}
