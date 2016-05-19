@@ -65,8 +65,8 @@ framexleftmargin=20pt}
   \texttt{seita@berkeley.edu}
   \And
   Xinlei Pan \\
-  Graduate Program in Bioengineering \\
-  UC Berkeley-UC San Francisco \\
+  Department of Bioengineering \\
+  University of California, Berkeley \\
   \texttt{xinleipan@berkeley.edu}
   \And 
   Biye Jiang \\
@@ -620,17 +620,18 @@ consuming fewer data points.
 \begin{figure}[t]
     \centering
     \includegraphics[width=1\linewidth]{exp2.png}
-    \caption{Experiment results of Logistic regression}
+    \caption{Logistic regression performance (accuracy/log likelihood) and minibatch size analysis.}
     \label{fig:logistic_fig}
     %\vspace{-10pt}
 \end{figure}
 
-We use this experiment to illustrate another property of our minibatch MH testing: when the size of
-minibatch increase to a threshold, the accuracy / log likelihood of sampled data at a fix iteration
-number will not improve with larger minibatch size, see Fig.~4c. This is because the variance of
-$\Delta'$ decrease with large minibatch, and the error of our minibatch MH testing is proportional
-to our estimation error of variance of $\Delta'$. When the ${\rm Var}(\Delta')$ decrease to a
-threshold, the error of our minibatch MH testing can be ignored.
+The third plot of Figure~\ref{fig:logistic_fig} shows performance based on minibatch size, when the
+performance is evaluated on the test set after training iterations 700, 1000, and 1500. For all
+three iteration counts, when the minibatch size increases beyond about 10, the performance of the
+sampled data will not improve with a large minibatch size. This makes sense because the error of our
+MH test is proportional to our estimation error of ${\rm std}(\Delta')$, and as the minibatch
+increases, ${\rm std}(\Delta')$ decreases. Beyond a certain standard deviation threshold, the error
+in our minibatch MH test is negligible.
 
 
 
@@ -653,9 +654,8 @@ Figure~\ref{fig:nnet_fig} illustrates our experiment results.
 
 \begin{figure}[t]
     \centering
-    \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
-    %\includegraphics[width=0.5\linewidth]{empty}
-    \caption{This will hopefully show results for neural networks on BIDMach.}
+    \includegraphics[width=1\linewidth]{exp3}
+    \caption{TODO This will hopefully show results for neural networks on BIDMach.}
     \label{fig:nnet_fig}
     %\vspace{-10pt}
 \end{figure}
