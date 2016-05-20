@@ -299,7 +299,8 @@ symmetric about zero, so the acceptance criteria can also be expressed as $\Delt
 \subsection{The Minibatch Version}\label{ssec:deltas_minibatch}
 
 With large datasets, $\Delta$ is intractable to compute. An intuitive fix is to replace $\Delta$
-with the minibatch version, $\Delta'$, for our MH test. The following lemma characterizes the distribution of $\Delta'$.
+with the minibatch version, $\Delta'$, for our MH test. The following lemma characterizes the
+distribution of $\Delta'$.
 
 \begin{lemma}\label{lem:gaussian}
 If the minibatch data is chosen randomly without replacement and has sufficiently many elements,
@@ -314,8 +315,8 @@ By expanding the definition of $\Delta'$ from Equation~\ref{eq:deltas}, we get
 \]
 During a given iteration, $\theta_t$ and $\theta'$ are fixed. Therefore, the randomness in $\Delta'$
 comes only from the minibatch. Since the minibatch is chosen randomly, the distribution of
-$\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta_t))$ converges to a Gaussian as $n
-\to \infty$ by the Central Limit Theorem.
+$\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta_t))$ converges to a Gaussian for
+sufficiently large $N$ by the Central Limit Theorem.
 \end{proof}
 
 % Daniel: I decided to put the figure here, so it's closer to the text that references it.
@@ -325,8 +326,8 @@ $\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta_t))$ converges to
     \caption{
     Three examples of $X_{\rm norm}$ and $X_{\rm corr}$ distributions that convolve to form the
     standard logistic distribution. We use three standard deviation values of $X_{\rm norm}$. The
-    two red curves convolve to form the logistic, etc. The $y$-axis is capped at 0.5 for
-    readability. This figure must be viewed in color.
+    two red (respectively, blue, green) curves form the logistic. The $y$-axis is capped at 0.5.
+    This figure must be viewed in color.
     }
     \label{fig:deconvolution}
     %\vspace{-10pt}
@@ -367,9 +368,8 @@ we know the distribution of $X_{\rm corr}$? We need the correct distribution to 
     \item We first need to estimate the standard deviation of $X_{\rm norm}$. We generate $K$ values
     of $\Delta'$, each using a different random minibatch of $n$ data points, but each using the
     same $\theta_t$ and $\theta'$. In our experiments (see Section~\ref{sec:experiments}) we make $K$
-    small, around 5-10, for speed purposes, and $n$ is usually a few hundred for the Central Limit
-    Theorem to apply.  Using these $K$ values, we compute the empirical standard deviation ${\rm
-    std}(\Delta')$.
+    small, around 5-10, for speed purposes, and $n$ is usually 50-200.  Using these $K$ values, we
+    compute the empirical standard deviation ${\rm std}(\Delta')$.
 
     \item Once we have ${\rm std}(\Delta')$, we can determine the distribution of $X_{\rm corr}$
     from standard deconvolution techniques. These rely on the well-known fact that the Fourier
@@ -427,8 +427,8 @@ densities to consider the range $[-10,10]$ as shown in Figure~\ref{fig:deconvolu
 \textbf{Variance Preconditioning}. Returning to the discussion from Section~\ref{sec:introduction},
 our test requires a variance check. Equation~\ref{eq:deconvolution} means that the variance of $X$,
 which is $\pi^2/3\approx 3.29$ is an upper bound on the variances of $X_{\rm norm}$. Therefore, the
-test cannot work if the variance of $X_{\rm norm}$ is too large. Since the standard deviation of $X$
-is about $\sqrt{3.29}\approx 1.81$, this bounds ${\rm std}(X_{\rm norm})$ (as well as ${\rm
+test cannot work if the variance of $X_{\rm norm}$ is too large. The standard deviation of $X$
+is about $\sqrt{3.29}\approx 1.81$, so this bounds ${\rm std}(X_{\rm norm})$ (as well as ${\rm
 std}(\Delta')$). From the discussion above, we bound the standard deviation at 1.2 so that $X_{\rm
 corr}$ can handle the remaining noise. Recall from Section~\ref{ssec:deltas_minibatch} that we
 estimate the ${\rm std}(X_{\rm norm})$ each iteration. If the variance/standard deviation test
@@ -465,13 +465,17 @@ these kernels (e.g., $P_i$) are applied on a probability distribution $D_1$, the
 distribution $D_2$, which we write as $P_i \circ D_1 = D_2$. Define $\pi$ to be the stationary
 distribution obtained by $P_i$, and $\pi_i'$ to be the stationary distribution obtained by $P_i'$
 ($\pi'$ needs a subscript in this case).  Finally, we indicate the \emph{total variation distance}
-between two kernels using $\| \cdot \|$, e.g., $\|P_i-P_i'\|$.
+between two kernels using $\| \cdot \|$.
 
-Our first result shows that the distance between $P_i$ and $P_i'$ is proportional to our estimation
-error $X_{\xi}$.
+Our first result shows that the distance $\|P_i\circ D - P_i'\circ D\| \le 4\zeta \ell$ for all
+distributions $D$.
+
+% Our first result shows that the distance between $P_i$ and $P_i'$ is proportional to our estimation
+% error $X_{\xi}$.
 
 \begin{lemma}\label{lem:theory1}
-If $|X_\xi| < \zeta$ and $|\nabla F_X(x)| < \ell$ for all $x$, then $\|P_i-P_i'\| \le 2\zeta \ell$.
+If $|X_\xi| < \zeta$ and $|\nabla F_X(x)| < \ell$ for all $x$, then $\|P_i\circ D-P_i'\circ D\| \le
+4\zeta \ell \;\;\forall D$.
 \end{lemma}
 
 %% \begin{proof}
@@ -500,8 +504,8 @@ Theorem~\ref{thm:theory3} to characterize the convergence of our samples.
 
 \begin{theorem}\label{thm:theory3}
 Assume $\pi$ satisfies $\|P_i \circ D_0 - \pi\| \leq \eta \|D_0 - \pi\|$, where $\eta \in [0, 1)$ for
-all distributions $D_0$. Also assume there exists $0 < \rho_t < 1$ such that $\|P'_i(x, \cdot) -
-\pi_i'\| \leq 2\rho_i$. We can get $\| P_t' \circ P_{t-1}' \circ \cdots \circ P_1' \circ D_0 - \pi
+all distributions $D_0$. Also assume there exists $0 < \rho_t < 1$ such that $\|P'_i \circ D -
+\pi_i'\| \leq 2\rho_i \;\; \forall D$. We can get $\| P_t' \circ P_{t-1}' \circ \cdots \circ P_1' \circ D_0 - \pi
 \| \leq \sum_{s=1}^t \{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\} \rho_s \alpha_s + \alpha_t $, where
 $\alpha_i = \frac{\epsilon_i C }{1-\eta}$ and $\epsilon_i$ is the step size at iteration $i$.
 \end{theorem}
@@ -544,14 +548,14 @@ results in rather sharp posterior modes and high ${\rm std}(\Delta')$ estimates,
 temperature $T=110$ to reduce ${\rm std}(\Delta')$. Taking logs, we get the target as shown in the
 far left of Figure~\ref{fig:gauss_mix_1}.
 
-We run MCMC with our MH test with $m=200$. We also run this using standard full-batch MCMC
-(``standard sampling'') with the standard MH test, and the method from~\cite{cutting_mh_2014}
-(``adaptive sampling''). For the latter, we also use $m=200$ and increment minibatches by that
-amount within an iteration if necessary. The tolerance for making a decision is $\epsilon=0.1$. To
-make comparisons easier, all three use the same random walk proposer with covariance $\Sigma={\rm
-diag}(0.03, 0.03)$. This is a poor proposer, but it is sufficient for our purposes as the quality of
-the samples will be primarily due to the MH test. All methods are run 10000 times to collect 10000
-samples.
+We run MCMC with our MH test using minibatch size $m=200$. We also run this using standard
+full-batch MCMC (``standard sampling'') with the standard test from Equation~\ref{eq:traditional}, and the method
+from~\cite{cutting_mh_2014} (``adaptive sampling''). For the latter, we also use $m=200$ and
+increment minibatches by that amount within an iteration if necessary. The tolerance for making a
+decision is $\epsilon=0.1$. To make comparisons easier, all three use the same random walk proposer
+with covariance $\Sigma={\rm diag}(0.03, 0.03)$. This is a poor proposer, but it is sufficient for
+our purposes as the quality of the samples will be primarily due to the MH test. All methods are run
+10000 times to collect 10000 samples.
 
 \begin{figure}[t]
     \centering
@@ -635,13 +639,14 @@ connected neural network. We use the Higgs data set from the UCI dataset~\cite{L
 is a binary classification task with one million instances, each of which are 28-dimensional. The
 network we use has four layers: the first is the input, the last is the softmax, and the
 intermediate ones apply the sigmoid activation unit.  We also employ dropout and batch
-normalization~\cite{icml2015_ioffe15}.
+normalization~\cite{icml2015_ioffe15}.  In order to control ${\rm std}(\Delta')$, we initialize the
+temperature at 1000, and adjust it at iteration $i$ according to $T_i = \max\{1,
+1000/(i+1)^{0.5}\}$.
 
 For our comparison baseline, we train the same network architecture using the Adaptive Gradient
 Descent method~\cite{adapGrad}. Since the frequencies of the features are quite different, we use
 the same strategy as in Adaptive Gradient to rescale the gradient before applying SGHMC. We
-implement our MH test and Adaptive Gradient in the open-source BIDMach
-project~\cite{canny2013bidmach}.  
+implement our MH test and SGHMCin the open-source BIDMach project~\cite{canny2013bidmach}.  
 
 Figure~\ref{fig:nnet_fig} illustrates our experiment results and reveals that SGHMC with our
 minibatch MH test achieves higher log likelihood than the baseline. By comparing SGHMC with and
@@ -711,17 +716,21 @@ We first prove that the difference in our acceptance rates is bounded: $|P_a - P
 where we use Taylor's Theorem ($o(\xi^2)$ represents higher-order terms that have smaller absolute
 value) and the Triangle Inequality.  Since $|X_\xi| < \zeta$, $|P_a - P_a'| < 2 \zeta \ell$.
 
-Next, we show the transition kernels at each step are bounded if we use the same proposer, i.e.
-$\|P_i - P'_i\| \leq 2\zeta \ell$. We write $P_i(\theta_t \mid \theta') = P_a(\theta_t, \theta')
+Next, we show the distance of new distributions obtained by applying $P_i$ and $P_i'$ on an
+arbitrary distribution $D$ once is bounded if we use the same proposer, i.e.  $\|P_i\circ D -
+P'_i\circ D\| \leq 4\zeta \ell \;\; \forall D$. We write $P_i(\theta_t \mid \theta') = P_a(\theta_t, \theta')
 q(\theta'\mid \theta_t) + (1-P_a(\theta_t,\theta')) \delta_D(\theta' - \theta_t)$, where $\delta_D$
-is the Dirac delta function. The total variation distance between two proposal kernels is
+is the Dirac delta function. The total variation distance between two generated distributions is
 \begin{align*}
-\|P_i - P'_i \| &= \int_{\theta'} \left| \int_{\theta_t}((P_a-P_a') q(\theta'|\theta_t) + (1-P_a - 1+P_a') \delta_D(\theta_t -\theta')) d\theta_t  \right| d\theta' \\
-&= \int_{\theta'} \left| \int_{\theta_t} (P_a- P_a')(q(\theta'|\theta_t) - \delta_D(\theta_t - \theta')) d\theta_t \right|  d\theta'\\ 
-&\leq 2 \zeta \ell \int_{\theta'} \left| \int_{\theta_t}(q(\theta'|\theta_t) + q(\theta_t|\theta')) d\theta_t \right| d\theta'\\
-&= 2 \zeta \ell,
+\|P_i\circ D - P'_i\circ D\| &= \int_{\theta'} \left| \int_{\theta_t}((P_a-P_a') q(\theta'|\theta_t) + (1-P_a - 1+P_a') \delta_D(\theta_t -\theta')) dD(\theta_t) \right| d\theta' \\
+&= \int_{\theta'} \left| \int_{\theta_t} (P_a- P_a')(q(\theta'|\theta_t) - \delta_D(\theta_t - \theta')) dD(\theta_t) \right|  d\theta'\\ 
+&\leq 2 \zeta \ell \int_{\theta'} \left| \int_{\theta_t}(q(\theta'|\theta_t) + \delta_D(\theta_t - \theta')) dD(\theta_t) \right| d\theta'\\
+&\leq 2 \zeta \ell \int_{\theta'} ( D'(\theta') + D(\theta') ) d\theta'\\
+&= 4 \zeta \ell,
 \end{align*}
-as desired.
+where $D'$ is the distribution generated if we always accept the proposed point. (In the last line,
+we integrate two probability density functions, resulting in a value of two.) This matches our
+desired bound.
 
 \subsection{Proof of Lemma~\ref{lem:theory2}}\label{app:theory2}
 
@@ -743,8 +752,8 @@ as desired.
 \subsection{Proof of Theorem~\ref{thm:theory3}}\label{app:theory3}
 
 First, by Theorem 1 in~\cite{cutting_mh_2014}, $\|P_i \circ D_0 - \pi\| \leq \eta \|D_0
-- \pi\|$ and $\|P_i-P'_i\| \leq \epsilon_i C$, the norm between the stationary distribution is $\|\pi
-- \pi_i'\|\leq \frac{\epsilon_i C}{1-\eta}$.
+- \pi\|$ and $\|P_i\circ D-P'_i\circ D\| \leq \epsilon_i C$ for all $D$. The norm between the
+stationary distributions is $\|\pi - \pi_i'\|\leq \frac{\epsilon_i C}{1-\eta}$.
 
 Second, by Theorem 3.6 in~\cite{yang2013sequential}, we have 
 \[
@@ -887,10 +896,9 @@ For SGHMC, we use the simplified update equations~\cite{sghmc_2014}:
 where $v$ represents auxiliary momentum variables, and $\nabla U(\theta)$ is the gradient of the
 system. We set the hyperparameters to be $\eta_i = 0.01 /(i+1)^{0.4}$, and $\alpha=0.1$. We use the
 empirical Fisher~\cite{conf/icml/AhnBW12} information $V(\theta)$ to estimate the value of
-$\hat{\beta}$, so that $\hat{\beta}=\frac{1}{2}\eta V(\theta)$.
-
-In order to control ${\rm std}(\Delta')$, we initialize the temperature at 1000, and adjust it
-at iteration $i$ according to $T_i = \max\{1, 1000/(i+1)^{0.5}\}$.
+$\hat{\beta}$, so that $\hat{\beta}=\frac{1}{2}\eta V(\theta)$. In order to control ${\rm
+std}(\Delta')$, we initialize the temperature at 1000, and adjust it at iteration $i$ according to
+$T_i = \max\{1, 1000/(i+1)^{0.5}\}$.
 
 % Daniel: here are example LaTeX codes for figures and tables if we want to use them.
 %\begin{figure}[h]
