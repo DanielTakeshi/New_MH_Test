@@ -581,7 +581,7 @@ same rough form of the posterior, so our MH test can indeed result in the same p
 other two methods.
 
 Figure~\ref{fig:gauss_mix_2} (to the left) shows a histogram of the final minibatch sizes used by
-the adaptive subsampling method each iteration (capped at 600 for readability).  Usually, the method
+the adaptive subsampling method each iteration (on a log scale for readability).  Usually, the method
 can make a decision with 200 samples. Occasionally, however, it must use all 10000 points, resulting
 in lots of wasted computation. For this particular experiment, that happened eight times.  In
 contrast, our method keeps the minibatch size fixed at 200, but requires that ${\rm std}(\Delta') <
