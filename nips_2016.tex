@@ -459,13 +459,13 @@ $X_{\rm norm}$.  Thus, $\Delta' = \Delta + X_{\rm norm} + X_\xi$. We assume the 
 of $X_{\rm norm}$ is less than $\pi/\sqrt{3}$, so that we can use Equation~\ref{eq:deconvolution}.
 We denote $F_X(x)$ as the CDF of $X$.
 
-We use some additional terms from standard Markov chain theory~\cite{Meyn2009}. Let the
-\emph{transition kernels} of MCMC on complete and minibatch data at step $i$ be $P_i$ and $P_i'$,
-respectively. When these kernels (e.g., $P_i$) are applied on a probability distribution $D_1$, they
-generate a new distribution $D_2$, which we write as $P_i \circ D_1 = D_2$. Define $\pi$ to be the
-stationary distribution obtained by $P_i$, and $\pi_i'$ to be the stationary distribution obtained
-by $P_i'$.  Finally, we indicate the \emph{total variation distance} between two kernels using $\|
-\cdot \|$, e.g., $\|P_i-P_i'\|$.
+We use some terms from standard Markov chain theory~\cite{Meyn2009}. Let the \emph{transition
+kernels} of MCMC on complete and minibatch data at step $i$ be $P_i$ and $P_i'$, respectively. When
+these kernels (e.g., $P_i$) are applied on a probability distribution $D_1$, they generate a new
+distribution $D_2$, which we write as $P_i \circ D_1 = D_2$. Define $\pi$ to be the stationary
+distribution obtained by $P_i$, and $\pi_i'$ to be the stationary distribution obtained by $P_i'$
+($\pi'$ needs a subscript in this case).  Finally, we indicate the \emph{total variation distance}
+between two kernels using $\| \cdot \|$, e.g., $\|P_i-P_i'\|$.
 
 Our first result shows that the distance between $P_i$ and $P_i'$ is proportional to our estimation
 error $X_{\xi}$.
@@ -495,16 +495,15 @@ For one step sampling from $\theta_t$ to $\theta'$, if the jumping step $\|\thet
 
 Since ${\rm Var}(\Delta') < 4\epsilon^2 k^2 (m - \frac{m(m-1)}{N-1}) $, we can assume the maximum
 value of $X_{\xi}$ is proportional to the standard deviation of $\Delta'$, i.e. $\epsilon$. Thus, we
-can assume $\zeta=\epsilon C$, where $C$ is a constant factor.
-
-We finally introduce Theorem~\ref{thm:theory3} to characterize the convergence of our samples.
+can assume $\zeta=\epsilon C$, where $C$ is a constant factor. We finally introduce
+Theorem~\ref{thm:theory3} to characterize the convergence of our samples.
 
 \begin{theorem}\label{thm:theory3}
 Assume $\pi$ satisfies $\|P_i \circ D_0 - \pi\| \leq \eta \|D_0 - \pi\|$, where $\eta \in [0, 1)$ for
 all distributions $D_0$. Also assume there exists $0 < \rho_t < 1$ such that $\|P'_i(x, \cdot) -
 \pi_i'\| \leq 2\rho_i$. We can get $\| P_t' \circ P_{t-1}' \circ \cdots \circ P_1' \circ D_0 - \pi
 \| \leq \sum_{s=1}^t \{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\} \rho_s \alpha_s + \alpha_t $, where
-$\alpha_i = \frac{\epsilon_i C }{1-\eta}$.
+$\alpha_i = \frac{\epsilon_i C }{1-\eta}$ and $\epsilon_i$ is the step size at iteration $i$.
 \end{theorem}
 
 %% \begin{proof}
