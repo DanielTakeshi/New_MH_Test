@@ -86,23 +86,25 @@ framexleftmargin=20pt}
 \begin{abstract}
 Markov chain Monte Carlo (MCMC) methods have many applications in
 machine learning. We are particularly interested in their application
-to modeling very large datasets, where it is impractical to
-perform Metropolis-Hastings tests on the full data. To do this, we
-describe a novel acceptance test which is applied to minibatches of
-data. Previous work on minibatch Metropolis-Hastings use adaptive
-batch sizes, which may use far more than one minibatch of data and therefore
-yield few samples.  Here we describe a simpler test on fixed-sized
-minibatches. Instead of adaptive batch sizes, our test requires a
-precondition on the variance of the log proposal probability
-ratio. Given a measurement of this variance, a minibatch size can be
-chosen to support the test in one step, which yields a number of
-samples proportional to the batch/minibatch ratio. Alternatively, the
-variance condition can be used to adjust the temperature of the
-sampling distribution to a ``natural'' value to provide regular
-samples at a given minibatch size. The resulting proposal/test is only
-slightly more complex than a simple SGD update. In this paper we
-derive the test, discuss its implementation, and present several
-experiments.
+to modeling very large datasets where it is impractical to perform
+Metropolis-Hastings tests on the full data. We describe a novel
+acceptance test which can be applied to fixed-size minibatches of
+data. Previous works on reducing sample count for the
+Metropolis-Hastings test require a data-dependent number of samples
+which is not fixed a-priori.  They do not work on bounded-size samples
+and therefore do not provide the typical practical benefits of
+minibatch methods.  Our novel test requires an upper bound on the
+variance of the log probability, but given this condition it can be
+applied to fixed-size minibatches of data. We show via experiments
+that if this condition is not met, that the earlier methods consume an
+large number of samples.  Our test is extremely simple and fast,
+bringing the benefits of minibatch methods to MCMC inference.
+Alternatively, the variance condition can be used to adjust the
+temperature of the sampling distribution to a ``natural'' value to
+provide regular samples at a given minibatch size. The resulting
+proposal/test is only slightly more complex than a simple SGD
+update. In this paper we derive the test, discuss its implementation,
+and present several experiments.
 \end{abstract}
 
 
@@ -116,12 +118,11 @@ from the target distribution $p$, and decide whether to accept or
 reject them based on an acceptance test. The acceptance test is
 usually a Metropolis-Hastings
 test~\cite{Metropolis1953,hastings70}. For example, for Bayesian
-posterior inference, the posterior distribution $p(\theta \mid x_1,
+posterior inference, the sampling target distribution over the
+parameters $\theta$ is the posterior distribution $p(\theta \mid x_1,
 \ldots, x_N) \propto p(\theta)\prod_{i=1}^np(x_i \mid \theta)$ of
-parameter $\theta$ based on conditionally independent data
-$\{x_i\}_{i=1}^n$ is the target distribution which one aims to
-approximate by sampling $\theta$ values. When $n$ is large, it is
-very expensive to compute the exact posterior because the
+based on conditionally independent data $\{x_i\}_{i=1}^n$. When $n$ is
+large, it is very expensive to compute the exact posterior because the
 likelihood must be evaluated on every $x_i$.
 
 Many state-of-the-art machine learning methods, and deep learning in
@@ -129,15 +130,17 @@ particular, are based on minibatch updates (such as SGD) to a model.
 Minibatch updates produce many improvements to the model for each pass
 over the dataset, and have high sample efficiency. They also map very
 well onto hardware such as GPUs. In contrast, MCMC methods typically
-require calculations over the full dataset to produce a new sample. A
-recent result from~\cite{cutting_mh_2014} attempted to bridge the gap
-between minibatch optimization and MCMC by proposing an \emph{adaptive
-  minibatch} method. Their method uses a subset of the $N$ data points
-for the MH test each iteration. However the number of points is not
-known a priori, and is adjusted dynamically during every test. This
-undermines many of the practical advantages of minibatch calculations: 
-GPU kernels work best for certain minibatch sizes, memory blocks
-can be reused when minibatch size is fixed, etc. 
+require calculations over the full dataset to produce a new sample.
+Recent results
+\cite{cutting_mh_2014,conf/uai/MaclaurinA14,icml2014c1_bardenet14}
+attempted to bridge the gap between minibatch optimization and MCMC by
+data-adaptive subsampling. These methods uses a
+subset of the $N$ data points for the MH test each iteration. However
+the number of points is not known a priori, and is adjusted
+dynamically during every test. This undermines many of the practical
+advantages of minibatch calculations: GPU kernels work best for
+certain minibatch sizes, memory blocks can be reused when minibatch
+size is fixed, etc.
 
 In this paper, we develop an alternative minibatch acceptance test for MCMC
 methods which uses only one fixed-size minibatch per test. Instead of
@@ -154,7 +157,7 @@ posterior inference. As the dataset size grows, the posterior distribution
 sharpens and often concentrates to a few sharp peaks. Samples from
 this distribution will come from those peaks, and will easily become
 stuck in one of them (see Section~\ref{ssec:gaussians}).  The samples are not exploring
-the posterior parameter %vspace, and are unlikely to concentrate at a
+the posterior parameter space, and are unlikely to concentrate at a
 strong local optimum. They therefore fail to accurately represent a
 sample of the posterior because of inadequate search (i.e.,
 mixing). We argue that it is much more natural to sample the
@@ -173,8 +176,9 @@ posterior modes.
 To be precise, the contributions of this paper are as follows:
 
 \begin{enumerate}[noitemsep]
-    \item We develop a new minibatch acceptance test which satisfies detailed balance.
-    \item We compare performance of our new test and the adaptive sampling method.
+\item We develop a new acceptance test which works on fixed-size data samples, given
+  an auxiliary condition. 
+    \item We compare performance of our new test and adaptive sampling methods.
     \item We experiment using the approach for posterior estimation.
 \end{enumerate}
 
@@ -202,34 +206,45 @@ satisfies detailed balance, so if one samples long enough, one will arrive at a 
 distribution matching the posterior, though a burn-in period and/or taking every $n$th sample may be
 helpful.
 
-Unfortunately, computing $f$ requires the use of all $N$ training data points. Moreover, it is
-difficult to design tests using substantially fewer than $N$ points that also satisfy detailed
-balance. To reconcile these competing objectives,~\cite{cutting_mh_2014} proposes an adaptive
-minibatch MCMC algorithm which uses a sequential hypothesis test. During each iteration, the
-algorithm starts with a small minibatch of data and tests the hypothesis that the sample $\theta'$
-should be accepted or rejected based on the likelihood ratio. If the test cannot make a decision
-over a certain confidence threshold, then they increase the minibatch size and test again. This
-process repeats until a decision.  The downside of this algorithm is the need to keep incrementing
-the minibatch size; in the worst case, all $N$ data points may be needed in a single iteration.  A
-similar approach from~\cite{icml2014c1_bardenet14} has slightly more robust theoretical properties,
-but comes at the cost of more computational time.
+Unfortunately, computing $f$ requires the use of all $N$ training data
+points. Moreover, it is difficult to design tests using substantially
+fewer than $N$ points that also satisfy detailed balance. To reconcile
+these competing objectives,~\cite{cutting_mh_2014} proposes an
+adaptive minibatch MCMC algorithm which uses a sequential hypothesis
+test. During each iteration, the algorithm starts with a small
+minibatch of data and adds additional samples until the test either
+succeeds or fails. in the worst case, all $N$ data points may be
+needed in a single iteration.  A similar approach is explored in
+~\cite{icml2014c1_bardenet14} but as the authors there note, the
+method is ``of limited usefulness'' when the log probability variance
+is high, and the method may consume all or most of the samples. The
+work of~\cite{conf/uai/MaclaurinA14} presents another approach to
+reducing sample size for MH testing. In their case, auxiliary
+variables are introduced which allow exact sampling from the
+posterior. Their method assumes a lower bound on the posterior
+probability. Unfortunately, in the most challenging situations (high
+variance in the log probability), this lower bound, if it exists at
+all, will be much smaller than the mean probability. As a consequence,
+this method will consume most of the data samples.
 
-The work of~\cite{conf/uai/MaclaurinA14} presents another minibatch MCMC method which gets the
-\emph{exact} posterior, so long as there exists a (cheap) lower bound on the likelihood for each
-data point. Their approach is only a starting point, however, and it can be difficult to derive
-these lower bounds in general cases. The extra auxiliary variables they introduce also hurt mixing.
-
-There is a separate line of MCMC work on simulating the physics of a probability distribution. By
-viewing random variables as particles in a system, one can apply Hamiltonian Monte Carlo
-(HMC)~\cite{mcmc_hamiltonian_2010} methods which generate the best case scenario for proposals: high
-quality \emph{and} distant.  HMC methods require a full gradient computation of the posterior, which
-means they also face the problem of computing the likelihood at each point. Stochastic versions of
-HMC~\cite{sghmc_2014,stochastic_thermostats_2014} use a minibatch of data each iteration but require
-controlling the noise from sampling to avoid divergence. Langevin
-Dynamics~\cite{langevin_2011,conf/icml/AhnBW12} is a similar approach which does not use the
-momentum terms in HMC.  Minibatch SGHMC and Langevin Dynamics are orthogonal to our work and are
-other ways of attempting to solve the same problem of MCMC methods on big data. We can combine our
-methods with these results, as we demonstrate in Section~\ref{ssec:nets}.
+MCMC methods can use physics-inspired state-space
+extensions. By viewing random variables as particles in a physical
+system and adding virtual momentum variables, one realizes the
+Hamiltonian Monte Carlo (HMC)~\cite{mcmc_hamiltonian_2010} approach.
+These methods generate high-efficiency proposals with large steps and
+high acceptance rates. Traditional HMC methods require a full gradient
+computation for proposals, but recent extensions
+HMC~\cite{sghmc_2014,stochastic_thermostats_2014} use minibatches of
+data. Langevin Dynamics~\cite{langevin_2011,conf/icml/AhnBW12} is a
+similar approach which does not use the momentum terms in HMC, but
+typically produces smaller steps and random-walk behavior. In both
+cases, these methods avoided the expense of MH acceptance tests which
+are much larger than the minibatch proposals. But because of this they
+are forced to limit step size so that their approximate proposals
+generate the true distribution in the limit. With our fast test,
+these methods can be made more efficient by using larger
+step sizes without compromising accuracy.
+We demonstrate this in Section~\ref{ssec:nets}.
 
 %% Daniel: for a further discussion on the 'Firefly' paper, see this blog post:
 %% https://xianblog.wordpress.com/2014/04/02/firefly-monte-carlo/
@@ -241,19 +256,23 @@ methods with these results, as we demonstrate in Section~\ref{ssec:nets}.
 
 \section{A New Metropolis-Hastings Test}\label{sec:our_algorithm}
 
-For our new MH test, we use two key values, $\Delta$ and $\Delta'$:
+For our new MH test, we define $\Delta$ and $\Delta'$ which are logs of transition probability
+ratios:
 \begin{equation}\label{eq:deltas}
 \Delta = \log \left( \frac{p(\theta')  \prod_{i=1}^N p(x_i \mid \theta')  q(\theta_t \mid
 \theta')}{p(\theta_t)\prod_{i=1}^N p(x_i \mid \theta_t)  q(\theta' \mid
 \theta_t)} \right);\;  \Delta' = \log \left( \frac{p(\theta') (\prod_{i=1}^n p(x_i \mid
 \theta'))^{\frac{N}{n}} q(\theta_t \mid \theta')}{p(\theta_t) (\prod_{i=1}^n p(x_i \mid
 \theta_t))^{\frac{N}{n}} q(\theta' \mid \theta_t)} \right)
-\end{equation}
-where $p$ and $q$ have similar definitions as in Equation~\ref{eq:traditional}. Thus, $\Delta$ and
-$\Delta'$ are the likelihood ratios in log space. Note that the only difference between $\Delta$ and
-$\Delta'$ is that they use $N$ and $n$ data terms $x_i$, respectively, and that the latter uses an
-$N/n$ scaling term. We assume $n \ll N$ (so $\Delta'$ is substantially faster to compute) and that
-the $n$ data points $x_i$ represent a random minibatch of data.
+\end{equation} 
+where $p$ and $q$ are target and proposal distributions respectively
+as in Equation~\ref{eq:traditional}. Note that the difference
+between $\Delta$ and $\Delta'$ is that they use $N$ and $n$ data terms
+$x_i$, respectively, and that the latter uses an $N/n$ scaling
+term. The scaling term ensures that $\Delta'$ is an unbiased estimator of $\Delta$.
+ We assume $n \ll N$ (so $\Delta'$ is substantially faster to
+compute) and that the $n$ data points $x_i$ represent a random
+minibatch of data.
 
 \subsection{The Full Data Test}\label{ssec:deltas_full}
 
@@ -289,15 +308,20 @@ As a sanity check, the standard Metropolis-Hastings acceptance function $g(\Delt
 e^\Delta \} = \min\left\{1, \frac{f(\theta')q(\theta_t \mid \theta')}{f(\theta_t)q(\theta' \mid
 \theta_t)}\right\}$ satisfies the condition $g(\Delta) = \exp(\Delta)g(-\Delta)$.
 
-For our MH test, the key is that we use a different $g$, the logistic function: $g(\Delta) =
-(1+\exp(-\Delta))^{-1}$. Straightforward arithmetic shows that it satisfies the condition in
-Lemma~\ref{lem:detailed_balance}.  The logistic function is nice because we can easily sample from
-it using the following procedure. At any iteration with a current parameter $\theta_t$ and a
-candidate sample $\theta'$, we can compute $\Delta$. Let $u$ be a uniform random variable $u \sim
-{\rm Unif}[0,1]$. We accept $\theta'$ if $g(\Delta) > u$, and reject otherwise. This process is
-equivalent to sampling a random variable $X$ with cumulative distribution function $F_X(x) = g(x)$,
-and accepting if $\Delta > X$ and rejecting otherwise. We can define $X = g^{-1}(u)$ so that its CDF
-is the logistic function, which follows because for arbitrary $X = x$, we have
+For our MH test, the key is that we use a different $g$, the logistic
+function: $g(\Delta) = (1+\exp(-\Delta))^{-1}$. Straightforward
+arithmetic shows that it satisfies the condition in
+Lemma~\ref{lem:detailed_balance}.  The logistic function is ideal for
+this task because we can easily sample from it using the following
+procedure: At any iteration with a current parameter $\theta_t$ and a
+candidate sample $\theta'$, we can compute $\Delta$. Let $u$ be a
+uniform random variable $u \sim {\rm Unif}[0,1]$. We accept $\theta'$
+if $g(\Delta) > u$, and reject otherwise. This process is equivalent
+to sampling a random variable $X$ with cumulative distribution
+function $F_X(x) = g(x)$, and accepting if $\Delta > X$ and rejecting
+otherwise. We can define $X = g^{-1}(u)$ so that its CDF is the
+logistic function, which follows because for arbitrary $X = x$, we
+have
 \[
 F_X(x) = {\rm Pr}(X \le x) = {\rm Pr}(g^{-1}(u) \le x) = {\rm Pr}(u \le g(x)) = \int_{0}^{g(x)} 1 dx = g(x),
 \]
@@ -308,10 +332,10 @@ expressed as $\Delta + X>0$.
 \subsection{The Minibatch Version}\label{ssec:deltas_minibatch}
 
 With large datasets, $\Delta$ is intractable to compute. An intuitive fix is to instead use the
-minibatch version $\Delta'$. The following lemma characterizes the distribution of $\Delta'$.
+minibatch approximation $\Delta'$. The following lemma characterizes the distribution of $\Delta'$.
 
 \begin{lemma}\label{lem:gaussian}
-If the minibatch data is chosen randomly and sufficiently large, then the distribution of $\Delta'$ is approximately Gaussian.
+If the minibatch data is chosen randomly and sufficiently large, then the distribution of $\Delta'$ is approximately Normal.
 \end{lemma}
 
 \begin{proof}
@@ -320,9 +344,9 @@ By expanding the definition of $\Delta'$ from Equation~\ref{eq:deltas}, we get
 \Delta' = \log p(\theta') - \log p(\theta_t) + \log q(\theta_t \mid \theta') - \log q(\theta' \mid \theta_t) +
 \frac{N}{n}\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta_t)).
 \]
-During a given iteration, $\theta_t$ and $\theta'$ are fixed. Therefore, the randomness in $\Delta'$
-comes only from the minibatch. Since the minibatch is chosen randomly, the distribution of
-$\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta_t))$ converges to a Gaussian as $n
+During a given iteration, $\theta_t$ and $\theta'$ are fixed. Therefore, the variation in $\Delta'$
+comes only from the samples in the minibatch. Since each term in the sum is IID, the distribution of
+$\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta_t))$ converges to a Normal distribtuion as $n
 \to \infty$ by the Central Limit Theorem.
 \end{proof}
 
@@ -343,16 +367,16 @@ $\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta_t))$ converges to
 From Lemma~\ref{lem:gaussian}, since $\Delta'$ is a noisy approximation of $\Delta$, the
 relationship is expressed as
 \begin{equation}\label{eq:relationship}
-\Delta' = \Delta + \varepsilon, \quad \varepsilon \sim \mathcal{N}(0, \sigma^2),
+\Delta' \approx \Delta + \varepsilon, \quad \varepsilon \sim \mathcal{N}(0, \sigma^2),
 \end{equation}
-for a Gaussian noise term $\varepsilon$.  The extra noise means we can no longer directly perform
+for a Normal noise term $\varepsilon$.  The extra noise means we can no longer directly perform
 the $\Delta + X$ test, so we need to slightly change our acceptance criteria. Our insight is to
 decompose $X$ as
 \begin{equation}\label{eq:deconvolution}
 X = X_{\rm norm}+X_{\rm corr},
 \end{equation}
-where we assume $X_{\rm norm}$ is a zero-mean Gaussian and $X_{\rm corr}$ is a zero-mean
-``correction'' term.  These two add (i.e., their distributions convolve) to form $X$. The criteria
+where we assume $X_{\rm norm}$ is a zero-mean Normally-distributed and $X_{\rm corr}$ is a zero-mean
+``correction'' term.  These two add to form $X$. The criteria
 to accept is now
 \begin{equation}\label{eq:criteria}
 \Delta + X = \Delta + X_{\rm norm} + X_{\rm corr} \approx \Delta' + X_{\rm corr} >0.
@@ -360,16 +384,20 @@ to accept is now
 The approximation exists because $X_{\rm norm}$ is an estimate of $\varepsilon$. If $X_{\rm norm}$
 is exact, then we get the same MH test with $\Delta'$ as we do with the full data version $\Delta$.
 
-It is important to understand why we use Equations~\ref{eq:deconvolution} and~\ref{eq:criteria}. The
-deconvolution process allows us to use $\Delta' + X_{\rm corr}$ as a proxy for $\Delta + X$. It
-works because if we know the distribution\footnote{Computing the distributions of $\varepsilon$ and
-$X_{\rm norm}$ reduces to finding their standard deviations.} of $\varepsilon$ (from
-Equation~\ref{eq:relationship}), then we can pretend that our $\Delta'$ is in fact $\Delta$. To
-``insert'' $\varepsilon$ into our test, we deconvolve $X$ so that one of its components, $X_{\rm
-norm}$, plays the part of $\varepsilon$. In light of our revised MH test, the previous discussion
-raises the question: in an iteration of MCMC with current $\theta_t$ and proposed $\theta'$, how do
-we know the distribution of $X_{\rm corr}$? We need the correct distribution to sample the
-\emph{values} of $X_{\rm corr}$ appropriately. This procedure consists of two major steps.
+Equations~\ref{eq:deconvolution} and~\ref{eq:criteria} yield an extremely simple test: Namely,
+compute the approximate log transition probability ratio $\Delta'$, add the correction random
+variable, and compare with zero. It remains to be determined how, and under what conditions
+we can do the decomposition~\ref{eq:deconvolution}. First we recall that the distribution
+of a sum of indendent random variables is the convolution of their distributions. From equation
+\cite{eq:deconvolution}, we know the distributions of both $X_{\rm norm}$ and $X$. It follows
+that $X_{\rm corr}$ is the {\em deconvolution} of $X$ by $X_{\rm norm}$. Such a decomposition
+need not exist. For instance, \ref{eq:deconvolution} implies that
+\begin{equation}
+  {\rm var}(X) = {\rm var}(X_{\rm norm}) + {\rm var}(X_{\rm corr})
+\end{equation}
+so we must have ${\rm var}(X) > {\rm var}(X_{\rm norm})$ to have a chance of success. In fact
+since these distributions are known, the variance information is enough to determine whether
+the test is applicable. The correction sample can be generated as follows:
 
 \begin{enumerate}[noitemsep]
     \item We first need to estimate the standard deviation of $X_{\rm norm}$. We generate $K$ values
@@ -392,13 +420,12 @@ Algorithm~\ref{alg:our_algorithm} describes our MH test within the MCMC algorith
 \SetKwInOut{Input}{Input}
 \SetKwInOut{Output}{Output}
 \begin{algorithm}[t]
-\Input{Number of samples $T$, number of $\Delta'$ estimates $K$, minibatch size $m$, pre-computed $X_{\rm
+\Input{Number of samples $T$, variance estimation window $W$, minibatch size $m$, pre-computed $X_{\rm
 corr}$ distributions, $\{x_i\}_{i=1}^n$ values from a target distribution, and initial sample $\theta_0$.}
-\Output{A chain of $T$ samples $\{\theta_1, \ldots, \theta_T\}$ for either posterior inference or
-point estimation.}
+\Output{A chain of $T$ samples $\{\theta_1, \ldots, \theta_T\}$}
 \For{$t=\{1, \ldots, T\}$}{
     Propose a candidate $\theta'$ and create an empty list for $\Delta'$ estimates, $d = []$\;
-    \For{$k = \{1, \ldots, K\}$}{
+    \For{$k = \{1, \ldots, W\}$}{
         Sample a random minibatch of size $m$ from the complete data\;
         Compute $\Delta'$ from this minibatch (see Equation~\ref{eq:deltas}), and add $\Delta'$ to $d$\;
     }
@@ -411,7 +438,7 @@ point estimation.}
         \eIf{$X_c + \Delta_{\rm real}' > 0$}{
             Accept the candidate, $\theta_{t+1} = \theta'$\;
         }{
-            Reject and re-use the old one, $\theta_{t+1} = \theta_t$\;
+            Reject and re-use the sample, $\theta_{t+1} = \theta_t$\;
         }
     }
 }
@@ -426,7 +453,7 @@ norm}$ and $X_{\rm corr}$. The density of $X$, a logistic random variable with m
 scale $s=1$, is known, as are the $X_{\rm norm}$ densities for different standard deviations. The
 deconvolution provides us with the $X_{\rm corr}$ distributions. Note, however, that as the standard
 deviation of $X_{\rm norm}$ increases, the $X_{\rm corr}$ distribution becomes increasingly unstable
-and ``bumpier'', because the logistic curve has fatter tails than Gaussians. For this reason, we cap
+and ``bumpier'', because the logistic curve has fatter tails than the normal distribution. For this reason, we cap
 the standard deviation possibilities of $X_{\rm norm}$ at $\approx 1.2$ in our experiments. In our
 experiments, we discretize the possible standard deviations of $X_{\rm norm}$, and we also limit the
 densities to consider the range $[-10,10]$ (as shown in Figure~\ref{eq:deconvolution}).
@@ -450,8 +477,29 @@ the target distribution. For a temperature $T>1$, the augmented target distribut
 with an extra $1/T$ term augmented. As the temperature increases, the values of $\Delta'$ get
 smaller, thus reducing variance. The flatter posterior results in easier mixing.
 
+\section{Accelerating the Test}
+The test as stated is dominated by the time to estimate the variance of $\Delta'$ using $W$
+samples per step. An alternative is to use a moving-average estimate of variance, using only
+a single sample per iteration. However, the variance of $\Delta$ may be quite complex since
+it involves interactions through the proposal distribution, between new and old states $\theta$.
+We can simplify it by decomposing it:
 
-
+\begin{equation}
+   \Delta' = \log \left(p(\theta') (\prod_{i=1}^n p(x_i \mid \theta'))^{\frac{N}{n}}\right) -
+   \log \left(p(\theta_t) (\prod_{i=1}^n p(x_i \mid \theta_t))^{\frac{N}{n}}\right) +
+   \log \left(\frac{
+   q(\theta' \mid \theta_t)}{q(\theta_t \mid \theta')}\right)
+\end{equation} 
+which can be written as
+\begin{equation}
+  \Delta' = X(\theta') + X(\theta_t) + X(q)
+\end{equation}
+where $X(\theta')$, $X(\theta_t)$ and $X(q)$ correspond to the three
+terms above. We can make independent estimates of $X(\theta')$ and
+$X(\theta_t)$ by using different minibatches for each.  This will
+likely increase the variance of $\Delta'$ but also render it more
+stable, since it is then depends only on the variance of the log
+likihood in the parameter region of interest.
 
 \section{Theoretical Results}\label{sec:theory}
 
