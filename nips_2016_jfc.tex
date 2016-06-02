@@ -118,26 +118,17 @@ from the target distribution $p$, and decide whether to accept or
 reject them based on an acceptance test. The acceptance test is
 usually a Metropolis-Hastings
 test~\cite{Metropolis1953,hastings70}. For example, for Bayesian
-<<<<<<< HEAD:nips_2016_jfc.tex
 posterior inference, the sampling target distribution over the
 parameters $\theta$ is the posterior distribution $p(\theta \mid x_1,
 \ldots, x_N) \propto p(\theta)\prod_{i=1}^np(x_i \mid \theta)$ of
 based on conditionally independent data $\{x_i\}_{i=1}^n$. When $n$ is
 large, it is very expensive to compute the exact posterior because the
-=======
-posterior inference, the posterior distribution $p(\theta \mid x_1,
-\ldots, x_N) \propto p(\theta)\prod_{i=1}^N p(x_i \mid \theta)$ of
-parameter $\theta$ based on conditionally independent data
-$\{x_i\}_{i=1}^N$ is the target distribution which one aims to
-approximate by sampling $\theta$ values. When $N$ is large, it is
-very expensive to compute the exact posterior because the
->>>>>>> 98a0aaed442f939cd4eb8a88c1b2c5c5fffa0b0b:nips_2016.tex
 likelihood must be evaluated on every $x_i$.
 
 Many state-of-the-art machine learning methods, and deep learning in
 particular, are based on minibatch updates (such as SGD) to a model.
 Minibatch updates produce many improvements to the model for each pass
-over the dataset, and therefore have high sample efficiency. They also map very
+over the dataset, and have high sample efficiency. They also map very
 well onto hardware such as GPUs. In contrast, MCMC methods typically
 require calculations over the full dataset to produce a new sample.
 Recent results
@@ -161,7 +152,6 @@ before performing the test. The minibatch variance
 decreases as the minibatch size grows, so the variance measurement can be
 used to set the minimum minibatch size.
 
-<<<<<<< HEAD:nips_2016_jfc.tex
 There is another advantage when using our test for Bayesian
 posterior inference. As the dataset size grows, the posterior distribution
 sharpens and often concentrates to a few sharp peaks. Samples from
@@ -182,20 +172,6 @@ changes increase minibatch size monotonically, and only a few changes
 are performed in the course of a sampling session.
 Annealing can also be used for MAP and ML estimation because changing temperature preserves
 posterior modes. 
-=======
-There is another advantage when using our test for Bayesian posterior inference. As the dataset size
-grows, the posterior distribution sharpens and often concentrates to a few sharp peaks. Samples from
-this distribution will come from those peaks, and will easily become stuck in one of them. The
-samples are not exploring the posterior parameter space, and are unlikely to concentrate at a strong
-local optimum. They therefore fail to accurately represent a sample of the posterior because of
-inadequate search (i.e., mixing). We argue that it is much more natural to sample the distribution
-at a higher temperature determined by the minibatch size rather than the dataset size. Starting at a
-high temperature (small minibatch size) which mixes easily, one can reduce the temperature
-(increasing minibatch size) until one reaches the desired target distribution temperature.  Although
-this approach also involves changing minibatch size, the changes increase minibatch size
-monotonically, and only a few changes are performed in the course of a sampling session.  Annealing
-can also be used for MAP and ML estimation because changing temperature preserves posterior modes. 
->>>>>>> 98a0aaed442f939cd4eb8a88c1b2c5c5fffa0b0b:nips_2016.tex
 
 To be precise, the contributions of this paper are as follows:
 
@@ -225,11 +201,11 @@ P_a = \min\left\{ 1, \frac{f(\theta')q(\theta_t \mid \theta')}{f(\theta_t)q(\the
 \theta')}{p(\theta_t)\prod_{i=1}^N p(x_i \mid \theta_t)q(\theta' \mid
 \theta_t)} \right\},
 \end{equation}
-where $f(\theta_t)=p(\theta_t \mid x_1,\ldots,x_N)$. This $P_a$ satisfies detailed balance, so if
-one samples long enough, one will arrive at a stationary distribution matching the posterior, though
-a burn-in period and/or only using samples at regular intervals is often done in practice.
+where $f(\theta_t)=p(\theta_t \mid x_1,\ldots,x_N)$. The $P_a$ from Equation~\ref{eq:traditional}
+satisfies detailed balance, so if one samples long enough, one will arrive at a stationary
+distribution matching the posterior, though a burn-in period and/or taking every $n$th sample may be
+helpful.
 
-<<<<<<< HEAD:nips_2016_jfc.tex
 Unfortunately, computing $f$ requires the use of all $N$ training data
 points. Moreover, it is difficult to design tests using substantially
 fewer than $N$ points that also satisfy detailed balance. To reconcile
@@ -269,36 +245,6 @@ generate the true distribution in the limit. With our fast test,
 these methods can be made more efficient by using larger
 step sizes without compromising accuracy.
 We demonstrate this in Section~\ref{ssec:nets}.
-=======
-Unfortunately, computing $f$ requires the use of all $N$ training data points. Moreover, it is
-difficult to design tests using substantially fewer than $N$ points that also satisfy detailed
-balance. To reconcile these competing objectives,~\cite{cutting_mh_2014} proposes an adaptive
-minibatch MCMC algorithm which uses a sequential hypothesis test. During each iteration, the
-algorithm starts with a small minibatch of data and tests the hypothesis that the sample $\theta'$
-should be accepted or rejected based on a probability ratio. If the test cannot make a decision
-over a certain confidence threshold, then the minibatch size is increased and the test repeats. This
-process continues until a decision. The downside of this algorithm is the need to keep incrementing
-the minibatch size; in the worst case, all $N$ data points may be needed to decide on $\theta'$. A
-similar approach from~\cite{icml2014c1_bardenet14} has slightly more robust theoretical properties
-based on concentration inequalities, but comes at the cost of more computational time.
-
-The work of~\cite{conf/uai/MaclaurinA14} presents another minibatch MCMC method which gets the
-\emph{exact} posterior, so long as there exists a (cheap) lower bound on the likelihood for each
-data point. Their approach is only a starting point, however, and it can be difficult to derive
-these lower bounds in general cases. The extra auxiliary variables they introduce also hurt mixing.
-
-There is a separate line of MCMC work on simulating the physics of a probability distribution. By
-viewing random variables as particles in a system, one can apply Hamiltonian Monte Carlo
-(HMC)~\cite{mcmc_hamiltonian_2010} methods which generate the best case scenario for proposals: high
-quality \emph{and} distant.  HMC methods require a full gradient computation of the posterior, which
-means they also face the problem of computing the likelihood at each point. Stochastic versions of
-HMC~\cite{sghmc_2014,stochastic_thermostats_2014} use a minibatch of data each iteration but require
-controlling the minibatch noise to avoid divergence. Langevin
-Dynamics~\cite{langevin_2011,conf/icml/AhnBW12} is a similar approach which does not use the
-momentum terms in HMC.  Minibatch SGHMC and Langevin Dynamics are orthogonal to our work and are
-other ways of attempting to solve the same problem of MCMC methods on big data. We can combine our
-methods with these results, as we demonstrate in Section~\ref{ssec:nets}.
->>>>>>> 98a0aaed442f939cd4eb8a88c1b2c5c5fffa0b0b:nips_2016.tex
 
 %% Daniel: for a further discussion on the 'Firefly' paper, see this blog post:
 %% https://xianblog.wordpress.com/2014/04/02/firefly-monte-carlo/
@@ -318,7 +264,6 @@ ratios:
 \theta_t)} \right);\;  \Delta' = \log \left( \frac{p(\theta') (\prod_{i=1}^n p(x_i \mid
 \theta'))^{\frac{N}{n}} q(\theta_t \mid \theta')}{p(\theta_t) (\prod_{i=1}^n p(x_i \mid
 \theta_t))^{\frac{N}{n}} q(\theta' \mid \theta_t)} \right)
-<<<<<<< HEAD:nips_2016_jfc.tex
 \end{equation} 
 where $p$ and $q$ are target and proposal distributions respectively
 as in Equation~\ref{eq:traditional}. Note that the difference
@@ -328,24 +273,16 @@ term. The scaling term ensures that $\Delta'$ is an unbiased estimator of $\Delt
  We assume $n \ll N$ (so $\Delta'$ is substantially faster to
 compute) and that the $n$ data points $x_i$ represent a random
 minibatch of data.
-=======
-\end{equation}
-where $p$ and $q$ have similar definitions as in Equation~\ref{eq:traditional}. Thus, $\Delta$ and
-$\Delta'$ are probability ratios in log space. Note that the only difference between $\Delta$ and
-$\Delta'$ is that they use $N$ and $n$ data terms $x_i$, respectively, and that the latter uses an
-$N/n$ scaling term. We assume $n \ll N$ (so $\Delta'$ is substantially faster to compute) and that
-the $n$ data points $x_i$ represent a random minibatch without replacement.
->>>>>>> 98a0aaed442f939cd4eb8a88c1b2c5c5fffa0b0b:nips_2016.tex
 
 \subsection{The Full Data Test}\label{ssec:deltas_full}
 
 To motivate the use of $\Delta$, we turn to Lemma~\ref{lem:detailed_balance}.
 
 \begin{lemma}\label{lem:detailed_balance}
-An acceptance function $g$ such that $g(\Delta) = \exp(\Delta) g(-\Delta )$ satisfies detailed
-balance. That is, $f(\theta_t)p(\theta' \mid \theta_t) = f(\theta')p(\theta_t \mid \theta')$, where
-$p(\theta_y \mid \theta_x)$ is the probability of jumping from $\theta_x$ to $\theta_y$ in our
-chain.
+Let $\Delta$ be defined as in Equation~\ref{eq:deltas}. Any acceptance function $g$ such that
+$g(\Delta) = \exp(\Delta) g(-\Delta )$ satisfies detailed balance. That is, $f(\theta_t)p(\theta'
+\mid \theta_t) = f(\theta')p(\theta_t \mid \theta')$, where $p(\theta_y \mid \theta_x)$ is the
+probability of jumping from $\theta_x$ to $\theta_y$ in our chain.
 \end{lemma}
 
 \begin{proof}
@@ -389,26 +326,16 @@ have
 F_X(x) = {\rm Pr}(X \le x) = {\rm Pr}(g^{-1}(u) \le x) = {\rm Pr}(u \le g(x)) = \int_{0}^{g(x)} 1 dx = g(x),
 \]
 as the density of $u$ is one. Thus, the criteria to accept the candidate $\theta'$ is equivalent to
-whether $\Delta > X$. Moreover, the density of $X$ (a standard logistic random variable) is
-symmetric about zero, so the acceptance criteria can also be expressed as $\Delta + X>0$.
+whether $\Delta > X$. Moreover, $X$ is symmetric about zero, so the acceptance criteria can also be
+expressed as $\Delta + X>0$.
 
 \subsection{The Minibatch Version}\label{ssec:deltas_minibatch}
 
-<<<<<<< HEAD:nips_2016_jfc.tex
 With large datasets, $\Delta$ is intractable to compute. An intuitive fix is to instead use the
 minibatch approximation $\Delta'$. The following lemma characterizes the distribution of $\Delta'$.
 
 \begin{lemma}\label{lem:gaussian}
 If the minibatch data is chosen randomly and sufficiently large, then the distribution of $\Delta'$ is approximately Normal.
-=======
-With large datasets, $\Delta$ is intractable to compute. An intuitive fix is to replace $\Delta$
-with the minibatch version, $\Delta'$, for our MH test. The following lemma characterizes the
-distribution of $\Delta'$.
-
-\begin{lemma}\label{lem:gaussian}
-If the minibatch data is chosen randomly without replacement and has sufficiently many elements,
-then the distribution of $\Delta'$ is approximately Gaussian.
->>>>>>> 98a0aaed442f939cd4eb8a88c1b2c5c5fffa0b0b:nips_2016.tex
 \end{lemma}
 
 \begin{proof}
@@ -417,17 +344,10 @@ By expanding the definition of $\Delta'$ from Equation~\ref{eq:deltas}, we get
 \Delta' = \log p(\theta') - \log p(\theta_t) + \log q(\theta_t \mid \theta') - \log q(\theta' \mid \theta_t) +
 \frac{N}{n}\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta_t)).
 \]
-<<<<<<< HEAD:nips_2016_jfc.tex
 During a given iteration, $\theta_t$ and $\theta'$ are fixed. Therefore, the variation in $\Delta'$
 comes only from the samples in the minibatch. Since each term in the sum is IID, the distribution of
 $\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta_t))$ converges to a Normal distribtuion as $n
 \to \infty$ by the Central Limit Theorem.
-=======
-During a given iteration, $\theta_t$ and $\theta'$ are fixed. Therefore, the randomness in $\Delta'$
-comes only from the minibatch. Since the minibatch is chosen randomly, the distribution of
-$\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta_t))$ converges to a Gaussian for
-sufficiently large $N$ by the Central Limit Theorem.
->>>>>>> 98a0aaed442f939cd4eb8a88c1b2c5c5fffa0b0b:nips_2016.tex
 \end{proof}
 
 % Daniel: I decided to put the figure here, so it's closer to the text that references it.
@@ -437,8 +357,8 @@ sufficiently large $N$ by the Central Limit Theorem.
     \caption{
     Three examples of $X_{\rm norm}$ and $X_{\rm corr}$ distributions that convolve to form the
     standard logistic distribution. We use three standard deviation values of $X_{\rm norm}$. The
-    two red (respectively, blue, green) curves form the logistic. The $y$-axis is capped at 0.5.
-    This figure must be viewed in color.
+    two red curves convolve to form the logistic, etc. The $y$-axis is capped at 0.5 for
+    readability. This figure must be viewed in color.
     }
     \label{fig:deconvolution}
     %\vspace{-10pt}
@@ -449,13 +369,8 @@ relationship is expressed as
 \begin{equation}\label{eq:relationship}
 \Delta' \approx \Delta + \varepsilon, \quad \varepsilon \sim \mathcal{N}(0, \sigma^2),
 \end{equation}
-<<<<<<< HEAD:nips_2016_jfc.tex
 for a Normal noise term $\varepsilon$.  The extra noise means we can no longer directly perform
 the $\Delta + X$ test, so we need to slightly change our acceptance criteria. Our insight is to
-=======
-for a Gaussian noise term $\varepsilon$.  The noise means we cannot just replace $\Delta+X$ with
-$\Delta'+X$ for our test, so we need to slightly change our acceptance criteria. Our insight is to
->>>>>>> 98a0aaed442f939cd4eb8a88c1b2c5c5fffa0b0b:nips_2016.tex
 decompose $X$ as
 \begin{equation}\label{eq:deconvolution}
 X = X_{\rm norm}+X_{\rm corr},
@@ -487,15 +402,15 @@ the test is applicable. The correction sample can be generated as follows:
 \begin{enumerate}[noitemsep]
     \item We first need to estimate the standard deviation of $X_{\rm norm}$. We generate $K$ values
     of $\Delta'$, each using a different random minibatch of $n$ data points, but each using the
-    same $\theta_t$ and $\theta'$. In our experiments (see Section~\ref{sec:experiments}) we make $K$
-    small, around 5-10, for speed purposes, and $n$ is usually 50-200.  Using these $K$ values, we
-    compute the empirical standard deviation ${\rm std}(\Delta')$.
+    same $\theta_t$ and $\theta'$. In our experiments (see Section~\ref{sec:experiments}), $K$ is
+    small, around 5-10, and $n$ is usually a few hundred for the Central Limit Theorem to apply.
+    Using these $K$ values, we use the empirical standard deviation ${\rm std}(\Delta')$.
 
     \item Once we have ${\rm std}(\Delta')$, we can determine the distribution of $X_{\rm corr}$
     from standard deconvolution techniques. These rely on the well-known fact that the Fourier
-    transform of a convolution is the product of the individual Fourier transforms. In practice, we
-    pre-compute distributions of $X_{\rm corr}$ for different ${\rm std}(\Delta')$ values to
-    facilitate the sampling process.
+    transform of a convolution is the product of the Fourier transforms. In practice, we pre-compute
+    distributions of $X_{\rm corr}$ for different ${\rm std}(\Delta')$ values to facilitate the
+    sampling process.
 \end{enumerate}
 
 Algorithm~\ref{alg:our_algorithm} describes our MH test within the MCMC algorithm.
@@ -505,16 +420,9 @@ Algorithm~\ref{alg:our_algorithm} describes our MH test within the MCMC algorith
 \SetKwInOut{Input}{Input}
 \SetKwInOut{Output}{Output}
 \begin{algorithm}[t]
-<<<<<<< HEAD:nips_2016_jfc.tex
 \Input{Number of samples $T$, variance estimation window $W$, minibatch size $m$, pre-computed $X_{\rm
 corr}$ distributions, $\{x_i\}_{i=1}^n$ values from a target distribution, and initial sample $\theta_0$.}
 \Output{A chain of $T$ samples $\{\theta_1, \ldots, \theta_T\}$}
-=======
-\Input{Number of samples $T$, number of $\Delta'$ estimates $K$, minibatch size $m$, pre-computed $X_{\rm
-corr}$ distributions, $\{x_i\}_{i=1}^N$ values from a target distribution, and initial sample $\theta_0$.}
-\Output{A chain of $T$ samples $\{\theta_1, \ldots, \theta_T\}$ for either posterior inference or
-MAP/ML estimation.}
->>>>>>> 98a0aaed442f939cd4eb8a88c1b2c5c5fffa0b0b:nips_2016.tex
 \For{$t=\{1, \ldots, T\}$}{
     Propose a candidate $\theta'$ and create an empty list for $\Delta'$ estimates, $d = []$\;
     \For{$k = \{1, \ldots, W\}$}{
@@ -545,20 +453,16 @@ norm}$ and $X_{\rm corr}$. The density of $X$, a logistic random variable with m
 scale $s=1$, is known, as are the $X_{\rm norm}$ densities for different standard deviations. The
 deconvolution provides us with the $X_{\rm corr}$ distributions. Note, however, that as the standard
 deviation of $X_{\rm norm}$ increases, the $X_{\rm corr}$ distribution becomes increasingly unstable
-<<<<<<< HEAD:nips_2016_jfc.tex
 and ``bumpier'', because the logistic curve has fatter tails than the normal distribution. For this reason, we cap
-=======
-and ``bumpier'', because the logistic curve has fatter tails than Gaussians. In addition, we cap
->>>>>>> 98a0aaed442f939cd4eb8a88c1b2c5c5fffa0b0b:nips_2016.tex
 the standard deviation possibilities of $X_{\rm norm}$ at $\approx 1.2$ in our experiments. In our
 experiments, we discretize the possible standard deviations of $X_{\rm norm}$, and we also limit the
-densities to consider the range $[-10,10]$ as shown in Figure~\ref{fig:deconvolution}.
+densities to consider the range $[-10,10]$ (as shown in Figure~\ref{eq:deconvolution}).
 
 \textbf{Variance Preconditioning}. Returning to the discussion from Section~\ref{sec:introduction},
 our test requires a variance check. Equation~\ref{eq:deconvolution} means that the variance of $X$,
 which is $\pi^2/3\approx 3.29$ is an upper bound on the variances of $X_{\rm norm}$. Therefore, the
-test cannot work if the variance of $X_{\rm norm}$ is too large. The standard deviation of $X$
-is about $\sqrt{3.29}\approx 1.81$, so this bounds ${\rm std}(X_{\rm norm})$ (as well as ${\rm
+test cannot work if the variance of $X_{\rm norm}$ is too large. Since the standard deviation of $X$
+is about $\sqrt{3.29}\approx 1.81$, this bounds ${\rm std}(X_{\rm norm})$ (as well as ${\rm
 std}(\Delta')$). From the discussion above, we bound the standard deviation at 1.2 so that $X_{\rm
 corr}$ can handle the remaining noise. Recall from Section~\ref{ssec:deltas_minibatch} that we
 estimate the ${\rm std}(X_{\rm norm})$ each iteration. If the variance/standard deviation test
@@ -571,7 +475,7 @@ the target distribution. For a temperature $T>1$, the augmented target distribut
 \log p(\theta \mid x_1,\ldots,x_N) \approx \log p(\theta) + \frac{1}{T}\frac{N}{n} \sum_{i=1}^n\log p(x_i \mid \theta).
 \end{equation}
 with an extra $1/T$ term augmented. As the temperature increases, the values of $\Delta'$ get
-smaller in absolute value, thus reducing variance. The flatter posterior results in easier mixing.
+smaller, thus reducing variance. The flatter posterior results in easier mixing.
 
 \section{Accelerating the Test}
 The test as stated is dominated by the time to estimate the variance of $\Delta'$ using $W$
@@ -610,23 +514,19 @@ $X_{\rm norm}$.  Thus, $\Delta' = \Delta + X_{\rm norm} + X_\xi$. We assume the 
 of $X_{\rm norm}$ is less than $\pi/\sqrt{3}$, so that we can use Equation~\ref{eq:deconvolution}.
 We denote $F_X(x)$ as the CDF of $X$.
 
-We use some terms from standard Markov chain theory~\cite{Meyn2009}. Let the \emph{transition
-kernels} of MCMC on complete and minibatch data at step $i$ be $P_i$ and $P_i'$, respectively. When
-these kernels (e.g., $P_i$) are applied on a probability distribution $D_1$, they generate a new
-distribution $D_2$, which we write as $P_i \circ D_1 = D_2$. Define $\pi$ to be the stationary
-distribution obtained by $P_i$, and $\pi_i'$ to be the stationary distribution obtained by $P_i'$
-($\pi'$ needs a subscript in this case).  Finally, we indicate the \emph{total variation distance}
-between two kernels using $\| \cdot \|$.
+We use some additional terms from standard Markov chain theory~\cite{Meyn2009}. Let the
+\emph{transition kernels} of MCMC on complete and minibatch data at step $i$ be $P_i$ and $P_i'$,
+respectively. When these kernels (e.g., $P_i$) are applied on a probability distribution $D_1$, they
+generate a new distribution $D_2$, which we write as $P_i \circ D_1 = D_2$. Define $\pi$ to be the
+stationary distribution obtained by $P_i$, and $\pi_i'$ to be the stationary distribution obtained
+by $P_i'$.  Finally, we indicate the \emph{total variation distance} between two kernels using $\|
+\cdot \|$, e.g., $\|P_i-P_i'\|$.
 
-Our first result shows that the distance $\|P_i\circ D - P_i'\circ D\| \le 4\zeta \ell$ for all
-distributions $D$.
-
-% Our first result shows that the distance between $P_i$ and $P_i'$ is proportional to our estimation
-% error $X_{\xi}$.
+Our first result shows that the distance between $P_i$ and $P_i'$ is proportional to our estimation
+error $X_{\xi}$.
 
 \begin{lemma}\label{lem:theory1}
-If $|X_\xi| < \zeta$ and $|\nabla F_X(x)| < \ell$ for all $x$, then $\|P_i\circ D-P_i'\circ D\| \le
-4\zeta \ell \;\;\forall D$.
+If $|X_\xi| < \zeta$ and $|\nabla F_X(x)| < \ell$ for all $x$, then $\|P_i-P_i'\| \le 2\zeta \ell$.
 \end{lemma}
 
 %% \begin{proof}
@@ -638,27 +538,28 @@ $X_{\rm norm}$. We next show that ${\rm Var}(\Delta')$ is roughly proportional t
 our proposer.
 
 \begin{lemma}\label{lem:theory2}
-For one step sampling from $\theta_t$ to $\theta'$, if the jumping step $\|\theta_t - \theta'\|_2 <
-\epsilon$, and the gradient of the log likelihood is bounded by a constant factor, i.e. $\|\nabla
-(\log \Pr(x_i\mid \theta))\|_2 < k$, the variance of $\Delta'$ is bounded by $4\epsilon^2 k^2
-(m-\frac{m(m-1)}{N-1})$, where $m$ is the minibatch size, and $N$ is the total data size.
+For one step sampling from $\theta_t$ to $\theta'$, if the jumping step $|\theta_t - \theta'| <
+\epsilon$, and the gradient of the log-likelihood is bounded by a constant factor, i.e. $|\nabla
+(\log \Pr(x_i\mid \theta))| < k$, the variance of $\Delta'$ is bounded by $4\epsilon^2 k^2 (m-\frac{m(m-1)}{N-1})$, where
+$m$ is the minibatch size, and $N$ is the total data size.
 \end{lemma}
 
 %% \begin{proof}
 %% See Appendix~\ref{app:theory2}.
 %% \end{proof}
 
-Since ${\rm Var}(\Delta') < 4\epsilon^2 k^2 (m - \frac{m(m-1)}{N-1}) $, we can assume the maximum
-value of $X_{\xi}$ is proportional to the standard deviation of $\Delta'$, i.e. $\epsilon$. Thus, we
-can assume $\zeta=\epsilon C$, where $C$ is a constant factor. We finally introduce
-Theorem~\ref{thm:theory3} to characterize the convergence of our samples.
+Since ${\rm Var}(\Delta') < 4\epsilon^2 k^2 m $, we can assume the maximum value of $X_{\xi}$ is
+proportional to the standard deviation of $\Delta'$, i.e. $\epsilon$. Thus, we can assume
+$\zeta=\epsilon C$, where $C$ is a constant factor.
+
+We finally introduce Theorem~\ref{thm:theory3} to characterize the convergence of our samples.
 
 \begin{theorem}\label{thm:theory3}
 Assume $\pi$ satisfies $\|P_i \circ D_0 - \pi\| \leq \eta \|D_0 - \pi\|$, where $\eta \in [0, 1)$ for
-all distributions $D_0$. Also assume there exists $0 < \rho_t < 1$ such that $\|P'_i \circ D -
-\pi_i'\| \leq 2\rho_i \;\; \forall D$. We can get $\| P_t' \circ P_{t-1}' \circ \cdots \circ P_1' \circ D_0 - \pi
+all distributions $D_0$. Also assume there exists $0 < \rho_t < 1$ such that $\|P'_i(x, \cdot) -
+\pi_i'\| \leq 2\rho_i$. We can get $\| P_t' \circ P_{t-1}' \circ \cdots \circ P_1' \circ D_0 - \pi
 \| \leq \sum_{s=1}^t \{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\} \rho_s \alpha_s + \alpha_t $, where
-$\alpha_i = \frac{\epsilon_i C }{1-\eta}$ and $\epsilon_i$ is the step size at iteration $i$.
+$\alpha_i = \frac{\epsilon_i C }{1-\eta}$.
 \end{theorem}
 
 %% \begin{proof}
@@ -668,8 +569,8 @@ $\alpha_i = \frac{\epsilon_i C }{1-\eta}$ and $\epsilon_i$ is the step size at i
 Theorem~\ref{thm:theory3} indicates that the difference between the target and sampled distributions
 consists of two components: $\rho_i$, which is determined by the efficiency of $P'_i$, and the
 $\alpha_i$s, which are determined by the error of our transition kernels. These involve competing
-objectives: the larger the step size, the more efficient the $P_i'$ but its error increases.  The
-reverse happens with a step size too small.
+objectives: the larger the step size size, the more efficient the $P_i'$ but its error increases.
+The reverse happens with a step size too small.
 
 
 
@@ -694,19 +595,18 @@ The parameter is 2-D, $\theta = (\theta_1,\theta_2)$, and the parameter/data gen
 \end{equation}
 We set $\sigma_1^2 = 10, \sigma_2^2 = 1$ and $\sigma_x^2=2$. Fixing $\theta = (0,1)$, we draw 10000
 data points so that the target distribution is $p(\theta)\prod_{i=1}^{10000}p(x_i\mid \theta)$, with
-the prior based on the $\theta$ generation process in Equation~\ref{eq:data_generation}. This
-results in rather sharp posterior modes and high ${\rm std}(\Delta')$ estimates, so we apply a
-temperature $T=110$ to reduce ${\rm std}(\Delta')$. Taking logs, we get the target as shown in the
-far left of Figure~\ref{fig:gauss_mix_1}.
+the prior based on the $\theta$ generation process in Equation~\ref{eq:data_generation}. This turns
+out to be a rather sharp posterior, so to make our test applicable, we apply a temperature $T=110$
+to reduce ${\rm std}(\Delta')$. Taking logs, we get the new target as shown in the far left of
+Figure~\ref{fig:gauss_mix_1}.
 
-We run MCMC with our MH test using minibatch size $m=200$. We also run this using standard
-full-batch MCMC (``standard sampling'') with the standard test from Equation~\ref{eq:traditional}, and the method
-from~\cite{cutting_mh_2014} (``adaptive sampling''). For the latter, we also use $m=200$ and
-increment minibatches by that amount within an iteration if necessary. The tolerance for making a
-decision is $\epsilon=0.1$. To make comparisons easier, all three use the same random walk proposer
-with covariance $\Sigma={\rm diag}(0.03, 0.03)$. This is a poor proposer, but it is sufficient for
-our purposes as the quality of the samples will be primarily due to the MH test. All methods are run
-10000 times to collect 10000 samples.
+We run MCMC with our MH test with $m=200$. We also run this using standard full-batch MCMC
+(``standard sampling'') with the standard MH test, and the method from~\cite{cutting_mh_2014}
+(``adaptive sampling''). For the latter, we also use $m=200$ and increment minibatches by that
+amount within an iteration if necessary. The tolerance for making a decision is $\epsilon=0.1$. To
+make comparisons easier, all three use the same random walk proposer with covariance $\Sigma={\rm
+diag}(0.03, 0.03)$. This is a poor proposer, but it is sufficient for our purposes as the quality of
+the samples will be due to the MH test. All methods are run 10000 times to collect 10000 samples.
 
 \begin{figure}[t]
     \centering
@@ -729,34 +629,35 @@ our purposes as the quality of the samples will be primarily due to the MH test.
     %\vspace{-10pt}
 \end{figure}
 
-Figure~\ref{fig:gauss_mix_1} shows scatter plots of the resulting $\theta$ samples for the three
-methods, with darker regions indicating a greater density of points. All three methods obtain the
-same rough form of the posterior, so our MH test can indeed result in the same posterior as the
-other two methods.
+Figure~\ref{fig:gauss_mix_1} shows three scatter plots of the resulting $\theta$ samples for the
+three methods, with darker regions indicating a greater density of points. All three methods obtain
+the same rough form of the posterior, so our MH test can indeed obtain the posterior just as the
+other methods do.
 
 Figure~\ref{fig:gauss_mix_2} (to the left) shows a histogram of the final minibatch sizes used by
-the adaptive subsampling method each iteration (on a log scale for readability).  Usually, the method
+the adaptive subsampling method each iteration (capped at 600 for readability).  Usually, the method
 can make a decision with 200 samples. Occasionally, however, it must use all 10000 points, resulting
-in lots of wasted computation. For this particular experiment, that happened eight times.  In
+in more computation (some of it wasted). For this particular experiment, that happened eight times.  In
 contrast, our method keeps the minibatch size fixed at 200, but requires that ${\rm std}(\Delta') <
 1.2$. Figure~\ref{fig:gauss_mix_2} (in the middle) shows a histogram of the estimated ${\rm
-std}(\Delta')$ values each iteration. Only 75 iterations (out of 10000) resulted in ${\rm
-std}(\Delta') \ge 1.2$ and for these, we skipped the rest of the iteration (setting
-$\theta_{t+1}=\theta_t$). To smooth the ${\rm std}(\Delta')$ values, we use moving average updates.
-The third plot in Figure~\ref{fig:gauss_mix_2} investigates the number of times ${\rm std}(\Delta')
-\ge 1.2$ based on minibatch sizes. For six sizes (50, 100, 150, 200, 250, and 300), we ran MCMC with
-our MH test five times and averaged the number of ``violations.'' As the size increases, the
-number of violations decreases, as expected.
+std}(\Delta')$ values each iteration. Only 75 iterations resulted in ${\rm std}(\Delta') \ge 1.2$
+and for those, we skipped the rest of the iteration (setting $\theta_{t+1}=\theta_t$). To smooth the
+${\rm std}(\Delta')$ values, we use moving average updates. The third plot in
+Figure~\ref{fig:gauss_mix_2} investigates the number of times ${\rm std}(\Delta') \ge 1.2$. For six
+minibatch sizes (50, 100, 150, 200, 250, and 300), we ran MCMC with our MH test five times and
+averaged the number of violations. As minibatch sizes increases, the number of violations decreases,
+showing that our test is more applicable.
 
 
 \subsection{Logistic Regression}\label{ssec:logistic}
 
 We next use logistic regression for the binary classification of 1s versus 7s in the MNIST
 dataset~\cite{lecun-mnisthandwrittendigit-2010}. The data has 12007 and 1000 training and testing
-points, respectively (we used a random subset of the test data). The proposer is again a random walk
-with covariance matrix $0.1I$ for the $784\times 784$ identity matrix $I$. We set the posterior
-temperature at $T=3000$. We set the minibatch size $m=50$ and compare with adaptive sampling with
-tolerance 0.02.
+points, respectively (we used a random subset of the test data). The propose is again a random walk
+with covariance matrix $0.1I$ for the $784\times 784$ identity matrix $I$. We initialize the
+posterior temperature at $T_0=3000$, and decrease it according to $T_i = T_0 /\sqrt{i + 1}$ for
+iteration $i \ge 1$. We set the minibatch size $m=50$ and compare our minibatch MH test with the
+adaptive minibatch.
 
 Figure~\ref{fig:logistic_fig} shows the prediction accuracy and log likelihood on the test set as a
 function of the cumulative training data points processed. Our test increments the cumulative data
@@ -769,35 +670,32 @@ consuming fewer data points.
     \includegraphics[width=1\linewidth]{exp2.png}
     \caption{Logistic regression performance (accuracy/log likelihood) and minibatch size analysis.}
     \label{fig:logistic_fig}
-    \vspace{-10pt}
+    %\vspace{-10pt}
 \end{figure}
 
-The third plot of Figure~\ref{fig:logistic_fig} shows performance based on minibatch size. The
-parameter is evaluated on the test set after training iterations 700, 1000, and 1500. For those
-three cases, when the minibatch size increases beyond about 10, the performance of the sampled data
-will not improve with a large minibatch size. This makes sense because the error of our MH test is
-proportional to our estimation error of ${\rm std}(\Delta')$, and as the minibatch increases, ${\rm
-std}(\Delta')$ decreases. Beyond a certain standard deviation (or minibatch) threshold, the error in
-our minibatch MH test is negligible.
+The third plot of Figure~\ref{fig:logistic_fig} shows performance based on minibatch size, when the
+performance is evaluated on the test set after training iterations 700, 1000, and 1500. For all
+three iteration counts, when the minibatch size increases beyond about 10, the performance of the
+sampled data will not improve with a large minibatch size. This makes sense because the error of our
+MH test is proportional to our estimation error of ${\rm std}(\Delta')$, and as the minibatch
+increases, ${\rm std}(\Delta')$ decreases. Beyond a certain standard deviation threshold, the error
+in our minibatch MH test is negligible.
 
 
 
 \subsection{Neural Network Optimization}\label{ssec:nets}
 
 In this experiment, we apply our minibatch MH test with a Stochastic Gradient Hamiltonian
-Monte Carlo (SGHMC)~\cite{sghmc_2014} proposer to sample the complete parameters for a fully
-connected neural network. We use the Higgs data set from the UCI dataset~\cite{Lichman:2013}, which
-is a binary classification task with one million instances, each of which are 28-dimensional. The
-network we use has four layers: the first is the input, the last is the softmax, and the
-intermediate ones apply the sigmoid activation unit.  We also employ dropout and batch
-normalization~\cite{icml2015_ioffe15}.  In order to control ${\rm std}(\Delta')$, we initialize the
-temperature at 1000, and adjust it at iteration $i$ according to $T_i = \max\{1,
-1000/(i+1)^{0.5}\}$.
+Monte Carlo (SGHMC)~\cite{sghmc_2014} proposer to sample the parameter instances from a fully connected
+neural network. We use the Higgs data set from the UCI dataset~\cite{Lichman:2013}. The network we
+use for this binary classification problem has four layers and is fully connected. The first layer
+is the input, the last layer is the softmax, and the intermediate layers apply the sigmoid
+activation unit.  We also employ dropout and batch normalization~\cite{icml2015_ioffe15}.
 
 For our comparison baseline, we train the same network architecture using the Adaptive Gradient
 Descent method~\cite{adapGrad}. Since the frequencies of the features are quite different, we use
-the same strategy as in Adaptive Gradient to rescale the gradient before applying SGHMC. We
-implement our MH test and SGHMCin the open-source BIDMach project~\cite{canny2013bidmach}.  
+the same strategy in the Adaptive Gradient to rescale the gradient before apply SGHMC. We implement
+our MH test and Adaptive Gradient in the open-source BIDMach project~\cite{canny2013bidmach}.  
 
 Figure~\ref{fig:nnet_fig} illustrates our experiment results and reveals that SGHMC with our
 minibatch MH test achieves higher log likelihood than the baseline. By comparing SGHMC with and
@@ -844,10 +742,10 @@ MCMC~\cite{conf/uai/AngelinoKWSA14,conf/icml/AhnSW14} concepts.
 In this appendix, we describe the following topics, with an emphasis on clarity and understanding:
 
 \begin{itemize}[noitemsep]
-    \item Proofs for material in Section~\ref{sec:theory}.
-    \item More information on Section~\ref{ssec:gaussians}.
-    \item More information on Section~\ref{ssec:logistic}.
-    \item More information on Section~\ref{ssec:nets}.
+    \item Some proof details on results in Section~\ref{sec:theory}.
+    \item Detailed discussion of the experiment from Section~\ref{ssec:gaussians}.
+    \item Detailed discussion of the experiment from Section~\ref{ssec:logistic}.
+    \item Detailed discussion of the experiment from Section~\ref{ssec:nets}.
 \end{itemize}
 
 \section{Proofs}\label{app:proofs}
@@ -859,29 +757,23 @@ We first prove that the difference in our acceptance rates is bounded: $|P_a - P
 \begin{align*}
 |P_a - P_a'| &= |\Pr(\Delta + X >0) - \Pr(\Delta' + X_{\rm corr} > 0)|\\
 & = | \Pr (\Delta + X > 0) - \Pr (\Delta + X_{\rm norm} + \xi + X_{\rm corr} >0) |    \\
-&= |\Pr (\Delta + X > 0) -\Pr(\Delta + X + \xi >0)| \\
-&= |F_X(-\Delta)- F_X(-\Delta - \xi)| \\
-&= |\nabla F(-\Delta) \xi + o(\xi^2)|\\
-&\leq  |\nabla F(-\Delta) \xi| +| o(\xi^2)| \leq 2|\nabla F(-\Delta)| |\xi| \leq 2\ell \xi,
+&= |\Pr (\Delta + X > 0) -\Pr(\Delta + X + \xi >0)| = |F_X(-\Delta)- F_X(-\Delta - \xi)| \\
+&= |\nabla F(-\Delta) \xi + o(\xi^2)| \leq  |\nabla F(-\Delta) \xi| +| o(\xi^2)| \leq 2|\nabla F(-\Delta)| |\xi| \leq 2\ell \xi,
 \end{align*}
-where we use Taylor's Theorem ($o(\xi^2)$ represents higher-order terms that have smaller absolute
-value) and the Triangle Inequality.  Since $|X_\xi| < \zeta$, $|P_a - P_a'| < 2 \zeta \ell$.
+where the last line uses Taylor's Theorem ($o(\xi^2)$ represents higher-order terms that have
+smaller absolute value) and the Triangle Inequality.  Since $|X_\xi| < \zeta$, $|P_a - P_a'| <
+2 \zeta \ell$.
 
-Next, we show the distance of new distributions obtained by applying $P_i$ and $P_i'$ on an
-arbitrary distribution $D$ once is bounded if we use the same proposer, i.e.  $\|P_i\circ D -
-P'_i\circ D\| \leq 4\zeta \ell \;\; \forall D$. We write $P_i(\theta_t \mid \theta') = P_a(\theta_t, \theta')
+Next, we show the transition kernels at each step are bounded if we use the same proposer, i.e.
+$\|P_i - P'_i\| \leq 2\zeta \ell$. We write $P_i(\theta_t \mid \theta') = P_a(\theta_t, \theta')
 q(\theta'\mid \theta_t) + (1-P_a(\theta_t,\theta')) \delta_D(\theta' - \theta_t)$, where $\delta_D$
-is the Dirac delta function. The total variation distance between two generated distributions is
+is the Dirac delta function. The total variation distance between two proposal kernels is
 \begin{align*}
-\|P_i\circ D - P'_i\circ D\| &= \int_{\theta'} \left| \int_{\theta_t}((P_a-P_a') q(\theta'|\theta_t) + (1-P_a - 1+P_a') \delta_D(\theta_t -\theta')) dD(\theta_t) \right| d\theta' \\
-&= \int_{\theta'} \left| \int_{\theta_t} (P_a- P_a')(q(\theta'|\theta_t) - \delta_D(\theta_t - \theta')) dD(\theta_t) \right|  d\theta'\\ 
-&\leq 2 \zeta \ell \int_{\theta'} \left| \int_{\theta_t}(q(\theta'|\theta_t) + \delta_D(\theta_t - \theta')) dD(\theta_t) \right| d\theta'\\
-&\leq 2 \zeta \ell \int_{\theta'} ( D'(\theta') + D(\theta') ) d\theta'\\
-&= 4 \zeta \ell,
+\|P_i - P'_i \| &= \int_{\theta'} \left| \int_{\theta_t}((P_a-P_a') q(\theta'|\theta_t) + (1-P_a - 1+P_a') \delta_D(\theta_t -\theta')) d\theta_t  \right| d\theta' \\
+& = \int_{\theta'} \left| \int_{\theta_t} (P_a- P_a')(q(\theta'|\theta_t) - \delta_D(\theta_t - \theta')) d\theta_t \right|  d\theta'\\ 
+& \leq 2 \zeta \ell \int_{\theta'} \left| \int_{\theta_t}(q(\theta'|\theta_t) + q(\theta_t|\theta')) d\theta_t \right| d\theta'= 2 \zeta \ell,
 \end{align*}
-where $D'$ is the distribution generated if we always accept the proposed point. (In the last line,
-we integrate two probability density functions, resulting in a value of two.) This matches our
-desired bound.
+as desired.
 
 \subsection{Proof of Lemma~\ref{lem:theory2}}\label{app:theory2}
 
@@ -893,7 +785,7 @@ $g_i(\theta) = \log p(x_i\mid \theta)$, and $q_i = g_i(\theta') - g_i(\theta_t)$
 \]
 Thus, given $\theta$ and $\theta'$, the variance of $\Delta'$ can be written as:
 \begin{align*}
-{\rm Var}(\Delta') &= {\rm Var}\left[\sum_{i=1}^m g_i(\theta') - g_i(\theta_t)\right] = {\rm Var}\left(\sum_{i=1}^m q_i\right) \\
+{\rm Var}(\Delta') &= {\rm Var}\left[\sum_{i=1}^m g_i(\theta') - g_i(\theta_t)\right] = {\rm Var}\left(\sum_i^m q_i\right) \\
 &= m {\rm Var} (q_i) + m(m-1) {\rm Cov}_{i \neq j}(q_i,q_j) \\
 &= m{\rm Var}(q_i) - \frac{m(m-1)}{N-1} {\rm Var}(q_i) \\
 &\leq 4\left(m - \frac{m(m-1)}{N-1}\right)k^2 \epsilon^2,
@@ -903,17 +795,14 @@ as desired.
 \subsection{Proof of Theorem~\ref{thm:theory3}}\label{app:theory3}
 
 First, by Theorem 1 in~\cite{cutting_mh_2014}, $\|P_i \circ D_0 - \pi\| \leq \eta \|D_0
-- \pi\|$ and $\|P_i\circ D-P'_i\circ D\| \leq \epsilon_i C$ for all $D$. The norm between the
-stationary distributions is $\|\pi - \pi_i'\|\leq \frac{\epsilon_i C}{1-\eta}$.
+- \pi\|$ and $\|P_i-P'_i\| \leq \epsilon_i C$, the norm between the stationary distribution is $\|\pi
+- \pi_i'\|\leq \frac{\epsilon_i C}{1-\eta}$.
 
-Second, by Theorem 3.6 in~\cite{yang2013sequential}, we have 
-\[
-\| P_t' \circ \cdots \circ P_1' \circ D_0 - \pi_t \| \leq \sum_{s=1}^t \left\{\prod _{u=s+1}^t
-\rho_u (1-\alpha_u)\right\} \rho_s \alpha_s,
-\]
-where $\alpha = \frac{\epsilon_i C}{1-\eta}$.  Thus, we get:
+Second, by Theorem 3.6 in~\cite{yang2013sequential}, we have  $\| P_t' \circ P_{t-1}' \circ \cdots
+\circ P_1' D_0 - \pi_t \| \leq \sum_{s=1}^t \{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\} \rho_s
+\alpha_s$, where $\alpha = \frac{\epsilon_i C}{1-\eta}$. Thus, we get:
 \begin{align*}
- \| P_t' \circ \cdots \circ P_1' \circ D_0 - \pi_0 \| &\leq \|P_t' \circ \cdots \circ P_1' \circ D_0 - \pi_t\| + \|\pi_t - \pi_0\| \\
+ \| P_t' \circ \cdots \circ P_1' D_0 - \pi_0 \| &\leq \|P_t' \circ \cdots \circ P_1' D_0 - \pi_t\| + \|\pi_t - \pi_0\| \\
  &\leq \sum_{s=1}^t \left\{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\right\} \rho_s \alpha_s + \alpha_t,
 \end{align*}
 as desired.
@@ -923,8 +812,9 @@ as desired.
 
 \section{Gaussian Mixture Experiment Details}\label{app:gaussian}
 
-In this section, we go over the math details on the Gaussian mixture model problem borrowed
-from~\cite{langevin_2011}. Our parameter is a 2-D vector $\theta =
+\subsection{Mathematical Assumptions}
+
+We borrow this example from~\cite{langevin_2011}. Our parameter is a 2-D vector $\theta =
 (\theta_1, \theta_2)$, where
 \begin{equation}
 \theta_1 \sim \mathcal{N}(0, \sigma_1^2) \quad \mbox{ and } \quad \theta_2 \sim \mathcal{N}(0, \sigma_2^2)
@@ -947,9 +837,10 @@ of a single data instance is
 \log\left(\exp\left(-\frac{1}{4}(x_i - \theta_1)^2\right) + \exp\left(-\frac{1}{4}(x_i -
 (\theta_1+\theta_2))^2\right)\right)
 \end{equation}
-Here is the problem statement: given some number of conditionally independent data points $x_1, x_2,
-\ldots, x_N$ generated according to~(\ref{eq:x_points}), determine the posterior
-distribution of $\theta$:
+Here is the problem statement. Given some number of i.i.d. data points $x_1, x_2, \ldots, x_N$
+generated according to~(\ref{eq:x_points}), determine the posterior distribution\footnote{Note that,
+as is typical with Bayesian analysis, we do not concern ourselves with the denominator of the
+original (non-log) posterior.} of $\theta$:
 \begin{equation}\label{eq:log_post}
 \log p(\theta \mid x_1,\ldots,x_N) = \log p(\theta) + \sum_{i=1}^N\log p(x_i \mid \theta).
 \end{equation}
@@ -962,17 +853,28 @@ literature generally uses
 \log p(\theta \mid x_1,\ldots,x_N) \approx \log p(\theta) + \frac{N}{n} \sum_{i=1}^n\log p(x_i \mid \theta).
 \end{equation}
 where we only use $n \ll N$ samples, but we must scale up the likelihood contribution by $N/n$. If we
-didn't add this scaling factor, then the contribution of the likelihood terms would be weaker.
-
-One technique we use is adding a \emph{temperature} to our distribution. In general, we will want to
-add $T > 1$ so that our posterior is $p(\theta)((\prod_{i=1}^n p(x_i\mid \theta))^{N/n})^{1/T}$,
-resulting in the log posterior of 
+didn't add this scaling factor, then the contribution of the likelihood terms would be weaker. There
+is another thing we need to consider about that, which is the \emph{temperature} of our
+distribution. In general, we will want to add $T > 1$ so that our posterior is
+$p(\theta)((\prod_{i=1}^n p(x_i\mid \theta))^{N/n})^{1/T}$, resulting in the log
+posterior of 
 \begin{equation}\label{eq:log_prior_temp}
 \log p(\theta \mid x_1,\ldots,x_N) \approx \log p(\theta) + \frac{1}{T}\frac{N}{n} \sum_{i=1}^n\log p(x_i \mid \theta).
 \end{equation}
-which has the extra $1/T$ to decrease the scale factor. Equation~(\ref{eq:log_prior_temp}) is what
-we use for our experiments, because warmer distributions help us satisfy our ${\rm std}(\Delta') <
-1.2$ requirement.
+which has the extra $1/T$ to decrease the scale factor.  Equation~(\ref{eq:log_prior_temp}) is what
+we will be using for our experiments, because we need to consider warmer distributions.
+{\color{blue} Daniel: not totally confident on this but I'll try.}
+
+Finally, recall earlier that we needed to define $\Delta$. In our context, $\Delta$ is:
+\begin{align}
+\Delta &= \log \left(\frac{f(\theta') q(\theta_t \mid \theta')}{f(\theta_t) q(\theta'\mid \theta_t)} \right) \\
+&= \log p(\theta') - \log p(\theta_t) + \sum_{i=1}^N(\log p(x_i \mid \theta') - \log p(x_i \mid \theta_t)) + \log\left(\frac{q(\theta_t \mid \theta')}{q(\theta' \mid \theta_t)}\right).
+\end{align}
+But again, with \emph{minibatches} of data, we usually do not sum over all $N$ terms and instead sum
+over $n$ terms, but with the extra $(1/T)(N/n)$ scaling factor, from
+Equation~(\ref{eq:log_prior_temp}). We generally denote that approximation as $\Delta'$ in the paper.
+
+\subsection{Experiment Observations}
 
 \begin{figure}[t]
   \centering
@@ -987,69 +889,143 @@ we use for our experiments, because warmer distributions help us satisfy our ${\
   \label{fig:contour2}
 \end{figure}
 
-To gain some intuition on what the posterior looks like, Figure~\ref{fig:contour1} shows simulated
-contour plots of the posterior based on varying numbers of data points $N$, with the temperature set
-at $T=1$. Note that because we are using all $N$ points here, the scale factor $N/n=1$. As $N$
-increases, the posterior converges to a multimodal distribution with modes at $(0,1)$ and $(1,-1)$.
+In this experiment, we compare our method with the one from~\cite{cutting_mh_2014}, hereafter called
+the ``adaptive sampling approach''. We apply them to the Gaussian Mixture model previously
+discussed.
+
+Figure~\ref{fig:contour1} shows simulated contour plots of the posterior based on the $N$ data
+points, for varying $N$, with the temperature set at $T=1$. Note that because we're using all $N$
+points here, the scale factor $N/n=1$. As $N$ increases, the posterior converges to a multimodal
+distribution with modes at $(0,1)$ and $(1,-1)$. 
+
 Figure~\ref{fig:contour2} is similar, except this time we fix the number of samples at $N=10000$,
 but show how changing the temperature $T$ affects the distribution. A larger $T$ implies a flatter
 posterior, one that (weakly) peaks in between the two true modes.
 
+Our ultimate goal is to either (a) get a posterior distribution that covers the posterior well, or
+(b) to get samples that stay trapped at a mode, for a point estimate of $\theta$.  Whether our goal
+is (a) or (b) depends on our objectives and the context of the problem (e.g., big data usually
+implies (b) is OK even if it would not satisfy the average Bayesian).
+
+For both our method and the adaptive sampling method, we use random walk proposals. (Thus, the term
+in $\Delta$ containing the $q$s disappears.)  Random walk proposals are bad, but since the proposal
+is poor, good performance can only be obtained with a strong MH test, hence why we can use this as a
+reasonable starting benchmark.
+
+We test use the following settings:
+
+\begin{itemize}[noitemsep]
+    \item We use $N=10000$ samples of $x_i$.
+    \item The covariance of the Gaussian random walk is ${\rm diag}(0.1, 0.1)$.
+    \item We use 10000 iterations. One iteration involves one $\theta'$ proposal and a test to
+    accept/reject.
+    \item The minibatch size is set at 100, so it is one percent of the total data. For the
+    adaptive sampling approach, this is the amount that the minibatch size would keep increasing if
+    we needed more precision. Our approach, of courses, keeps the size fixed.
+    \item For adaptive sampling, the tolerance for deciding on a test is 0.05. The temperature for
+    that is also set at $T=1$ because that algorithm was not designed to deal with temperatures.
+    \item For our approach, to get an estimate of the standard deviation of $\Delta'$ (remember,
+    $\Delta'$ is a minibatch approximation of $\Delta$) we take five other minibatches (randomly
+    selected from the data) and take the standard deviation of those values.
+\end{itemize}
+
+For our approach, we run using three different temperature values, $T=1$, $T=10$, and $T=100$.
+
+Figure~\ref{fig:scatter} compares scatter plots of the ``Cutting the MH'' test (hereafter called
+``adaptive minibatch'') versus ``Our Method'', where we use three different temperature settings.
+There doesn't seem to be too much noticeable difference in our method for the three different
+temperature setting values, but our approach is a lot different from the adaptive sampling method
+(this is because of rejection rates, more on that later).
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=1\linewidth]{scatter_v01}
+  \caption{Scatter plots of accepted $\theta$ for (in order) the adaptive sampling approach, and our
+  method (temperatures 1, 10, and 100).}
+  \label{fig:scatter}
+\end{figure}
+
+Before taking a look at our approach, we first examine the adaptive sampling approach. \textbf{That
+approach rejected a lot of samples; out of 10000 iterations, it only accepted 773 times}.
+Figure~\ref{fig:mb_sizes} describes the histograms of the adaptive minibatch's batch sizes. (Note
+that the histogram y-axis values are different.) In many cases, using the initial batch size of 100
+sufficed to make an accept/reject decision, but sometimes, this method needed to use the entire 10k
+data set. Decreasing the tolerance (from its current 0.05 value) would have required larger
+minibatches. Incidentally, it makes sense that the method rejects a lot of samples, because the
+random walk proposal usually provides us with poor points.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.75\linewidth]{adaptive_sampling_sizes_v01.png}
+  \caption{Minibatch sizes for adaptive sampling when it was accepting or rejecting.}
+  \label{fig:mb_sizes}
+\end{figure}
+
+Now we analyze our approach in more detail. Our method accepts far more samples than the adaptive
+sampling method, \textbf{accepting 3285, 3318, and 3332 out of 10k}, for temperature values 1, 10,
+and 100, respectively.
+
+For diagnostics purposes, Figures~\ref{fig:diagnostics1},~\ref{fig:diagnostics2},
+and~\ref{fig:diagnostics3} express histograms (for all three temperature runs) of the $\Delta'$,
+${\rm std}(\Delta')$, and $X_{\rm corr}$ values, respectively.
+
+There are a few immediate observations. First, increasing the temperature size by a factor of 10
+will decrease $\Delta'$ by a factor of 10, which makes sense. That will also directly affect the
+standard deviation estimate of $\Delta'$. Our $X_{\rm corr}$ distribution is symmetric about zero,
+which is also expected (and it also exhibits a decrease in a factor of 10 for an increase
+in temperature).
+
+{\color{blue}
+Daniel: One concern I have is that our $\Delta'$ values do not seem to be ``sufficiently negative''. If our
+$\Delta'$ values are negative (but large in absolute value) that means our MH test will reject more
+often. But then this raises another concern: didn't we say at one point that we \emph{should} be
+getting high acceptance rates, around 50 percent (in part because of the shape of the logistic
+function)? Doesn't that depend on the quality of the proposal distribution? If our method is
+designed to accept a lot regardless of the proposal distribution, I don't see how its performance
+can be considered equal to the adaptive sampling approach, or even a standard MH test. In fact, the
+best observation I can derive from this is that our approach and the adaptive sampling (or any
+standard MH test) will accept the high likelihood cases, but our case will accept the borderline
+ones more often.
+}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=1\linewidth]{our_deltas_v01.png}
+  \caption{Our $\Delta'$ values for three different temperature values.}
+  \label{fig:diagnostics1}
+\end{figure}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=1\linewidth]{our_sds_v01.png}
+  \caption{Our ${\rm std}(\Delta')$ values for three different temperature values.}
+  \label{fig:diagnostics2}
+\end{figure}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=1\linewidth]{our_xcorrs_v01.png}
+  \caption{Our $X_{\rm corr}$ values for three different temperature values.}
+  \label{fig:diagnostics3}
+\end{figure}
+
+
 
 \section{Logistic Regression Experiment Details}\label{app:logistic}
 
-In this section, we go over some details of our logistic regression experiment. The feature vector
-for an image consists of its pixel values, normalized between 0 and 1. For simplicity, we only
-consider the binary classification case, so we only use digits one (denoted as output $y = 1$) and
-seven (denoted as $y = -1$). The probability of the $i^{\rm th}$ output $y_i \in \{-1,+1\}$ with the
-input vector $x_i$ is
-\begin{equation}
-p(y_i \mid x_i) = \frac{1}{1+\exp (-y_i \theta^T x_i)},
-\end{equation}
-where $\theta$ is the 784-length parameter vector.
-
-For our experiment, we impose a uniform prior to represent our lack of knowledge about $\theta$.  We
-use a random walk proposer, which can be modeled as $\theta' = \theta_i + \mathcal{N}(0,
-\sigma^2I)$, where $\theta_i$ is the current sample, $\theta'$ is the proposed sample, and we choose
-the variance to be a constant $\sigma^2 = 0.01$ for all components. We initialize $\theta_0$ to be a
-vector of all ones, and set our minibatch size as $m=50$.
-
-For our minibatch MH test, in order to enforce the ${\rm std}(\Delta') < 1.2$ condition, we use a
-constant temperature $T = 3000$. If our estimated ${\rm std}(\Delta') \ge 1.2$, we ignore the
-current iteration.  Figure~\ref{fig:appendixExp2} plots our estimated ${\rm std}(\Delta')$ values
-versus iteration count. 
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=1\linewidth]{./figures/appendixExp2}
-  \caption{Additional results for the logistic regression experiment.}
-  \label{fig:appendixExp2}
-\end{figure}
-
-For adaptive MH testing, our experimental settings are the same as with our MH test, except we do
-not impose a temperature. The minibatch size of adaptive MH testing is also initialized as 50, but
-it may increase by that amount each iteration. Figure~\ref{fig:appendixExp2} shows the histogram of
-the actual minibatch size at the end of each iteration in adaptive MH testing.
-
+We applied our minibatch Metropolis Hastings algorithm to a Bayesian logistic regression model,
+comparing with the adaptive sampling method. We tested both our method and the adaptive sampling
+method using a random walk proposer $q(\theta \mid \theta_t) = N (\theta_t, \sigma^2)$. Since the
+random walk proposer does not contain any information about the target distribution, it only relies
+on the Metropolis-Hastings test to converge to the correct distribution. Therefore, random walk
+proposer is the ideal choice for illustrating our algorithm and comparing with the adaptive sampling
+method.
 
 \section{Neural Network Experiment Details}\label{app:nnet}
 
-For our neural network experiment, we use the architecture discussed in Section~\ref{ssec:nets}. We
-use the SGHMC as the proposer for our minibatch MH testing. For the baseline, we use a tuned
-adaptive gradient descent optimizer, whose step size changes by $0.01 /(i+1)^{0.4}$. Both methods
-have minibatch sizes set at $m=200$. There are one million total data instances $x_i$.
-
-For SGHMC, we use the simplified update equations~\cite{sghmc_2014}:
-\begin{equation}
-\Delta \theta = v, \quad \quad\Delta v = -\eta \nabla U(\theta) - \alpha v + \mathcal{N}(0, 2(\alpha
--\hat{\beta}) \eta),
-\end{equation}
-where $v$ represents auxiliary momentum variables, and $\nabla U(\theta)$ is the gradient of the
-system. We set the hyperparameters to be $\eta_i = 0.01 /(i+1)^{0.4}$, and $\alpha=0.1$. We use the
-empirical Fisher~\cite{conf/icml/AhnBW12} information $V(\theta)$ to estimate the value of
-$\hat{\beta}$, so that $\hat{\beta}=\frac{1}{2}\eta V(\theta)$. In order to control ${\rm
-std}(\Delta')$, we initialize the temperature at 1000, and adjust it at iteration $i$ according to
-$T_i = \max\{1, 1000/(i+1)^{0.5}\}$.
+{\color{blue}
+Daniel: TODO
+}
 
 % Daniel: here are example LaTeX codes for figures and tables if we want to use them.
 %\begin{figure}[h]
