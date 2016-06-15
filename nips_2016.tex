@@ -634,6 +634,16 @@ consuming fewer data points.
     \vspace{-10pt}
 \end{figure}
 
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=1\linewidth]{CI_v02.png}
+    \caption{
+    Histograms of ${\rm std}(\Delta')$, confidence interval of ${\rm std}(\Delta')$ (middle), along with $\rho / \sigma^3$ (right).
+    }
+    \label{fig:exp_3}
+    %\vspace{-10pt}
+\end{figure}
+
 The third plot of Figure~\ref{fig:logistic_fig} shows performance based on minibatch size. The
 parameter is evaluated on the test set after training iterations 700, 1000, and 1500. For those
 three cases, when the minibatch size increases beyond about 10, the performance of the sampled data
@@ -642,7 +652,7 @@ proportional to our estimation error of ${\rm std}(\Delta')$, and as the minibat
 std}(\Delta')$ decreases. Beyond a certain standard deviation (or minibatch) threshold, the error in
 our minibatch MH test is negligible.
 
-Similar as the Subsection~\ref{ssec:gaussians}, we use Figure~\ref{} to reveal the accuracy of our estimation of ${\rm std}(\Delta')$ and stability of $\rho/\sigma^3$.
+Similar as the Subsection~\ref{ssec:gaussians}, we use Figure~\ref{fig:exp_3} to reveal the accuracy of our estimation of ${\rm std}(\Delta')$ and stability of $\rho/\sigma^3$.
 
 
 \subsection{Neural Network Optimization}\label{ssec:nets}
@@ -799,7 +809,20 @@ where $\alpha = \frac{\epsilon_i C}{1-\eta}$.  Thus, we get:
 as desired.
 
 \subsection{Proof of Theorem~\ref{thm:efficiency}}\label{app:theory4}
-From Berry-Esseen theorem, we know $|F_n(x) - \Phi(x)| \leq \frac{C\rho}{\sigma^3\sqrt{n}}$, where $\Phi()$ is the CDF of standard normal distribution. 
+Since only the $\frac{N}{nT}\sum_{i=1}^n \left(\log p(x_i|\theta') - \log p(x_i|\theta_t) \right)$ term brings randomness into $\Delta'$. Define $X_i = \frac{N}{T}\left(\log p(x_i|\theta') - \log p (x_i|theta_t) \right)$, $\tilde{X_i} = X_i - E(X_i)$, and $Y_n = \frac{\sum_{i=1}^n \tilde{X_i}}{n}$ (i.e. $Y_n$ is the $\Delta' - E(\Delta')$). From Berry-Esseen theorem, $|F_n(x) - \Phi(x)| \leq \frac{C\rho}{\sigma^3\sqrt{n}}$, where $\Phi()$ is the CDF of standard normal distribution, $F_n()$ is the CDF of $Y_n$, $C$ is the constant parameter which is below 0.4748, $\rho = E(|\tilde{X_i}|^3)$, and $\sigma^2 = E(\tilde{X_i}^2)$. Since $\Delta'$ is an unbiased estimator of $\Delta$, the CDFs between $\Delta'$ and $\Delta + X_{\rm norm}$ has the same max gap (i.e. $\frac{C\rho}{\sigma^3\sqrt{n}}$).
+
+From Equation~\ref{eq:criteria}, we show we want to use $\Delta' + X_{\rm corr}$ to approximate $\Delta + X_{\rm norm} + X_{\rm corr}$. Since $|F_{\Delta'} - F_{\Delta + X_{\rm norm}}| \leq \frac{C\rho}{\sigma^3\sqrt{n}}$, for the worst case, assume $\exists \xi, ~{\rm s.t.} |f_{\Delta'}(\xi) - f_{\Delta + X_{\rm norm}} (\xi)| = \max_x |f_{\Delta'}(x) - f_{\Delta + X_{\rm norm}}(x)| \overset{\Delta}{=} \eta $, where $f()$ represents the PDF function. Because PDF of $X_{\rm corr}$ has the positive value and unit area, we have: 
+\begin{align*} 
+& |(f_{\Delta'}*f_{X_{\rm corr}})(\xi) - (f_{\Delta+X_{\rm norm}}*f_{X_{\rm corr}})(\xi)| \\
+& = |\int_{-\infty}^{\infty}f_{\Delta'}(\xi-\tau)f_{X_{\rm corr}}(\tau)d\tau - \int_{-\infty}^{\infty}f_{\Delta + X_{\rm norm}} (\xi -\tau) f_{X_{\rm corr}} (\tau) d\tau| \\
+& = |\int_{-\infty}^{\infty} (f_{\Delta'}(\xi-\tau) - f_{\Delta + X_{\rm norm}} (\xi -\tau)) f_{X_{\rm corr}} (\tau) d\tau| \\
+& \leq \int_{-\infty}^{\infty} |f_{\Delta'}(\xi-\tau) - f_{\Delta + X_{\rm norm}} (\xi -\tau) |f_{X_{\rm corr}} (\tau) d\tau  \\
+& \leq \int_{-\infty}^{\infty} \eta f_{X_{\rm corr}} (\tau) d\tau \leq \eta
+\end{align*}
+
+where ``*'' represents the convolution operation.
+
+Thus, after convolution with $X_{\rm corr}$, the maximum gap between PDF of the $\Delta'$ and $\Delta + X_{\rm norm}$ decreases. Thus, $|F_{\Delta' + X_{\rm corr}} - F_{\Delta + X_{\rm norm} + X_{\rm corr}}| \leq |F_{\Delta'} - F_{\Delta + X_{\rm norm}}| \leq \frac{C\rho}{\sigma^3\sqrt{n}}$. Thus, $|P_a - P_a'| = |\Pr (\Delta + X_{\rm norm} + X_{\rm corr} > 0) - \Pr (\Delta' + X_{\rm corr} > 0)|=|F_{\Delta + X_{\rm norm} + X_{\rm corr}}(0) - F_{\Delta' + X_{\rm corr}}(0)| \leq \frac{C\rho}{\sigma^3\sqrt{n}}$. We can choose $n$ so that $\frac{C\rho}{\sigma^3\sqrt{n}} < \varepsilon$ to ensure $|P_a - P_a'| < \varepsilon$. Thus, the requirement for $n$ is $n \geq \frac{C^2\rho^2}{\sigma^6 \varepsilon^2}$.   
 
 
 
