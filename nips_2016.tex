@@ -36,7 +36,7 @@ framexleftmargin=20pt}
 \newtheorem{lemma}{Lemma}
 \newtheorem{theorem}{Theorem}
 
-\title{A Simple Minibatch Acceptance Test for MCMC}
+\title{An Efficient Minibatch Acceptance Test for MCMC}
 
 % The \author macro works with any number of authors. There are two commands used to separate the
 % names and addresses of multiple authors: \And and \AND.
@@ -87,20 +87,17 @@ framexleftmargin=20pt}
 Markov chain Monte Carlo (MCMC) methods have many applications in
 machine learning. We are particularly interested in their application
 to modeling very large datasets, where it is impractical to
-perform Metropolis-Hastings tests on the full data. To do this, we
-describe a novel acceptance test which is applied to minibatches of
-data. Previous work on minibatch Metropolis-Hastings use adaptive
-batch sizes, which may use far more than one minibatch of data and therefore
-yield few samples.  Here we describe a simpler test on fixed-sized
-minibatches. Instead of adaptive batch sizes, our test requires a
-precondition on the variance of the log proposal probability
-ratio. Given a measurement of this variance, a minibatch size can be
-chosen to support the test in one step, which yields a number of
-samples proportional to the batch/minibatch ratio. Alternatively, the
-variance condition can be used to adjust the temperature of the
-sampling distribution to a ``natural'' value to provide regular
-samples at a given minibatch size. The resulting proposal/test is only
-slightly more complex than a simple SGD update. In this paper we
+perform Metropolis-Hastings tests on the full data. Previous work on reducing
+the cost of Metropolis-Hastings tests yield variable data reductions
+and in the worst case require the entire dataset. 
+Here we present a simple test which requires constant size minibatches
+if an auxiliary condition is met. We describe several cases under which
+this condition can be satisfied. Our new test is naturally tolerant
+of ``noisy'' estimates of the transition probability ratio. To achieve
+this, we replace the classical Metropolis-Hastings test with a smooth
+acceptance function which is a sigmoid (a logistic function). 
+The resulting test can be combined with minibatch proposals to yield
+updates with the same complexity as a simple SGD update. In this paper we
 derive the test, discuss its implementation, and present several
 experiments.
 \end{abstract}
@@ -127,48 +124,63 @@ likelihood must be evaluated on every $x_i$.
 Many state-of-the-art machine learning methods, and deep learning in
 particular, are based on minibatch updates (such as SGD) to a model.
 Minibatch updates produce many improvements to the model for each pass
-over the dataset, and therefore have high sample efficiency. They also map very
-well onto hardware such as GPUs. In contrast, MCMC methods typically
-require calculations over the full dataset to produce a new sample. A
-recent result from~\cite{cutting_mh_2014} attempted to bridge the gap
-between minibatch optimization and MCMC by proposing an \emph{adaptive
-  minibatch} method. Their method uses a subset of the $N$ data points
-for the MH test each iteration. However the number of points is not
-known a priori, and is adjusted dynamically during every test. This
-undermines many of the practical advantages of minibatch calculations: 
-GPU kernels work best for certain minibatch sizes, memory blocks
-can be reused when minibatch size is fixed, etc. 
+over the dataset, and therefore have high sample efficiency. They also
+map very well onto hardware such as GPUs. In contrast, MCMC methods
+typically require calculations over the full dataset to produce a new
+sample.  Recent results
+from~\cite{cutting_mh_2014,icml2014c1_bardenet14} perform approximate
+(bounded error) acceptance tests based on the classical M-H test. The
+tests depend on minibatch statistics, and on the value of an
+additional random variable. The amount of data consumed for each test
+varies significantly from one minibatch to the next, and
+non-repeatably on the random variable. By contrast,
+\cite{conf/uai/MaclaurinA14} performs exact tests but requires a lower
+bound on parameter distribution across its domain. The amount of data
+reduction depends on the accuracy of this bound, and such bounds are
+only available for relatively simple distributions.
 
-In this paper, we develop an alternative minibatch acceptance test for MCMC
-methods which uses only one fixed-size minibatch per test. Instead of
-dynamically adjusting the batch size, we add a prerequisite for the test
-based on the variance of the log acceptance probability. If this
-variance is small enough, the test requires only a single step. This
-variance changes slowly on typical problems, and we can estimate it
-before performing the test. The minibatch variance
-decreases as the minibatch size grows, so the variance measurement can be
-used to set the minimum minibatch size.
+Here we derive a new test which incorporates the variability in
+minibatch statistics as {\em a natural part of the test}. Because of
+this, the amount of data required for each test is fixed with high
+probability and in expected value. Our test requires a bound on the
+(relative) variance of the log acceptance probability ratio. This variance
+changes slowly on typical problems, and we can estimate it before
+performing the test.
 
-There is another advantage when using our test for Bayesian posterior inference. As the dataset size
-grows, the posterior distribution sharpens and often concentrates to a few sharp peaks. Samples from
-this distribution will come from those peaks, and will easily become stuck in one of them. The
-samples are not exploring the posterior parameter space, and are unlikely to concentrate at a strong
-local optimum. They therefore fail to accurately represent a sample of the posterior because of
-inadequate search (i.e., mixing). We argue that it is much more natural to sample the distribution
-at a higher temperature determined by the minibatch size rather than the dataset size. Starting at a
-high temperature (small minibatch size) which mixes easily, one can reduce the temperature
-(increasing minibatch size) until one reaches the desired target distribution temperature.  Although
-this approach also involves changing minibatch size, the changes increase minibatch size
-monotonically, and only a few changes are performed in the course of a sampling session.  Annealing
-can also be used for MAP and ML estimation because changing temperature preserves posterior modes. 
+If the variance test fails, there are three
+ways to mitigate the situation:
+\begin{itemize}
+  
+\item Increase the temperature of the target distribution. Log likelihoods
+  scale as $1/T$, and so the variance of the likelihood ratio will
+  vary as $1/T^2$.
 
-To be precise, the contributions of this paper are as follows:
+\item Increase the minibatch size. Relative variance scales as $1/k$ vs the
+  minibatch size $k$.
 
-\begin{enumerate}[noitemsep]
-    \item We develop a new minibatch acceptance test which satisfies detailed balance.
-    \item We compare performance of our new test and the adaptive sampling method.
-    \item We experiment using the approach for posterior estimation.
-\end{enumerate}
+\item For continuous probability distributions, reduce the proposal step
+  size. Since the condition is on variance in the {\em difference} in
+  log probabilities of prior and proposed likelihoods, smaller proposal steps
+  will lead to smaller changes in probability and smaller changes in the
+  variance of those changes.
+\end{itemize}
+
+Note that changes to the distribution temperature may only need to be
+temporary.  The distribution can be annealed from high-to-low
+temperatures to maintain the variance condition. High temperature is
+natural with small minibatches and large step sizes, since the
+precision of the acceptance test is limited by the amount of data
+available. As the distribution reaches a stationary state and is cooled,
+particle motion can be slowed with larger minibatches or smaller proposal
+steps. The contributions of this paper are as follows:
+
+\begin{itemize}
+\item We develop a new minibatch acceptance test which satisfies detailed balance.
+\item we developed effectively measurable bounds for both absolute and relative
+  test error. 
+\item We compare performance of our new test and prior approaches. 
+\item We experiment using the approach for posterior estimation.
+\end{itemize}
 
 
 
@@ -178,7 +190,7 @@ To be precise, the contributions of this paper are as follows:
 In standard MCMC methods~\cite{gilks1996markov,brooks2011handbook} for Bayesian inference with
 parameter $\theta$ and conditionally independent data, the goal is to compute the distribution
 $p(\theta \mid x_1, \ldots, x_N)$.  To do so, one generates a chain of (correlated) samples
-$\theta_1, \ldots, \theta_T$ for large $T$ and approximates $p$ using the sample counts.  Each
+$\theta_1, \ldots, \theta_T$ for large $T$ and approximates $p$ using the samples.  Each
 iteration $t$ has a current $\theta_t$, and a \emph{proposal distribution} $q(\theta' \mid
 \theta_t)$ determines a new candidate $\theta'$. With probability $P_a$, the sample is accepted, so
 $\theta_{t+1} = \theta'$. Otherwise, $\theta_{t+1} = \theta_t$. This is done by drawing a uniform
@@ -193,38 +205,65 @@ where $f(\theta_t)=p(\theta_t \mid x_1,\ldots,x_N)$. This $P_a$ satisfies detail
 one samples long enough, one will arrive at a stationary distribution matching the posterior, though
 a burn-in period and/or only using samples at regular intervals is often done in practice.
 
-Unfortunately, computing $f$ requires the use of all $N$ training data points. Moreover, it is
-difficult to design tests using substantially fewer than $N$ points that also satisfy detailed
-balance. To reconcile these competing objectives,~\cite{cutting_mh_2014} proposes an adaptive
-minibatch MCMC algorithm which uses a sequential hypothesis test. During each iteration, the
-algorithm starts with a small minibatch of data and tests the hypothesis that the sample $\theta'$
-should be accepted or rejected based on a probability ratio. If the test cannot make a decision
-over a certain confidence threshold, then the minibatch size is increased and the test repeats. This
-process continues until a decision. The downside of this algorithm is the need to keep incrementing
-the minibatch size; in the worst case, all $N$ data points may be needed to decide on $\theta'$. We prove that the lower bound of average number of data instance consumed for one iteration is $O(\sqrt{N})$, where $N$ is the number of all data points, see Lemma~\ref{lem:efficienty_cutting}. A
-similar approach from~\cite{icml2014c1_bardenet14} has slightly more robust theoretical properties
-based on concentration inequalities, but comes at the cost of more computational time.
+Unfortunately, computing $f$ requires the use of all $N$ training data
+points. Moreover, it is difficult to design tests using substantially
+fewer than $N$ points that also satisfy detailed balance. To reconcile
+these competing
+objectives,~\cite{cutting_mh_2014,icml2014c1_bardenet14} perform
+approximate Metropolis-Hasting tests using sequential hypothesis
+testing. During each iteration, they start with a small minibatch of
+data and tests the hypothesis that the sample $\theta'$ should be
+accepted or rejected based on a probability ratio involving the
+additional random variable $u\in [0,1]$. If the test cannot make a
+decision with sufficient confidence, then the minibatch size is
+increased and the test repeats. This process continues until a
+decision. The bounds depend on either a central limit theorem
+\cite{cutting_mh_2014} or a concentration bound
+\cite{icml2014c1_bardenet14} requiring direct bounds on the log
+likelihood ratio.  The problem with both methods is the expense of
+resolving small differences.  In the worst case, all $N$ data points
+may be needed, and as we show next this worst case can occur
+about $\sqrt{N}$ times during the performance of $N$ tests.
+
+We next prove that for some simple distributions, the lower
+bound of average number of data instance consumed for one iteration of
+~\cite{cutting_mh_2014,icml2014c1_bardenet14} is
+$\Omega(\sqrt{N})$, where $N$ is the number of data points, see
+Lemma~\ref{lem:efficienty_cutting}.
 
 \begin{lemma}\label{lem:efficienty_cutting}
-If the sample mean $\bar{l}$ has uniform distribution from $[-L,L]$, the lower bound of expected data consumed of adaptive sampling method for one iteration is $\frac{\eta s_{l}Q}{2L}\sqrt{N}$, where $\bar{l} = \frac{1}{n}\sum_{i=1}^{n} \left (\log p(x_i; \theta') - \log p(x_i| \theta_t)\right )$, $\eta = \phi^{-1}_{n-1}(1-\varepsilon)$, $Q=\frac{p(\theta_t)q(\theta'|\theta_t)}{p(\theta')q(\theta_t|\theta')}$, $s_l$ is the population standard deviation of $l_i$, $\phi_{n-1}()$ is the CDF of t distribution with degree of freedom $n-1$, and $n$ is the minibatch size.
+If the sample mean $\bar{l}$ has uniform distribution on $[-L,L]$,
+the lower bound of expected data consumed of adaptive sampling method
+for one iteration is $\frac{\eta s_{l}Q}{2L}\sqrt{N}$, where $\bar{l}
+= \frac{1}{n}\sum_{i=1}^{n} \left (\log p(x_i; \theta') - \log p(x_i|
+\theta_t)\right )$, $\eta = \phi^{-1}_{n-1}(1-\varepsilon)$,
+$Q=\frac{p(\theta_t)q(\theta'|\theta_t)}{p(\theta')q(\theta_t|\theta')}$,
+$s_l$ is the population standard deviation of $l_i$, $\phi_{n-1}()$ is
+the CDF of t distribution with degree of freedom $n-1$, and $n$ is the
+minibatch size.
 \end{lemma}
 
-The work of~\cite{conf/uai/MaclaurinA14} presents another minibatch MCMC method which gets the
-\emph{exact} posterior, so long as there exists a (cheap) lower bound on the likelihood for each
-data point. Their approach is only a starting point, however, and it can be difficult to derive
-these lower bounds in general cases. The extra auxiliary variables they introduce also hurt mixing.
-
-There is a separate line of MCMC work on simulating the physics of a probability distribution. By
-viewing random variables as particles in a system, one can apply Hamiltonian Monte Carlo
-(HMC)~\cite{mcmc_hamiltonian_2010} methods which generate the best case scenario for proposals: high
-quality \emph{and} distant.  HMC methods require a full gradient computation of the posterior, which
-means they also face the problem of computing the likelihood at each point. Stochastic versions of
-HMC~\cite{sghmc_2014,stochastic_thermostats_2014} use a minibatch of data each iteration but require
-controlling the minibatch noise to avoid divergence. Langevin
-Dynamics~\cite{langevin_2011,conf/icml/AhnBW12} is a similar approach which does not use the
-momentum terms in HMC.  Minibatch SGHMC and Langevin Dynamics are orthogonal to our work and are
-other ways of attempting to solve the same problem of MCMC methods on big data. We can combine our
-methods with these results, as we demonstrate in Section~\ref{ssec:nets}.
+\begin{proof} see appendix
+  \end{proof}
+There is a separate line of MCMC work drawing principles from
+statistical physics. By viewing random variables as particles in a
+system, one can apply Hamiltonian Monte Carlo
+(HMC)~\cite{mcmc_hamiltonian_2010} methods which generate high
+acceptance \emph{and} distant proposals when run on full batches of
+data. Recently Langevin
+Dynamics~\cite{langevin_2011,conf/icml/AhnBW12} has been applied to
+Bayesian estimation on minibatches of data. This simplified dynamics
+uses local proposals and avoids MH tests by using small proposal steps
+whose acceptance approaches 1 in the limit. However, the constraint on
+proposal step size is severe, and the state space exploration reduces
+to a random walk. Full minibatch HMC for minibatches was recently
+described in ~\cite{sghmc_2014} which allows momentum-augmented
+proposals with larger step sizes. However, step sizes are still
+limited by the need to run accurately without MH tests.
+% \cite{stochastic_thermostats_2014}
+Our work opens the door to applying those methods with much
+more agressive step sizes without loss of accuracy. We demonstrate
+this in Section~\ref{ssec:nets}.
 
 %% Daniel: for a further discussion on the 'Firefly' paper, see this blog post:
 %% https://xianblog.wordpress.com/2014/04/02/firefly-monte-carlo/
@@ -387,24 +426,23 @@ Algorithm~\ref{alg:our_algorithm} describes our MH test within the MCMC algorith
 \SetKwInOut{Input}{Input}
 \SetKwInOut{Output}{Output}
 \begin{algorithm}[t]
-\Input{Number of samples $T$, number of $\Delta'$ estimates $K$, minibatch size $m$, pre-computed $X_{\rm
-corr}$ distributions, $\{x_i\}_{i=1}^N$ values from a target distribution, and initial sample $\theta_0$.}
+\Input{Number of samples $T$, minibatch size $m$, pre-computed $X_{\rm
+corr}$ distribution, and initial sample $\theta_0$.}
 \Output{A chain of $T$ samples $\{\theta_1, \ldots, \theta_T\}$ for either posterior inference or
 MAP/ML estimation.}
 \For{$t=\{1, \ldots, T\}$}{
-    Propose a candidate $\theta'$\;
-    Compute the $\Delta'$ from one minibatch data\;
-    Compute the ${\rm std}(\Delta')$ from another minibatch data\;
-    \While {${\rm std}(d) \ge 1.2$} {
-    	Update the value of $\Delta'$ and ${\rm std}(\Delta')$ from one new minibatch\;
+    Propose a candidate $\theta'$\ from proposal distribution\;
+    Draw a minibatch of $m$ samples, compute $\Delta'(\theta',\theta_t)$ and ${\rm std}(\Delta')$ for this sample\;
+    \While {${\rm std}(\Delta') \ge 1.2$} {
+    	Draw $m$ more samples to augment the current minibatch, and update $\Delta'$ and ${\rm std}(\Delta')$ \;
     }
-    
-        Choose the closest $X_{\rm corr}$ distribution, and sample a value $X_c$ from it\;
+    Let $\sigma = \sqrt{1.2 - {\rm std}(\Delta')^2}$, draw a normal variable $X_n \in Norm(0,\sigma)$ and
+    $X_c$ from the correction distribution\;
         
-        \eIf{$X_c + \Delta' > 0$}{
+        \eIf{$X_c + X_n + \Delta' > 0$}{
             Accept the candidate, $\theta_{t+1} = \theta'$\;
         }{
-            Reject and re-use the old one, $\theta_{t+1} = \theta_t$\;
+            Reject and re-use the old sample, $\theta_{t+1} = \theta_t$\;
         }
     
 }
