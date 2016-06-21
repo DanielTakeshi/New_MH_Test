@@ -428,15 +428,15 @@ Algorithm~\ref{alg:our_algorithm} describes our MH test within the MCMC algorith
 \begin{algorithm}[t]
 \Input{Number of samples $T$, minibatch size $m$, pre-computed $X_{\rm
 corr}$ distribution, and initial sample $\theta_0$.}
-\Output{A chain of $T$ samples $\{\theta_1, \ldots, \theta_T\}$ for either posterior inference or
+\Output{A chain of $T$ samples $\{\theta_1, \ldots, \theta_T\}$ from $p(\theta)$\;
 MAP/ML estimation.}
 \For{$t=\{1, \ldots, T\}$}{
     Propose a candidate $\theta'$\ from proposal distribution\;
     Draw a minibatch of $m$ samples, compute $\Delta'(\theta',\theta_t)$ and ${\rm std}(\Delta')$ for this sample\;
-    \While {${\rm std}(\Delta') \ge 1.2$} {
+    \While {${\rm std}(\Delta') \ge 1$} {
     	Draw $m$ more samples to augment the current minibatch, and update $\Delta'$ and ${\rm std}(\Delta')$ \;
     }
-    Let $\sigma = \sqrt{1.2 - {\rm std}(\Delta')^2}$, draw a normal variable $X_n \in Norm(0,\sigma)$ and
+    Let $\sigma = \sqrt{1 - {\rm std}(\Delta')^2}$, draw a normal variable $X_n \in Norm(0,\sigma)$ and
     $X_c$ from the correction distribution\;
         
         \eIf{$X_c + X_n + \Delta' > 0$}{
