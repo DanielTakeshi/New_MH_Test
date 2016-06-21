@@ -175,11 +175,11 @@ particle motion can be slowed with larger minibatches or smaller proposal
 steps. The contributions of this paper are as follows:
 
 \begin{itemize}
-\item We develop a new minibatch acceptance test which satisfies detailed balance.
+\item We developed a new minibatch acceptance test which satisfies detailed balance.
 \item we developed effectively measurable bounds for both absolute and relative
   test error. 
-\item We compare performance of our new test and prior approaches. 
-\item We experiment using the approach for posterior estimation.
+\item We compared performance of our new test and prior approaches. 
+\item We did experiments using the approach for posterior estimation.
 \end{itemize}
 
 
@@ -262,7 +262,7 @@ proposals with larger step sizes. However, step sizes are still
 limited by the need to run accurately without MH tests.
 % \cite{stochastic_thermostats_2014}
 Our work opens the door to applying those methods with much
-more agressive step sizes without loss of accuracy. We demonstrate
+more aggressive step sizes without loss of accuracy. We demonstrate
 this in Section~\ref{ssec:nets}.
 
 %% Daniel: for a further discussion on the 'Firefly' paper, see this blog post:
@@ -410,7 +410,7 @@ we know the distribution of $X_{\rm corr}$? We need the correct distribution to 
 \begin{enumerate}[noitemsep]
     \item We first need to estimate the standard deviation of $X_{\rm norm}$ (i.e. the standard deviation of $\Delta'$). We use one minibatch data to complete this task. From the proof of Lemma~\ref{lem:gaussian}, we know the randomness comes from $\frac{N}{n}\sum_{i=1}^n \left(\log p(x_i|\theta') - \log p(x_i|\theta_t) \right)$. Thus, ${\rm var}(\Delta') = \frac{N^2}{n^2}\sum_{i=1}^n{\rm var}\left (  \log p(x_i|\theta') - \log p(x_i|\theta_t) \right ) = \frac{N^2}{n}{\rm var}\left (  \log p(x_i|\theta') - \log p(x_i|\theta_t) \right )$. We use data instances in one minibatch to estimate the ${\rm var} \left (  \log p(x_i|\theta') - \log p(x_i|\theta_t) \right )$. Since there are $n$ data instances in one minibatch, the estimation of ${\rm var} \left (  \log p(x_i|\theta') - \log p(x_i|\theta_t) \right )$ has high accuracy. In our experiments (see Section~\ref{sec:experiments}) we also use the complete data to obtain the population variance of $\left (  \log p(x_i|\theta') - \log p(x_i|\theta_t) \right )$, and use the nonparametric Bootstrap to estimate the ${\rm std(std}(\Delta'))$, so that we can construct the confidence interval of ${\rm std}(\Delta')$ to reveal the accuracy of our estimation.
 
-	\item If the ${\rm std}(\Delta') > 1.2$, the decomposition of $X$ (i.e. Equation~\ref{eq:deconvolution}) is unstable. We consume more minibatches to decrease the ${\rm std}(\Delta')$. We update the value of $\Delta'$ by $\Delta' = (k\Delta'_{\rm old} + \Delta'_{\rm new}) / (k+1)$, where $\Delta'_{\rm old}$ is the existing $\Delta'$ which uses $k$ minibatches to computed (usually $k=1$), and $\Delta'_{\rm new}$ is the $\Delta'$ computed from the new minibatch. We also update the value of ${\rm std}(\Delta')$ by ${\rm std}(\Delta') = \sqrt{\left ( k^2 {\rm var}(\Delta'_{\rm old}) + {\rm var}(\Delta'_{\rm new}) \right ) / (k+1)^2}$. Thus, we can decrease the ${\rm std}(\Delta')$ by consuming more data until the ${\rm std}(\Delta') > 1.2$. With help of temperature (see Section~\ref{ssec:discussion}), we will show that usually the mean of minibatch consumed per iteration is below 2 in Section~\ref{sec:experiments}. Later our efficiency analysis in Section~\ref{sec:theory} will reveal that the number of data instance consumed by our algorithm is much fewer than that of exisitng algorithms.
+	\item If the ${\rm std}(\Delta') > 1.2$, the decomposition of $X$ (i.e. Equation~\ref{eq:deconvolution}) is unstable. We consume more minibatches to decrease the ${\rm std}(\Delta')$. We update the value of $\Delta'$ by $\Delta' = (k\Delta'_{\rm old} + \Delta'_{\rm new}) / (k+1)$, where $\Delta'_{\rm old}$ is the existing $\Delta'$ which uses $k$ minibatches to computed (usually $k=1$), and $\Delta'_{\rm new}$ is the $\Delta'$ computed from the new minibatch. We also update the value of ${\rm std}(\Delta')$ by ${\rm std}(\Delta') = \sqrt{\left ( k^2 {\rm var}(\Delta'_{\rm old}) + {\rm var}(\Delta'_{\rm new}) \right ) / (k+1)^2}$. Thus, we can decrease the ${\rm std}(\Delta')$ by consuming more data until the ${\rm std}(\Delta') > 1.2$. With help of temperature (see Section~\ref{ssec:discussion}), we will show that usually the mean of minibatch consumed per iteration is below 2 in Section~\ref{sec:experiments}. Later our efficiency analysis in Section~\ref{sec:theory} will reveal that the number of data instance consumed by our algorithm is much fewer than that of existing algorithms.
 
     \item Once we have ${\rm std}(\Delta')$, we can determine the distribution of $X_{\rm corr}$
     from standard deconvolution techniques. These rely on the well-known fact that the Fourier
@@ -561,7 +561,7 @@ reverse happens with a step size too small.
 We explore the efficiency of our minibatch MH test. Theorem~\ref{thm:efficiency} indicates that our minibatch MH test only requires a constant number of instances for each step, however, recall the Lemma~\ref{lem:efficienty_cutting}, the adaptive minibatch MH test requires $O(\sqrt{N})$ number of data instance for each step. Thus, We show that our proposed minibatch MH test is much higher efficient than the known minibatch algorithms. 
 
 \begin{theorem}\label{thm:efficiency}
-We require $\frac{ C^2 \rho^2 }{\sigma^6 \varepsilon^2}$ minibatch size to ensure $|P_a -P_a'| < \varepsilon$, where $C$ is a positive constant which is smaller than 0.4748, $\sigma^2 $ and $\rho$ is the second and third moment of $(\nabla\log \Pr(x_i|\theta_t) - \nabla\log\Pr(x_i|\theta')) - E\left[ \nabla\log \Pr(x_i|\theta_t) - \nabla\log\Pr(x_i|\theta')\right]$, $P_a$ is the accpet rate from the complete data, $P_a'$ is the accpet rate from minibatch data by our algorithm, $\theta_t$ is the current parameter, and $\theta'$ is the proposed parameter. 
+We require $\frac{ C^2 \rho^2 }{\sigma^6 \varepsilon^2}$ minibatch size to ensure $|P_a -P_a'| < \varepsilon$, where $C$ is a positive constant which is smaller than 0.4748, $\sigma^2 $ and $\rho$ is the second and third moment of $(\nabla\log \Pr(x_i|\theta_t) - \nabla\log\Pr(x_i|\theta')) - E\left[ \nabla\log \Pr(x_i|\theta_t) - \nabla\log\Pr(x_i|\theta')\right]$, $P_a$ is the accept rate from the complete data, $P_a'$ is the accept rate from minibatch data by our algorithm, $\theta_t$ is the current parameter, and $\theta'$ is the proposed parameter. 
 
 \end{theorem}
 
@@ -634,7 +634,7 @@ our purposes as the quality of the samples will be primarily due to the MH test.
 Figure~\ref{fig:gauss_mix_1} shows scatter plots of the resulting $\theta$ samples for the four
 methods, with darker regions indicating a greater density of points. The first three methods obtain the
 same rough form of the posterior, so our MH test can indeed result in the same posterior as the
-other two methods. However, the fourth method (i.e. just treat the $\Delta'$ which comes from minibatch as $\Delta$ which comes from the complete data) reveals wider spread distribution than the posterior. From Figure~\ref{fig:gauss_mix_1} we illustrate our proposed method can obtain the samples which have almost the same distirbution as the standard MH test from the complete data, adaptive minibatch test, and the true posterior. Meanwhile, we show the benefits of our minibatch method compared with the navie minibatch method.  
+other two methods. However, the fourth method (i.e. just treat the $\Delta'$ which comes from minibatch as $\Delta$ which comes from the complete data) reveals wider spread distribution than the posterior. From Figure~\ref{fig:gauss_mix_1} we illustrate our proposed method can obtain the samples which have almost the same distribution as the standard MH test from the complete data, adaptive minibatch test, and the true posterior. Meanwhile, we show the benefits of our minibatch method compared with the naive minibatch method.  
 
 Figure~\ref{fig:gauss_mix_2} (to the left) shows a histogram of the final minibatch sizes used by
 the adaptive subsampling method each iteration (on a log scale for readability).  Usually, the method
@@ -642,11 +642,11 @@ can make a decision with 200 samples. Occasionally, however, it must use all 100
 in lots of wasted computation.  For this particular experiment, that happened eight times. The mean of adaptive minibatch size is 520 which is roughly close to $\sqrt{N}$ (i.e. 100). This number validates the claims of Theorem~\ref{thm:efficiency}. In
 contrast, our method keeps the minibatch size around 200. Figure~\ref{fig:gauss_mix_2} (in the middle) shows a histogram of the minibatch size, and the mean of our minibatch size is 247. 
 The third plot in Figure~\ref{fig:gauss_mix_2} investigates the number of times ${\rm std}(\Delta')
-\ge 1.2$ for only consuming one mimnibatch data. For six minibatch sizes (50, 100, 150, 200, 250, and 300), we ran MCMC with
+\ge 1.2$ for only consuming one minibatch data. For six minibatch sizes (50, 100, 150, 200, 250, and 300), we ran MCMC with
 our MH test five times and averaged the number of ``violations.'' As the size increases, the
 number of violations decreases, as expected.
 
-Figure~\ref{fig:gauss_mix_3} (to the left) shows a historgram of ${\rm std}(\Delta')$. Figure~\ref{fig:gauss_mix_3} (to the middle) shows the confidence interval of our estimated ${\rm std}(\Delta')$ at each iteration \footnote{In order to show the confidence interval clearly, we use moving smooth to smooth the confidence interval, and plot each value by interval of 50 iterations}. The blue line represents the standard deviation comes from the complete data, which can be treated as the ``true'' ${\rm std}(\Delta')$, the green line represents our estimation of ${\rm std}(\Delta')$ from the minibatch, and the two red dash lines represent the confidence interval of ${\rm std}(\Delta')$ by adding / subtracking one ${\rm std(std(}\Delta'))$. This figure indicates that our estimation of ${\rm std}(\Delta')$ from one minibatch data is accurate. Figure~\ref{fig:gauss_mix_3} (to the right) shows the value of $\rho/\sigma^3$ at each iteration. Recall Theorem~\ref{thm:efficiency}, the number of data instance required is $\frac{4 \ell^2 C^2 \rho^2 }{\sigma^6 \varepsilon^2}$. This figure reveals that $\rho/\sigma^3$ is rougly a constant, which means the data required for each iteration is a constant value which has nothing to do with the $N$.
+Figure~\ref{fig:gauss_mix_3} (to the left) shows a histogram of ${\rm std}(\Delta')$. Figure~\ref{fig:gauss_mix_3} (to the middle) shows the confidence interval of our estimated ${\rm std}(\Delta')$ at each iteration \footnote{In order to show the confidence interval clearly, we use moving smooth to smooth the confidence interval, and plot each value by interval of 50 iterations}. The blue line represents the standard deviation comes from the complete data, which can be treated as the ``true'' ${\rm std}(\Delta')$, the green line represents our estimation of ${\rm std}(\Delta')$ from the minibatch, and the two red dash lines represent the confidence interval of ${\rm std}(\Delta')$ by adding / subtracting one ${\rm std(std(}\Delta'))$. This figure indicates that our estimation of ${\rm std}(\Delta')$ from one minibatch data is accurate. Figure~\ref{fig:gauss_mix_3} (to the right) shows the value of $\rho/\sigma^3$ at each iteration. Recall Theorem~\ref{thm:efficiency}, the number of data instance required is $\frac{4 \ell^2 C^2 \rho^2 }{\sigma^6 \varepsilon^2}$. This figure reveals that $\rho/\sigma^3$ is roughly a constant, which means the data required for each iteration is a constant value which has nothing to do with the $N$.
 
 
 \subsection{Logistic Regression}\label{ssec:logistic}
@@ -765,7 +765,7 @@ In this appendix, we describe the following topics, with an emphasis on clarity 
 
 \subsection{Proof of Lemma~\ref{lem:efficienty_cutting}}\label{app:lem_efficiency}
 
-If the minibatch size is $n$, we fisrt compute the probability that more than $n$ data instances are required for adaptive sampling method for one iteration. We denote this probaility $P_{rej}$.
+If the minibatch size is $n$, we first compute the probability that more than $n$ data instances are required for adaptive sampling method for one iteration. We denote this probability $P_{rej}$.
 \[P_{rej} = \Pr \left ( 1-\phi_{n-1} \left( \frac{|\bar{l} - \frac{1}{N} \log (u\frac{p(\theta_t)q(\theta'|\theta_t)}{p(\theta')q(\theta_t|\theta')})|}{s} \right )  \geq \varepsilon \right ) \] 
 
 where $s = \frac{s_l}{\sqrt{n}}\sqrt{1-\frac{n-1}{N-1}}$. \\
