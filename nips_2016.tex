@@ -107,33 +107,31 @@ experiments.
 \section{Introduction}\label{sec:introduction}
 
 Markov chain Monte Carlo (MCMC) sampling is a powerful method for
-computation on intractable distributions. MCMC algorithms propose
-samples from a proposal distribution $q$ which is in general different
-from the target distribution $p$, and decide whether to accept or
-reject them based on an acceptance test. The acceptance test is
-usually a Metropolis
-test~\cite{Metropolis1953,hastings70}. For example, for Bayesian
-posterior inference, the posterior distribution $p(\theta \mid x_1,
-\ldots, x_N) \propto p(\theta)\prod_{i=1}^N p(x_i \mid \theta)$ of
-parameter $\theta$ based on conditionally independent data
-$\{x_i\}_{i=1}^N$ is the target distribution which one aims to
-approximate by sampling $\theta$ values. When $N$ is large, it is
-very expensive to compute the exact posterior because the
-likelihood must be evaluated on every $x_i$.
+computation on intractable distributions. We are interested primarily
+in large dataset applications, where the goal is to sample a posterior
+distribution $p(\theta \mid x_1, \ldots, x_N)$ of parameter $\theta$,
+and where the number of data instances $N$ is large.  The
+Metroplis-Hastings method (M-H) generates sample candidates from a
+proposal distribution $q$ which is in general different from the
+target distribution $p$, and decides whether to accept or reject them
+based on an acceptance test. The acceptance test is usually a
+Metropolis test~\cite{Metropolis1953,hastings70}. Conventional
+Metropolis-Hastings requires all $N$ data instances to generate one
+posterior sample.
 
 Many state-of-the-art machine learning methods, and deep learning in
 particular, are based on minibatch updates (such as SGD) to a model.
 Minibatch updates produce many improvements to the model for each pass
-over the dataset, and therefore have high sample efficiency. They also
-map very well onto hardware such as GPUs. In contrast, MCMC methods
-typically require calculations over the full dataset to produce a new
-sample.  Recent results
-from~\cite{cutting_mh_2014,icml2014c1_bardenet14} perform approximate
-(bounded error) acceptance tests based on the classical M-H test. The
-tests depend on minibatch statistics, and on the value of an
-additional random variable. The amount of data consumed for each test
-varies significantly from one minibatch to the next, and
-non-repeatably on the random variable. By contrast,
+over the dataset, and have high sample efficiency. They also
+map very well onto hardware such as GPUs. In contrast, M-H requires
+calculations over the full dataset to produce a new sample.  Recent
+results from~\cite{cutting_mh_2014,icml2014c1_bardenet14} perform
+approximate (bounded error) acceptance tests using subsets
+(minibatches) of the full dataset. The tests depend on minibatch
+statistics, and on the value of an additional random variable $u$. The
+amount of data consumed for each test varies significantly from one
+minibatch to the next, and depends on the current sample, the proposed
+sample, and on the random variable $u$. By contrast,
 \cite{conf/uai/MaclaurinA14} performs exact tests but requires a lower
 bound on parameter distribution across its domain. The amount of data
 reduction depends on the accuracy of this bound, and such bounds are
@@ -143,43 +141,39 @@ Here we derive a new test which incorporates the variability in
 minibatch statistics as {\em a natural part of the test}. Because of
 this, the amount of data required for each test is fixed with high
 probability and in expected value. Our test requires a bound on the
-(relative) variance of the log acceptance probability ratio. This variance
-changes slowly on typical problems, and we can estimate it before
-performing the test.
+(relative) variance of the log acceptance probability. This variance
+is small when the proposal distribution is efficient, that is when samples
+diffuse at an optimal rate.
 
-If the variance test fails, there are three
-ways to mitigate the situation:
+The variance of the log acceptance probability can be controlled in
+three ways, and these allow the test to be applied to modest-sized
+minibatches. The first two allow the test to be applied when the
+minibatch size is fixed a-priori.
+
 \begin{itemize}
   
 \item Increase the temperature of the target distribution. Log likelihoods
   scale as $1/T$, and so the variance of the likelihood ratio will
   vary as $1/T^2$.
 
-\item Increase the minibatch size. Relative variance scales as $1/k$ vs the
-  minibatch size $k$.
+\item For continuous probability distributions, reduce the proposal
+  step size and variance (for stochastic proposals). 
 
-\item For continuous probability distributions, reduce the proposal step
-  size. Since the condition is on variance in the {\em difference} in
-  log probabilities of prior and proposed likelihoods, smaller proposal steps
-  will lead to smaller changes in probability and smaller changes in the
-  variance of those changes.
+\item Increase the minibatch size. Relative variance scales as $1/k$ vs the
+  minibatch size $k$. Increased minibatch size also reduces the error of
+  the test. 
+
 \end{itemize}
 
-Note that changes to the distribution temperature may only need to be
-temporary.  The distribution can be annealed from high-to-low
-temperatures to maintain the variance condition. High temperature is
-natural with small minibatches and large step sizes, since the
-precision of the acceptance test is limited by the amount of data
-available. As the distribution reaches a stationary state and is cooled,
-particle motion can be slowed with larger minibatches or smaller proposal
-steps. The contributions of this paper are as follows:
+The contributions of this paper are as follows:
 
 \begin{itemize}
-\item We developed a new minibatch acceptance test which satisfies detailed balance.
-\item we developed effectively measurable bounds for both absolute and relative
-  test error. 
-\item We compared performance of our new test and prior approaches. 
-\item We did experiments using the approach for posterior estimation.
+\item We develop a new, more efficient (in samples per test) minibatch acceptance test which incorporates
+online  estimates of its error probability.
+\item We analyze the test for accuracy and speed.
+\item We compared performance of our new test and prior approaches on several datasets. We demonstrate the test is several orders
+  of magnitude more efficient than prior work measured as data consumed per test, and that it does not suffer
+  from long-tailed data requirements (up to the dataset size). 
 \end{itemize}
 
 
@@ -187,24 +181,24 @@ steps. The contributions of this paper are as follows:
 
 \section{Preliminaries and Related Work}\label{sec:related_work}
 
-In standard MCMC methods~\cite{gilks1996markov,brooks2011handbook}, a difficult-to-compute
+In the Metropolis-Hastings method~\cite{gilks1996markov,brooks2011handbook}, a difficult-to-compute
 probability distribution $p(\theta)$ is sampled using a Markov chain $\theta_1,\ldots,\theta_n$. The 
 sample $\theta_{t+1}$ at time $t+1$ is generated using a candidate $\theta'$ from a (simpler) proposal
 distribution $q(\theta'\mid \theta_t)$, filtered by an acceptance test. The acceptance test is usually
 a Metropolis test. The Metropolis test has acceptance probability:
 \begin{equation}\label{eq:traditional}
-\alpha(\theta',\theta_t) = \min\left\{ 1, \frac{p(\theta')q(\theta_t \mid \theta')}{p(\theta_t)q(\theta' \mid \theta_t)}
+\alpha(\theta_t,\theta') = \min\left\{ 1, \frac{p(\theta')q(\theta_t \mid \theta')}{p(\theta_t)q(\theta' \mid \theta_t)}
 \right\}
 \end{equation}
-and with probability $\alpha(\theta',\theta_t)$, we accept $\theta'$
+and with probability $\alpha(\theta_t,\theta')$, we accept $\theta'$
 and set $\theta_{t+1} = \theta'$, otherwise set
 $\theta_{t+1}=\theta_t$.  The test is often implemented with an
-auxiliary random variable $u \sim \mathcal{U}(0,1)$ with a comparison $u < \alpha(\theta',\theta_t)$
+auxiliary random variable $u \sim \mathcal{U}(0,1)$ with a comparison $u < \alpha(\theta_t,\theta')$
 
 
 The acceptance test guarantees detailed balance, so that
 \begin{equation}
-  p(\theta)q(\theta',\theta)\alpha(\theta',\theta) = p(\theta')q(\theta,\theta')\alpha(\theta,\theta')
+  p(\theta)q(\theta'\mid\theta)\alpha(\theta,\theta') = p(\theta')q(\theta\mid\theta')\alpha(\theta',\theta)
 \end{equation}
 The detailed balance condition, together with ergodicity, guarantee that the
 Markov chain has a unique stationary distribution $\pi(\theta) = p(\theta)$.
@@ -213,7 +207,7 @@ For Bayesian inference, we would like to sample from a parameter distribution fo
 observed data $x_1,\ldots,x_N$. i.e. we want to sample from 
 $p(\theta \mid x_1, \ldots, x_N)$. The acceptance probability is now:
 \begin{equation}
-\alpha(\theta',\theta_t) = 
+\alpha(\theta_t,\theta') = 
 \min\left\{ 1, \frac{p(\theta')\prod_{i=1}^N p(x_i \mid \theta')q(\theta_t \mid
 \theta')}{p(\theta_t)\prod_{i=1}^N p(x_i \mid \theta_t)q(\theta' \mid\theta_t)} \right\},
 \end{equation}
@@ -226,7 +220,7 @@ objectives,~\cite{cutting_mh_2014,icml2014c1_bardenet14} perform
 approximate Metropolis-Hasting tests using sequential hypothesis
 testing. During each iteration, they start with a small minibatch of
 data and test the hypothesis that the sample $\theta'$ based on an
-approximate version of the test $u < \alpha(\theta',\theta_t)$. If the
+approximate version of the test $u < \alpha(\theta_t,\theta')$. If the
 approximate test cannot make a decision with sufficient confidence,
 then the minibatch size is increased and the test repeats. This
 process continues until a decision. The bounds depend on either a
@@ -235,29 +229,29 @@ concentration bound \cite{icml2014c1_bardenet14}, the latter requiring
 direct bounds on the log likelihood ratio.  The problem with both
 methods is the expense of resolving small differences.  In the worst
 case, all $N$ data points may be needed, and as we show next this
-worst case can occur about $\sqrt{N}$ times during the performance of
+worst case can occur about $\Omega(N)$ times during the performance of
 $N$ tests.
 
-Following ~\cite{icml2014c1_bardenet14}, we write the test $u < \alpha(\theta',\theta_t)$ in
-the equivalent form $\Lambda(\theta,\theta') > \psi(u,\theta,\theta')$ where
+Following ~\cite{icml2014c1_bardenet14}, we write the test $u < \alpha(\theta_t,\theta')$ in
+the equivalent form $\Lambda(\theta_t,\theta') > \psi(u,\theta_t,\theta')$ where
 \begin{equation}
-\Lambda(\theta,\theta') = \frac{1}{N}\sum_{i=1}^N \log\left(\frac{p(x_i|\theta')}{p(x_i|\theta)}\right)  
+\Lambda(\theta_t,\theta') = \frac{1}{N}\sum_{i=1}^N \log\left(\frac{p(x_i|\theta')}{p(x_i|\theta_t)}\right)  
 \hspace{0.2in} {\rm and} \hspace{0.2in}
-\psi(u,\theta,\theta') = \frac{1}{N}\log\left(u\frac{q(\theta'|\theta)p(\theta)}{q(\theta|\theta')p(\theta')}\right)
+\psi(u,\theta_t,\theta') = \frac{1}{N}\log\left(u\frac{q(\theta'|\theta_t)p(\theta_t)}{q(\theta_t|\theta')p(\theta')}\right)
 \end{equation}
 
 By the central limit theorem, we expect $\Lambda(\theta_t,\theta')$ to be approximately
-Normal. To reduce computational effort, an unbiased estimate of $\Lambda(\theta,\theta')$
+Normal. To reduce computational effort, an unbiased estimate of $\Lambda(\theta_t,\theta')$
 based on a minibatch can be used:
 
 \begin{equation}
-\Lambda^*(\theta,\theta') = \frac{1}{b}\sum_{i=1}^b \log\left(\frac{p(x_i|\theta')}{p(x_i|\theta)}\right)  
+\Lambda^*(\theta_t,\theta') = \frac{1}{b}\sum_{i=1}^b \log\left(\frac{p(x_i|\theta')}{p(x_i|\theta_t)}\right)  
 \end{equation}
 
 The acceptance test then becomes a statistical test of the hypothesis
-that $\Lambda(\theta,\theta') > \psi(u,\theta,\theta')$ by
-establishing that $\Lambda^*(\theta,\theta')$ is substantially larger
-than $\psi(u,\theta,\theta')$.  In ~\cite{cutting_mh_2014} an
+that $\Lambda(\theta_t,\theta') > \psi(u,\theta_t,\theta')$ by
+establishing that $\Lambda^*(\theta_t,\theta')$ is substantially larger
+than $\psi(u,\theta_t,\theta')$.  In ~\cite{cutting_mh_2014} an
 asymptotic central limit argument was used to derive this gap, while
 in \cite{icml2014c1_bardenet14} a concentration bound was used. In
 both cases, the resulting tests were shown to give useful reductions
@@ -267,13 +261,13 @@ worst-case bounds were given on average number of samples needed.
 We next show that for some simple distributions, the lower
 bound of average number of data instance consumed for one iteration of
 ~\cite{cutting_mh_2014} and ~\cite{icml2014c1_bardenet14} is
-$\Omega(\sqrt{N})$, where $N$ is the number of data points.
+$\Omega(N)$, where $N$ is the number of data points.
 
 Consider a simple model where samples $x_i$ for $i=1,\ldots,N$ are
 drawn from a Normal distribution $\mathcal{N}(\theta,1)$ where
 $\theta=0.5$, and with a uniform prior on $\theta$. The log likelihood ratio is
 \begin{equation}
-\Lambda^*(\theta,\theta') =  \frac{1}{b}\sum_{i=1}^b \log\frac{p(x_i|\theta')}{p(x_i|\theta_t)}=
+\Lambda^*(\theta_t,\theta') =  \frac{1}{b}\sum_{i=1}^b \log\frac{p(x_i|\theta')}{p(x_i|\theta_t)}=
   %%\frac{1}{2}\left( (x_i-\theta')^2 - (x_i - \theta_t)^2\right) =
   (\theta'-\theta_t)\left(\frac{1}{b}\sum_{i=1}^b x_i-\theta_t-\frac{\theta'-\theta_t}{2}\right)
 \end{equation}
@@ -289,8 +283,8 @@ which is a normal distribution centered on the sample mean, and with
 variance $1/N$.  The target distribution is therefore
 $\mathcal{N}(\mu,1/N)$ where $\mu$ is the sample mean.  An efficient
 proposal distribution has the same variance as the target distribution
-$\mathcal{N}(\mu,1/N)$, so we take $q(\theta'\mid\theta_t) =
-\phi((\theta'-\theta_t)N)$, where $\phi(x)$ is a Normal density
+$\mathcal{N}(\theta'-\theta_t,1/N)$, so we take $q(\theta'\mid\theta_t) =
+\phi((\theta'-\theta_t)N)$, where $\phi(x)$ is the Normal density
 function with zero mean and unit variance. This proposal is symmetric
 $q(\theta',\theta_t)=q(\theta_t,\theta')$, and we assumed uniform
 prior for $\theta$, so $\psi(u,\theta',\theta_t)$ reduces to $1/N\log
@@ -298,23 +292,31 @@ u$.
 
 \begin{lemma}\label{lem:efficienty_cutting}
   For the model above, there
-  exists a fixed constant $c$ such that with probability $ \geq c$ over the joint
+  exists a fixed (independent of $N$) constant $c$ such that with probability $ \geq c$ over the joint
   distribution of $(\theta_t, \theta', u)$, the
   test from \cite{icml2014c1_bardenet14} consumes all $N$ samples. 
 \end{lemma}
 
 \begin{proof} Assume $(\theta' - \theta_t) \in \pm\frac{1}{\sqrt{N}}[0.5,1]$ and
   $\theta_t -0.5 \in \pm\frac{1}{\sqrt{N}}[0.5,1]$ with matching sign. These events
-  occur with probability $p_0=2*(\Phi(1)-\Phi(0.5)) = 0.2997$ and $p_1=(\Phi(1)-\Phi(0.5))=0.14988$ respectively. 
-  Choose $u_0$
+  occur with probability $p_0=2*(\Phi(1)-\Phi(0.5)) = 0.2997$ and $p_1=(\Phi(1)-\Phi(0.5))=0.14988$ respectively,
+  and guarantee that $\Lambda^*(\theta',\theta_t)$ is negative, which guarantees that we can find
+  a $u$ so that $\psi(u,\theta',\theta_t)$ equals the expected value of $\Lambda^*(\theta',\theta_t)$.
+  Specifically, choose $u_0$
   to satisfy
+  \begin{equation}
+    \log u_0 = N(\Lambda^*(\theta',\theta_t)-\psi(1,\theta',\theta_t))
+  \end{equation}
+  which evaluates to 
   \begin{equation}
     \log u_0 = -N(\theta'-\theta_t)\left(\theta_t-0.5+\frac{\theta'-\theta_t}{2}\right) 
   \end{equation}
   and rewrite the test now as
   \begin{equation}
-\frac{1}{b}\sum_{i=1}^b x_i-\left(\theta_t+\frac{\theta'-\theta_t}{2} + \frac{\log u_0}{N(\theta'-\theta)}\right) > 0
+    \frac{1}{b}\sum_{i=1}^b x_i-\left(\theta_t+\frac{\theta'-\theta_t}{2} + \frac{\log u_0}{N(\theta'-\theta)}\right)
+    \hspace{0.1in} \not\approx \hspace{0.1in} 0
   \end{equation}
+  where $\not\approx$ means ``significantly different from'' under the distribution over samples of $x_i$. 
   The above choice of $u_0$ ensures that the terms in parenthesis above sum to 0.5. Since the $x_i$ have mean 0.5, the
   test will never correctly succeed.
 
@@ -327,11 +329,20 @@ u$.
         \end{equation}
 and consider the range of $u$ values
   \begin{equation}
-    \log u \in \log u_0 + [-1,0.375]
+    \log u \in \log u_0 + [-0.5,0.375]
   \end{equation}
-  the size of this range is at least $\exp([-2.5,-1.125]) = [0082,0.286]$ and occurs
-  with probability at least $p_2=0.2044$. The samples $\theta_t$, $(\theta'-\theta_t)$
-  and $u$ are drawn independently and so the total probability of these events is
+  the size of the range in $u$ is at least $\exp([-2,-1.125]) = [0082,0.286]$ and occurs
+  with probability at least $p_2=0.2044$. With $u$ in this range, we rewrite the test as:
+  \begin{equation}
+    \frac{1}{b}\sum_{i=1}^b x_i-0.5 \hspace{0.1in} \not\approx \hspace{0.1in} \frac{\log u/u_0}{N(\theta'-\theta)}
+  \end{equation}
+  so that the LHS has expected value zero.  Given our choice of intervals for the variables, the RHS is in the range $1/\sqrt{N}[-1,0.75]$.
+  The standard deviation of the LHS given the interval constraints is at least $0.5/\sqrt{b}$. And
+  so the gap between LHS and RHS is at most $2\sqrt{b/N}$ standard deviations. 
+
+
+  The samples $\theta_t$, $(\theta'-\theta_t)$
+  and $u$ are drawn independently and so the probability of the conjunction of these events is
   $c = p_0 p_1 p_2 = 0.009$.
 \end{proof}
 There is a separate line of MCMC work drawing principles from
@@ -347,7 +358,6 @@ whose acceptance approaches 1 in the limit. However, the constraint on
 proposal step size is severe, and the state space exploration reduces
 to a random walk. Full minibatch HMC for minibatches was recently
 described in ~\cite{sghmc_2014} which allows momentum-augmented
-
 proposals with larger step sizes. However, step sizes are still
 limited by the need to run accurately without MH tests.
 % \cite{stochastic_thermostats_2014}
@@ -363,35 +373,43 @@ this in Section~\ref{ssec:nets}.
 
 
 
-\section{A New Metropolis-Hastings Test}\label{sec:our_algorithm}
+\section{A New Metropolis-Hastings Acceptance Test}\label{sec:our_algorithm}
 
-For our new MH test, we use two key values, $\Delta$ and $\Delta'$:
-\begin{equation}\label{eq:deltas}
-\Delta = \log \left( \frac{p(\theta')  \prod_{i=1}^N p(x_i \mid \theta')  q(\theta_t \mid
-\theta')}{p(\theta_t)\prod_{i=1}^N p(x_i \mid \theta_t)  q(\theta' \mid
-\theta_t)} \right);\;  \Delta' = \log \left( \frac{p(\theta') (\prod_{i=1}^n p(x_i \mid
-\theta'))^{\frac{N}{n}} q(\theta_t \mid \theta')}{p(\theta_t) (\prod_{i=1}^n p(x_i \mid
-\theta_t))^{\frac{N}{n}} q(\theta' \mid \theta_t)} \right)
+For our new M-H test, we denote the exact and approximate log likelihood ratios as $\Delta$ and $\Delta^*$.
+First, $\Delta$ is defined as:
+\begin{equation}\label{eq:delta0}
+    \Delta(x,\theta_t,\theta') =
+\log \frac{p(\theta')\prod_{i=1}^N p(x_i \mid \theta')q(\theta_t \mid
+  \theta')}{p(\theta_t)\prod_{i=1}^N p(x_i \mid \theta_t)q(\theta' \mid\theta_t)}
+  \end{equation}
+and we can separate out terms dependent and independent of the data $x$ as:
+\begin{equation}\label{eq:delta1}
+\Delta(x,\theta_t,\theta') = N\psi(1,\theta_t,\theta') + \sum_{i=1}^N\log\frac{p(x_i\mid\theta')}{p(x_i\mid\theta_t)}
 \end{equation}
-where $p$ and $q$ have similar definitions as in Equation~\ref{eq:traditional}. Thus, $\Delta$ and
-$\Delta'$ are probability ratios in log space. Note that the only difference between $\Delta$ and
-$\Delta'$ is that they use $N$ and $n$ data terms $x_i$, respectively, and that the latter uses an
-$N/n$ scaling term. We assume $n \ll N$ (so $\Delta'$ is substantially faster to compute) and that
-the $n$ data points $x_i$ represent a random minibatch without replacement.
+\begin{equation}\label{eq:delta2}
+    \Delta^*(x,\theta_t,\theta') =
+N\psi(1,\theta_t,\theta') + \frac{N}{b}\sum_{i=1}^b\log\frac{p(x_i\mid\theta')}{p(x_i\mid\theta_t)}
+\end{equation}
+Note that $\Delta$ and $\Delta^*$ are evaluated on the full dataset and a minibatch of size $b$
+respectively. The scaling term $N$ produces true log likelihood ratios whereas $\Lambda-\psi$
+is a scaled log ratio. $\Delta^*$ is an unbiased estimator of $\Delta$.
 
-\subsection{The Full Data Test}\label{ssec:deltas_full}
+\subsection{A Full Data Acceptance Test}\label{ssec:deltas_full}
 
-To motivate the use of $\Delta$, we turn to Lemma~\ref{lem:detailed_balance}.
+The key to our test is to smooth the acceptance function.  We consider tests other than the Metropolis
+test that satisfy the conditions needed for accurate posterior estimation. This condition is
+the detailed balance condition defined earlier. Expressed in terms of $\Delta$, the
+classical Metropolis test is $f(\Delta) = {\rm min}(\exp(\Delta),1)$. More generally we have:
 
 \begin{lemma}\label{lem:detailed_balance}
 An acceptance function $g$ such that $g(\Delta) = \exp(\Delta) g(-\Delta )$ satisfies detailed
 balance. That is, $f(\theta_t)p(\theta' \mid \theta_t) = f(\theta')p(\theta_t \mid \theta')$, where
-$p(\theta_y \mid \theta_x)$ is the probability of jumping from $\theta_x$ to $\theta_y$ in our
+$p(\theta_y \mid \theta_x)$ is the probability of jumping from $\theta_x$ to $\theta_y$ in the
 chain.
 \end{lemma}
 
 \begin{proof}
-We begin by deriving $p(\theta' \mid \theta_t)$. This is equivalent to the probability of proposing
+First note that the transition probability $p(\theta' \mid \theta_t)$ is the probability of proposing
 $\theta'$ and then accepting it, so $p(\theta' \mid \theta_t) = q(\theta' \mid \theta_t)g(\Delta).$
 Similarly, $p(\theta_t \mid \theta') = q(\theta_t \mid \theta')g(-\Delta).$ Notice that the
 probability of accepting a transition from $\theta'$ to $\theta_t$ is $g(-\Delta)$ because this
@@ -411,9 +429,12 @@ Cancellations result in $f(\theta') p(\theta_t \mid \theta') = f(\theta_t) p(\th
 
 As a sanity check, the standard Metropolis-Hastings acceptance function $g(\Delta) = \min\{1,
 e^\Delta \} = \min\left\{1, \frac{f(\theta')q(\theta_t \mid \theta')}{f(\theta_t)q(\theta' \mid
-\theta_t)}\right\}$ satisfies the condition $g(\Delta) = \exp(\Delta)g(-\Delta)$.
+  \theta_t)}\right\}$ satisfies the condition $g(\Delta) = \exp(\Delta)g(-\Delta)$. In fact it is
+the optimal acceptance function in terms of acceptance rate, since it accepts with probability
+1 for $\Delta > 0$. 
 
-For our MH test, the key is that we use a different $g$, the logistic function: $g(\Delta) =
+\subsubsection{Logistic Acceptance Function}\label{ssec:deltas_full}
+For our new MH test we use the logistic function: $g(\Delta) =
 (1+\exp(-\Delta))^{-1}$. Straightforward arithmetic shows that it satisfies the condition in
 Lemma~\ref{lem:detailed_balance}.  The logistic function is nice because we can easily sample from
 it using the following procedure. At any iteration with a current parameter $\theta_t$ and a
@@ -429,7 +450,7 @@ as the density of $u$ is one. Thus, the criteria to accept the candidate $\theta
 whether $\Delta > X$. Moreover, the density of $X$ (a standard logistic random variable) is
 symmetric about zero, so the acceptance criteria can also be expressed as $\Delta + X>0$.
 
-\subsection{The Minibatch Version}\label{ssec:deltas_minibatch}
+\subsection{A Minibatch Acceptance Test}\label{ssec:deltas_minibatch}
 
 With large datasets, $\Delta$ is intractable to compute. An intuitive fix is to replace $\Delta$
 with the minibatch version, $\Delta'$, for our MH test. The following lemma characterizes the
