@@ -111,7 +111,7 @@ computation on intractable distributions. MCMC algorithms propose
 samples from a proposal distribution $q$ which is in general different
 from the target distribution $p$, and decide whether to accept or
 reject them based on an acceptance test. The acceptance test is
-usually a Metropolis-Hastings
+usually a Metropolis
 test~\cite{Metropolis1953,hastings70}. For example, for Bayesian
 posterior inference, the posterior distribution $p(\theta \mid x_1,
 \ldots, x_N) \propto p(\theta)\prod_{i=1}^N p(x_i \mid \theta)$ of
@@ -187,64 +187,153 @@ steps. The contributions of this paper are as follows:
 
 \section{Preliminaries and Related Work}\label{sec:related_work}
 
-In standard MCMC methods~\cite{gilks1996markov,brooks2011handbook} for Bayesian inference with
-parameter $\theta$ and conditionally independent data, the goal is to compute the distribution
-$p(\theta \mid x_1, \ldots, x_N)$.  To do so, one generates a chain of (correlated) samples
-$\theta_1, \ldots, \theta_T$ for large $T$ and approximates $p$ using the samples.  Each
-iteration $t$ has a current $\theta_t$, and a \emph{proposal distribution} $q(\theta' \mid
-\theta_t)$ determines a new candidate $\theta'$. With probability $P_a$, the sample is accepted, so
-$\theta_{t+1} = \theta'$. Otherwise, $\theta_{t+1} = \theta_t$. This is done by drawing a uniform
-random variable $u \sim {\rm Unif}[0,1]$ and accepting if $u < P_a$. Traditionally, $P_a$ is
+In standard MCMC methods~\cite{gilks1996markov,brooks2011handbook}, a difficult-to-compute
+probability distribution $p(\theta)$ is sampled using a Markov chain $\theta_1,\ldots,\theta_n$. The 
+sample $\theta_{t+1}$ at time $t+1$ is generated using a candidate $\theta'$ from a (simpler) proposal
+distribution $q(\theta'\mid \theta_t)$, filtered by an acceptance test. The acceptance test is usually
+a Metropolis test. The Metropolis test has acceptance probability:
 \begin{equation}\label{eq:traditional}
-P_a = \min\left\{ 1, \frac{f(\theta')q(\theta_t \mid \theta')}{f(\theta_t)q(\theta' \mid \theta_t)}
-\right\} = \min\left\{ 1, \frac{p(\theta')\prod_{i=1}^N p(x_i \mid \theta')q(\theta_t \mid
-\theta')}{p(\theta_t)\prod_{i=1}^N p(x_i \mid \theta_t)q(\theta' \mid
-\theta_t)} \right\},
+\alpha(\theta',\theta_t) = \min\left\{ 1, \frac{p(\theta')q(\theta_t \mid \theta')}{p(\theta_t)q(\theta' \mid \theta_t)}
+\right\}
 \end{equation}
-where $f(\theta_t)=p(\theta_t \mid x_1,\ldots,x_N)$. This $P_a$ satisfies detailed balance, so if
-one samples long enough, one will arrive at a stationary distribution matching the posterior, though
-a burn-in period and/or only using samples at regular intervals is often done in practice.
+and with probability $\alpha(\theta',\theta_t)$, we accept $\theta'$
+and set $\theta_{t+1} = \theta'$, otherwise set
+$\theta_{t+1}=\theta_t$.  The test is often implemented with an
+auxiliary random variable $u \sim \mathcal{U}(0,1)$ with a comparison $u < \alpha(\theta',\theta_t)$
 
-Unfortunately, computing $f$ requires the use of all $N$ training data
-points. Moreover, it is difficult to design tests using substantially
-fewer than $N$ points that also satisfy detailed balance. To reconcile
-these competing
+
+The acceptance test guarantees detailed balance, so that
+\begin{equation}
+  p(\theta)q(\theta',\theta)\alpha(\theta',\theta) = p(\theta')q(\theta,\theta')\alpha(\theta,\theta')
+\end{equation}
+The detailed balance condition, together with ergodicity, guarantee that the
+Markov chain has a unique stationary distribution $\pi(\theta) = p(\theta)$.
+
+For Bayesian inference, we would like to sample from a parameter distribution for $\theta$ based on some
+observed data $x_1,\ldots,x_N$. i.e. we want to sample from 
+$p(\theta \mid x_1, \ldots, x_N)$. The acceptance probability is now:
+\begin{equation}
+\alpha(\theta',\theta_t) = 
+\min\left\{ 1, \frac{p(\theta')\prod_{i=1}^N p(x_i \mid \theta')q(\theta_t \mid
+\theta')}{p(\theta_t)\prod_{i=1}^N p(x_i \mid \theta_t)q(\theta' \mid\theta_t)} \right\},
+\end{equation}
+where $p(\theta)$ is a prior, and $p(x_i \mid \theta)$ are the
+probabilities of the observations. Computing samples this way requires
+the use of all $N$ training data points. Moreover, it is difficult to
+design tests using substantially fewer than $N$ points that also
+satisfy detailed balance. To reconcile these competing
 objectives,~\cite{cutting_mh_2014,icml2014c1_bardenet14} perform
 approximate Metropolis-Hasting tests using sequential hypothesis
 testing. During each iteration, they start with a small minibatch of
-data and tests the hypothesis that the sample $\theta'$ should be
-accepted or rejected based on a probability ratio involving the
-additional random variable $u\in [0,1]$. If the test cannot make a
-decision with sufficient confidence, then the minibatch size is
-increased and the test repeats. This process continues until a
-decision. The bounds depend on either a central limit theorem
-\cite{cutting_mh_2014} or a concentration bound
-\cite{icml2014c1_bardenet14} requiring direct bounds on the log
-likelihood ratio.  The problem with both methods is the expense of
-resolving small differences.  In the worst case, all $N$ data points
-may be needed, and as we show next this worst case can occur
-about $\sqrt{N}$ times during the performance of $N$ tests.
+data and test the hypothesis that the sample $\theta'$ based on an
+approximate version of the test $u < \alpha(\theta',\theta_t)$. If the
+approximate test cannot make a decision with sufficient confidence,
+then the minibatch size is increased and the test repeats. This
+process continues until a decision. The bounds depend on either a
+asymptotic central limit theorem \cite{cutting_mh_2014} or a
+concentration bound \cite{icml2014c1_bardenet14}, the latter requiring
+direct bounds on the log likelihood ratio.  The problem with both
+methods is the expense of resolving small differences.  In the worst
+case, all $N$ data points may be needed, and as we show next this
+worst case can occur about $\sqrt{N}$ times during the performance of
+$N$ tests.
 
-We next prove that for some simple distributions, the lower
+Following ~\cite{icml2014c1_bardenet14}, we write the test $u < \alpha(\theta',\theta_t)$ in
+the equivalent form $\Lambda(\theta,\theta') > \psi(u,\theta,\theta')$ where
+\begin{equation}
+\Lambda(\theta,\theta') = \frac{1}{N}\sum_{i=1}^N \log\left(\frac{p(x_i|\theta')}{p(x_i|\theta)}\right)  
+\hspace{0.2in} {\rm and} \hspace{0.2in}
+\psi(u,\theta,\theta') = \frac{1}{N}\log\left(u\frac{q(\theta'|\theta)p(\theta)}{q(\theta|\theta')p(\theta')}\right)
+\end{equation}
+
+By the central limit theorem, we expect $\Lambda(\theta_t,\theta')$ to be approximately
+Normal. To reduce computational effort, an unbiased estimate of $\Lambda(\theta,\theta')$
+based on a minibatch can be used:
+
+\begin{equation}
+\Lambda^*(\theta,\theta') = \frac{1}{b}\sum_{i=1}^b \log\left(\frac{p(x_i|\theta')}{p(x_i|\theta)}\right)  
+\end{equation}
+
+The acceptance test then becomes a statistical test of the hypothesis
+that $\Lambda(\theta,\theta') > \psi(u,\theta,\theta')$ by
+establishing that $\Lambda^*(\theta,\theta')$ is substantially larger
+than $\psi(u,\theta,\theta')$.  In ~\cite{cutting_mh_2014} an
+asymptotic central limit argument was used to derive this gap, while
+in \cite{icml2014c1_bardenet14} a concentration bound was used. In
+both cases, the resulting tests were shown to give useful reductions
+in number of samples required over using the full dataset. But no
+worst-case bounds were given on average number of samples needed.
+
+We next show that for some simple distributions, the lower
 bound of average number of data instance consumed for one iteration of
-~\cite{cutting_mh_2014,icml2014c1_bardenet14} is
-$\Omega(\sqrt{N})$, where $N$ is the number of data points, see
-Lemma~\ref{lem:efficienty_cutting}.
+~\cite{cutting_mh_2014} and ~\cite{icml2014c1_bardenet14} is
+$\Omega(\sqrt{N})$, where $N$ is the number of data points.
+
+Consider a simple model where samples $x_i$ for $i=1,\ldots,N$ are
+drawn from a Normal distribution $\mathcal{N}(\theta,1)$ where
+$\theta=0.5$, and with a uniform prior on $\theta$. The log likelihood ratio is
+\begin{equation}
+\Lambda^*(\theta,\theta') =  \frac{1}{b}\sum_{i=1}^b \log\frac{p(x_i|\theta')}{p(x_i|\theta_t)}=
+  %%\frac{1}{2}\left( (x_i-\theta')^2 - (x_i - \theta_t)^2\right) =
+  (\theta'-\theta_t)\left(\frac{1}{b}\sum_{i=1}^b x_i-\theta_t-\frac{\theta'-\theta_t}{2}\right)
+\end{equation}
+which is normally distributed over selection of the Normal samples $x_i$.
+Since the $x_i$ have unit variance, their mean has variance $1/b$, and the variance $\sigma^2(\Lambda^*)$
+of $\Lambda^*(\theta,\theta')$ is $(\theta'-\theta_t)^2/b$. In order to pass
+a hypothesis test that $\Lambda > \psi$, we will need to establish a
+large enough gap (several $\sigma(\Lambda^*)$) between $\Lambda^*(\theta',\theta_t)$
+and $\psi(u,\theta',\theta_t)$.
+
+We would like to sample from the posterior distribution of $\theta$
+which is a normal distribution centered on the sample mean, and with
+variance $1/N$.  The target distribution is therefore
+$\mathcal{N}(\mu,1/N)$ where $\mu$ is the sample mean.  An efficient
+proposal distribution has the same variance as the target distribution
+$\mathcal{N}(\mu,1/N)$, so we take $q(\theta'\mid\theta_t) =
+\phi((\theta'-\theta_t)N)$, where $\phi(x)$ is a Normal density
+function with zero mean and unit variance. This proposal is symmetric
+$q(\theta',\theta_t)=q(\theta_t,\theta')$, and we assumed uniform
+prior for $\theta$, so $\psi(u,\theta',\theta_t)$ reduces to $1/N\log
+u$.
 
 \begin{lemma}\label{lem:efficienty_cutting}
-If the sample mean $\bar{l}$ has uniform distribution on $[-L,L]$,
-the lower bound of expected data consumed of adaptive sampling method
-for one iteration is $\frac{\eta s_{l}Q}{2L}\sqrt{N}$, where $\bar{l}
-= \frac{1}{n}\sum_{i=1}^{n} \left (\log p(x_i; \theta') - \log p(x_i|
-\theta_t)\right )$, $\eta = \phi^{-1}_{n-1}(1-\varepsilon)$,
-$Q=\frac{p(\theta_t)q(\theta'|\theta_t)}{p(\theta')q(\theta_t|\theta')}$,
-$s_l$ is the population standard deviation of $l_i$, $\phi_{n-1}()$ is
-the CDF of t distribution with degree of freedom $n-1$, and $n$ is the
-minibatch size.
+  For the model above, there
+  exists a fixed constant $c$ such that with probability $ \geq c$ over the joint
+  distribution of $(\theta_t, \theta', u)$, the
+  test from \cite{icml2014c1_bardenet14} consumes all $N$ samples. 
 \end{lemma}
 
-\begin{proof} see appendix
-  \end{proof}
+\begin{proof} Assume $(\theta' - \theta_t) \in \pm\frac{1}{\sqrt{N}}[0.5,1]$ and
+  $\theta_t -0.5 \in \pm\frac{1}{\sqrt{N}}[0.5,1]$ with matching sign. These events
+  occur with probability $p_0=2*(\Phi(1)-\Phi(0.5)) = 0.2997$ and $p_1=(\Phi(1)-\Phi(0.5))=0.14988$ respectively. 
+  Choose $u_0$
+  to satisfy
+  \begin{equation}
+    \log u_0 = -N(\theta'-\theta_t)\left(\theta_t-0.5+\frac{\theta'-\theta_t}{2}\right) 
+  \end{equation}
+  and rewrite the test now as
+  \begin{equation}
+\frac{1}{b}\sum_{i=1}^b x_i-\left(\theta_t+\frac{\theta'-\theta_t}{2} + \frac{\log u_0}{N(\theta'-\theta)}\right) > 0
+  \end{equation}
+  The above choice of $u_0$ ensures that the terms in parenthesis above sum to 0.5. Since the $x_i$ have mean 0.5, the
+  test will never correctly succeed.
+
+  Furthermore, if we sample values of $u$ near enough to $u_0$, the terms in parenthesis will not be sufficiently different
+  from 0.5 to allow the test to succeed. 
+  
+ The choices above for $\theta_t$ and $\theta'$ guarantee that
+  \begin{equation}
+    \log u_0 \in -[0.5,1][0.75,1.5] = -[0.375,1.5]
+        \end{equation}
+and consider the range of $u$ values
+  \begin{equation}
+    \log u \in \log u_0 + [-1,0.375]
+  \end{equation}
+  the size of this range is at least $\exp([-2.5,-1.125]) = [0082,0.286]$ and occurs
+  with probability at least $p_2=0.2044$. The samples $\theta_t$, $(\theta'-\theta_t)$
+  and $u$ are drawn independently and so the total probability of these events is
+  $c = p_0 p_1 p_2 = 0.009$.
+\end{proof}
 There is a separate line of MCMC work drawing principles from
 statistical physics. By viewing random variables as particles in a
 system, one can apply Hamiltonian Monte Carlo
@@ -258,6 +347,7 @@ whose acceptance approaches 1 in the limit. However, the constraint on
 proposal step size is severe, and the state space exploration reduces
 to a random walk. Full minibatch HMC for minibatches was recently
 described in ~\cite{sghmc_2014} which allows momentum-augmented
+
 proposals with larger step sizes. However, step sizes are still
 limited by the need to run accurately without MH tests.
 % \cite{stochastic_thermostats_2014}
@@ -484,17 +574,23 @@ smaller in absolute value, thus reducing variance. The flatter posterior results
 
 
 
-\section{Theoretical Results}\label{sec:theory}
+\section{Analysis}\label{sec:theory}
 
-In this section, we firstly explore the convergence properties of our MH test. Secondly, we compare the efficiency between our MH test and adaptive MH test. Due to space constraints, all
-our proofs are in Appendix~\ref{app:proofs}.
+In this section, we first perform an error analysis for our new
+acceptance test. Second, we follow the implications of this analysis for accuracy of
+the estimated target distribution. Third, we compare the speed and accuracy of
+our test with prior work. Due to space constraints, all our proofs
+are in Appendix~\ref{app:proofs}.
 
-We first introduce some notation. Let our true and approximated acceptance probabilities be $P_a =
-g(\Delta) = \Pr(\Delta + X > 0)$ and $P_a' = \Pr(\Delta' + X_{\rm corr} > 0)$.  Define $X_{\xi} =
-\varepsilon - X_{\rm norm}$ which means, invoking Equations~\ref{eq:relationship}
-and~\ref{eq:deconvolution}, that $X_\xi$ is the random variable characterizing the accuracy of our
-$X_{\rm norm}$.  Thus, $\Delta' = \Delta + X_{\rm norm} + X_\xi$. We assume the standard deviation
-of $X_{\rm norm}$ is less than $\pi/\sqrt{3}$, so that we can use Equation~\ref{eq:deconvolution}.
+We first introduce some notation. Let our true (full dataset) and
+approximate (minibatch) acceptance probabilities be $P_a = g(\Delta) =
+\Pr(\Delta + X > 0)$ and $P_a' = \Pr(\Delta' + X_{\rm corr} > 0)$.
+Define $X_{\xi} = \varepsilon - X_{\rm norm}$ which means, invoking
+Equations~\ref{eq:relationship} and~\ref{eq:deconvolution}, that
+$X_\xi$ is the random variable characterizing the accuracy of our
+$X_{\rm norm}$.  Thus, $\Delta' = \Delta + X_{\rm norm} + X_\xi$. We
+assume the standard deviation of $X_{\rm norm}$ is less than
+$\pi/\sqrt{3}$, so that we can use Equation~\ref{eq:deconvolution}.
 We denote $F_X(x)$ as the CDF of $X$.
 
 We use some terms from standard Markov chain theory~\cite{Meyn2009}. Let the \emph{transition
