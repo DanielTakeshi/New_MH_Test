@@ -15,6 +15,7 @@
 \usepackage{url}            % simple URL typesetting
 \usepackage{booktabs}       % professional-quality tables
 \usepackage{amsfonts}       % blackboard math symbols
+\usepackage{amssymb}       % blackboard math symbols
 \usepackage{nicefrac}       % compact symbols for 1/2, etc.
 \usepackage{microtype}      % microtypography
 \usepackage{graphicx}
@@ -193,11 +194,18 @@ a Metropolis test. The Metropolis test has acceptance probability:
 and with probability $\alpha(\theta_t,\theta')$, we accept $\theta'$
 and set $\theta_{t+1} = \theta'$, otherwise set
 $\theta_{t+1}=\theta_t$.  The test is often implemented with an
-auxiliary random variable $u \sim \mathcal{U}(0,1)$ with a comparison $u < \alpha(\theta_t,\theta')$
+auxiliary random variable $u \sim \mathcal{U}(0,1)$ with a comparison $u < \alpha(\theta_t,\theta')$.
+For notational simplicity, from now on we will drop the subscript $t$ for the current sample $\theta_t$ and
+denote is simply as $\theta$. 
 
 
-The acceptance test guarantees detailed balance, so that
-\begin{equation}
+The acceptance test guarantees detailed balance, which means
+\begin{equation}\label{detailed_balance1}
+  p(\theta)p(\theta,\theta') = p(\theta')p(\theta',\theta)
+\end{equation}
+where $p(\theta,\theta')$ is the probability of a transition from state $\theta$ to $\theta'$. Here
+$p(\theta,\theta') = q(\theta'\mid\theta)\alpha(\theta,\theta')$ so the detailed balance equation becomes
+\begin{equation}\label{detailed_balance2}
   p(\theta)q(\theta'\mid\theta)\alpha(\theta,\theta') = p(\theta')q(\theta\mid\theta')\alpha(\theta',\theta)
 \end{equation}
 The detailed balance condition, together with ergodicity, guarantee that the
@@ -207,20 +215,18 @@ For Bayesian inference, we would like to sample from a parameter distribution fo
 observed data $x_1,\ldots,x_N$. i.e. we want to sample from 
 $p(\theta \mid x_1, \ldots, x_N)$. The acceptance probability is now:
 \begin{equation}
-\alpha(\theta_t,\theta') = 
-\min\left\{ 1, \frac{p(\theta')\prod_{i=1}^N p(x_i \mid \theta')q(\theta_t \mid
-\theta')}{p(\theta_t)\prod_{i=1}^N p(x_i \mid \theta_t)q(\theta' \mid\theta_t)} \right\},
+\alpha(\theta,\theta') = 
+\min\left\{ 1, \frac{p_0(\theta')\prod_{i=1}^N p(x_i \mid \theta')q(\theta \mid
+\theta')}{p_0(\theta)\prod_{i=1}^N p(x_i \mid \theta)q(\theta' \mid\theta)} \right\},
 \end{equation}
-where $p(\theta)$ is a prior, and $p(x_i \mid \theta)$ are the
+where $p_0(\theta)$ is a prior, and $p(x_i \mid \theta)$ are the
 probabilities of the observations. Computing samples this way requires
-the use of all $N$ training data points. Moreover, it is difficult to
-design tests using substantially fewer than $N$ points that also
-satisfy detailed balance. To reconcile these competing
-objectives,~\cite{cutting_mh_2014,icml2014c1_bardenet14} perform
+the use of all $N$ training data points, but this is very expensive
+for large datasets. To address this challenge,~\cite{cutting_mh_2014,icml2014c1_bardenet14} perform
 approximate Metropolis-Hasting tests using sequential hypothesis
 testing. During each iteration, they start with a small minibatch of
 data and test the hypothesis that the sample $\theta'$ based on an
-approximate version of the test $u < \alpha(\theta_t,\theta')$. If the
+approximate version of the test $u < \alpha(\theta,\theta')$. If the
 approximate test cannot make a decision with sufficient confidence,
 then the minibatch size is increased and the test repeats. This
 process continues until a decision. The bounds depend on either a
@@ -232,26 +238,28 @@ case, all $N$ data points may be needed, and as we show next this
 worst case can occur about $\Omega(N)$ times during the performance of
 $N$ tests.
 
-Following ~\cite{icml2014c1_bardenet14}, we write the test $u < \alpha(\theta_t,\theta')$ in
-the equivalent form $\Lambda(\theta_t,\theta') > \psi(u,\theta_t,\theta')$ where
+Following ~\cite{icml2014c1_bardenet14}, we write the test $u < \alpha(\theta,\theta')$ in
+the equivalent form $\Lambda(\theta,\theta') > \psi(u,\theta,\theta')$ where
 \begin{equation}
-\Lambda(\theta_t,\theta') = \frac{1}{N}\sum_{i=1}^N \log\left(\frac{p(x_i|\theta')}{p(x_i|\theta_t)}\right)  
+\Lambda(\theta,\theta') = \frac{1}{N}\sum_{i=1}^N \log\left(\frac{p(x_i|\theta')}{p(x_i|\theta)}\right)  
 \hspace{0.2in} {\rm and} \hspace{0.2in}
-\psi(u,\theta_t,\theta') = \frac{1}{N}\log\left(u\frac{q(\theta'|\theta_t)p(\theta_t)}{q(\theta_t|\theta')p(\theta')}\right)
+\psi(u,\theta,\theta') = \frac{1}{N}\log\left(u\frac{q(\theta'|\theta)p_0(\theta)}{q(\theta|\theta')p_0(\theta')}\right)
 \end{equation}
 
-By the central limit theorem, we expect $\Lambda(\theta_t,\theta')$ to be approximately
-Normal. To reduce computational effort, an unbiased estimate of $\Lambda(\theta_t,\theta')$
+To reduce computational effort, an unbiased estimate of $\Lambda(\theta,\theta')$
 based on a minibatch can be used:
 
 \begin{equation}
-\Lambda^*(\theta_t,\theta') = \frac{1}{b}\sum_{i=1}^b \log\left(\frac{p(x_i|\theta')}{p(x_i|\theta_t)}\right)  
+\Lambda^*(\theta,\theta') = \frac{1}{b}\sum_{i=1}^b \log\left(\frac{p(x_i|\theta')}{p(x_i|\theta)}\right)  
 \end{equation}
 
+The minibatch should contain randomly selected samples, and
+by the central limit theorem, we expect $\Lambda^*(\theta,\theta')$ to be approximately
+Normal. 
 The acceptance test then becomes a statistical test of the hypothesis
-that $\Lambda(\theta_t,\theta') > \psi(u,\theta_t,\theta')$ by
-establishing that $\Lambda^*(\theta_t,\theta')$ is substantially larger
-than $\psi(u,\theta_t,\theta')$.  In ~\cite{cutting_mh_2014} an
+that $\Lambda(\theta,\theta') > \psi(u,\theta,\theta')$ by
+establishing that $\Lambda^*(\theta,\theta')$ is substantially larger
+than $\psi(u,\theta,\theta')$.  In ~\cite{cutting_mh_2014} an
 asymptotic central limit argument was used to derive this gap, while
 in \cite{icml2014c1_bardenet14} a concentration bound was used. In
 both cases, the resulting tests were shown to give useful reductions
@@ -259,7 +267,7 @@ in number of samples required over using the full dataset. But no
 worst-case bounds were given on average number of samples needed.
 
 We next show that for some simple distributions, the lower
-bound of average number of data instance consumed for one iteration of
+bound of average number of data instances consumed for one iteration of
 ~\cite{cutting_mh_2014} and ~\cite{icml2014c1_bardenet14} is
 $\Omega(N)$, where $N$ is the number of data points.
 
@@ -267,53 +275,53 @@ Consider a simple model where samples $x_i$ for $i=1,\ldots,N$ are
 drawn from a Normal distribution $\mathcal{N}(\theta,1)$ where
 $\theta=0.5$, and with a uniform prior on $\theta$. The log likelihood ratio is
 \begin{equation}
-\Lambda^*(\theta_t,\theta') =  \frac{1}{b}\sum_{i=1}^b \log\frac{p(x_i|\theta')}{p(x_i|\theta_t)}=
-  %%\frac{1}{2}\left( (x_i-\theta')^2 - (x_i - \theta_t)^2\right) =
-  (\theta'-\theta_t)\left(\frac{1}{b}\sum_{i=1}^b x_i-\theta_t-\frac{\theta'-\theta_t}{2}\right)
+\Lambda^*(\theta,\theta') =  \frac{1}{b}\sum_{i=1}^b \log\frac{p(x_i|\theta')}{p(x_i|\theta)}=
+  %%\frac{1}{2}\left( (x_i-\theta')^2 - (x_i - \theta)^2\right) =
+  (\theta'-\theta)\left(\frac{1}{b}\sum_{i=1}^b x_i-\theta-\frac{\theta'-\theta}{2}\right)
 \end{equation}
 which is normally distributed over selection of the Normal samples $x_i$.
 Since the $x_i$ have unit variance, their mean has variance $1/b$, and the variance $\sigma^2(\Lambda^*)$
-of $\Lambda^*(\theta,\theta')$ is $(\theta'-\theta_t)^2/b$. In order to pass
+of $\Lambda^*(\theta,\theta')$ is $(\theta'-\theta)^2/b$. In order to pass
 a hypothesis test that $\Lambda > \psi$, we will need to establish a
-large enough gap (several $\sigma(\Lambda^*)$) between $\Lambda^*(\theta',\theta_t)$
-and $\psi(u,\theta',\theta_t)$.
+large enough gap (several $\sigma(\Lambda^*)$) between $\Lambda^*(\theta',\theta)$
+and $\psi(u,\theta',\theta)$.
 
 We would like to sample from the posterior distribution of $\theta$
 which is a normal distribution centered on the sample mean, and with
 variance $1/N$.  The target distribution is therefore
 $\mathcal{N}(\mu,1/N)$ where $\mu$ is the sample mean.  An efficient
 proposal distribution has the same variance as the target distribution
-$\mathcal{N}(\theta'-\theta_t,1/N)$, so we take $q(\theta'\mid\theta_t) =
-\phi((\theta'-\theta_t)N)$, where $\phi(x)$ is the Normal density
+$\mathcal{N}(\theta'-\theta,1/N)$, so we take $q(\theta'\mid\theta) =
+\phi((\theta'-\theta)N)$, where $\phi(x)$ is the Normal density
 function with zero mean and unit variance. This proposal is symmetric
-$q(\theta',\theta_t)=q(\theta_t,\theta')$, and we assumed uniform
-prior for $\theta$, so $\psi(u,\theta',\theta_t)$ reduces to $1/N\log
+$q(\theta',\theta)=q(\theta,\theta')$, and we assumed uniform
+prior for $\theta$, so $\psi(u,\theta',\theta)$ reduces to $1/N\log
 u$.
 
 \begin{lemma}\label{lem:efficienty_cutting}
   For the model above, there
   exists a fixed (independent of $N$) constant $c$ such that with probability $ \geq c$ over the joint
-  distribution of $(\theta_t, \theta', u)$, the
+  distribution of $(\theta, \theta', u)$, the
   test from \cite{icml2014c1_bardenet14} consumes all $N$ samples. 
 \end{lemma}
 
-\begin{proof} Assume $(\theta' - \theta_t) \in \pm\frac{1}{\sqrt{N}}[0.5,1]$ and
-  $\theta_t -0.5 \in \pm\frac{1}{\sqrt{N}}[0.5,1]$ with matching sign. These events
+\begin{proof} Assume $(\theta' - \theta) \in \pm\frac{1}{\sqrt{N}}[0.5,1]$ and
+  $\theta -0.5 \in \pm\frac{1}{\sqrt{N}}[0.5,1]$ with matching sign. These events
   occur with probability $p_0=2*(\Phi(1)-\Phi(0.5)) = 0.2997$ and $p_1=(\Phi(1)-\Phi(0.5))=0.14988$ respectively,
-  and guarantee that $\Lambda^*(\theta',\theta_t)$ is negative, which guarantees that we can find
-  a $u$ so that $\psi(u,\theta',\theta_t)$ equals the expected value of $\Lambda^*(\theta',\theta_t)$.
+  and guarantee that $\Lambda^*(\theta',\theta)$ is negative, which guarantees that we can find
+  a $u$ so that $\psi(u,\theta',\theta)$ equals the expected value of $\Lambda^*(\theta',\theta)$.
   Specifically, choose $u_0$
   to satisfy
   \begin{equation}
-    \log u_0 = N(\Lambda^*(\theta',\theta_t)-\psi(1,\theta',\theta_t))
+    \log u_0 = N(\Lambda^*(\theta',\theta)-\psi(1,\theta',\theta))
   \end{equation}
   which evaluates to 
   \begin{equation}
-    \log u_0 = -N(\theta'-\theta_t)\left(\theta_t-0.5+\frac{\theta'-\theta_t}{2}\right) 
+    \log u_0 = -N(\theta'-\theta)\left(\theta-0.5+\frac{\theta'-\theta}{2}\right) 
   \end{equation}
   and rewrite the test now as
   \begin{equation}
-    \frac{1}{b}\sum_{i=1}^b x_i-\left(\theta_t+\frac{\theta'-\theta_t}{2} + \frac{\log u_0}{N(\theta'-\theta)}\right)
+    \frac{1}{b}\sum_{i=1}^b x_i-\left(\theta+\frac{\theta'-\theta}{2} + \frac{\log u_0}{N(\theta'-\theta)}\right)
     \hspace{0.1in} \not\approx \hspace{0.1in} 0
   \end{equation}
   where $\not\approx$ means ``significantly different from'' under the distribution over samples of $x_i$. 
@@ -323,7 +331,7 @@ u$.
   Furthermore, if we sample values of $u$ near enough to $u_0$, the terms in parenthesis will not be sufficiently different
   from 0.5 to allow the test to succeed. 
   
- The choices above for $\theta_t$ and $\theta'$ guarantee that
+ The choices above for $\theta$ and $\theta'$ guarantee that
   \begin{equation}
     \log u_0 \in -[0.5,1][0.75,1.5] = -[0.375,1.5]
         \end{equation}
@@ -341,7 +349,7 @@ and consider the range of $u$ values
   so the gap between LHS and RHS is at most $2\sqrt{b/N}$ standard deviations. 
 
 
-  The samples $\theta_t$, $(\theta'-\theta_t)$
+  The samples $\theta$, $(\theta'-\theta)$
   and $u$ are drawn independently and so the probability of the conjunction of these events is
   $c = p_0 p_1 p_2 = 0.009$.
 \end{proof}
@@ -378,83 +386,111 @@ this in Section~\ref{ssec:nets}.
 For our new M-H test, we denote the exact and approximate log likelihood ratios as $\Delta$ and $\Delta^*$.
 First, $\Delta$ is defined as:
 \begin{equation}\label{eq:delta0}
-    \Delta(x,\theta_t,\theta') =
-\log \frac{p(\theta')\prod_{i=1}^N p(x_i \mid \theta')q(\theta_t \mid
-  \theta')}{p(\theta_t)\prod_{i=1}^N p(x_i \mid \theta_t)q(\theta' \mid\theta_t)}
+  \Delta(\theta,\theta') = \log\frac{p(\theta')q(\theta\mid\theta')}{p(\theta)q(\theta'\mid\theta)}
+\end{equation}
+and in the Bayesian case
+\begin{equation}\label{eq:delta1}
+\Delta(x,\theta,\theta')  =
+\log \frac{p_0(\theta')\prod_{i=1}^N p(x_i \mid \theta')q(\theta \mid
+  \theta')}{p_0(\theta)\prod_{i=1}^N p(x_i \mid \theta)q(\theta' \mid\theta)}
   \end{equation}
 and we can separate out terms dependent and independent of the data $x$ as:
-\begin{equation}\label{eq:delta1}
-\Delta(x,\theta_t,\theta') = N\psi(1,\theta_t,\theta') + \sum_{i=1}^N\log\frac{p(x_i\mid\theta')}{p(x_i\mid\theta_t)}
-\end{equation}
 \begin{equation}\label{eq:delta2}
-    \Delta^*(x,\theta_t,\theta') =
-N\psi(1,\theta_t,\theta') + \frac{N}{b}\sum_{i=1}^b\log\frac{p(x_i\mid\theta')}{p(x_i\mid\theta_t)}
+\Delta(x,\theta,\theta') = N\psi(1,\theta,\theta') + \sum_{i=1}^N\log\frac{p(x_i\mid\theta')}{p(x_i\mid\theta)}
+\end{equation}
+A minibatch estimator of $\Delta$ can be defined as:
+\begin{equation}\label{eq:delta3}
+    \Delta^*(x,\theta,\theta') =
+N\psi(1,\theta,\theta') + \frac{N}{b}\sum_{i=1}^b\log\frac{p(x_i\mid\theta')}{p(x_i\mid\theta)}
 \end{equation}
 Note that $\Delta$ and $\Delta^*$ are evaluated on the full dataset and a minibatch of size $b$
-respectively. The scaling term $N$ produces true log likelihood ratios whereas $\Lambda-\psi$
-is a scaled log ratio. $\Delta^*$ is an unbiased estimator of $\Delta$.
+respectively. The scaling term $\frac{N}{b}$ ensures that $\Delta^*(x,\theta,\theta')$ is an
+unbiased estimator of $\Delta(x,\theta,\theta')$.
 
-\subsection{A Full Data Acceptance Test}\label{ssec:deltas_full}
+\subsection{A Full Dataset Acceptance Test}\label{ssec:deltas_full}
 
-The key to our test is to smooth the acceptance function.  We consider tests other than the Metropolis
+The key to our test is a smooth acceptance function.  We consider tests other than the Metropolis
 test that satisfy the conditions needed for accurate posterior estimation. This condition is
 the detailed balance condition defined earlier. Expressed in terms of $\Delta$, the
 classical Metropolis test is $f(\Delta) = {\rm min}(\exp(\Delta),1)$. More generally we have:
 
 \begin{lemma}\label{lem:detailed_balance}
-An acceptance function $g$ such that $g(\Delta) = \exp(\Delta) g(-\Delta )$ satisfies detailed
-balance. That is, $f(\theta_t)p(\theta' \mid \theta_t) = f(\theta')p(\theta_t \mid \theta')$, where
-$p(\theta_y \mid \theta_x)$ is the probability of jumping from $\theta_x$ to $\theta_y$ in the
-chain.
+  If $g(s)$ is any function such that $g(s) = \exp(s) g(-s)$, then the acceptance function $\alpha(\theta,\theta') \triangleq  g(\Delta(\theta,\theta'))$ satisfies detailed balance. That is,
+  \begin{equation}\label{detbal}
+    p(\theta)q(\theta'\mid\theta)\alpha(\theta,\theta') = p(\theta')q(\theta\mid\theta')\alpha(\theta',\theta)
+    \end{equation}
+
 \end{lemma}
 
 \begin{proof}
-First note that the transition probability $p(\theta' \mid \theta_t)$ is the probability of proposing
-$\theta'$ and then accepting it, so $p(\theta' \mid \theta_t) = q(\theta' \mid \theta_t)g(\Delta).$
-Similarly, $p(\theta_t \mid \theta') = q(\theta_t \mid \theta')g(-\Delta).$ Notice that the
-probability of accepting a transition from $\theta'$ to $\theta_t$ is $g(-\Delta)$ because this
-inverts the fraction inside the logarithm term of $\Delta$.  By assumption, we can expand $g(\Delta)
-= \exp(\Delta)g(-\Delta)$ in $p(\theta' \mid \theta_t)$. Doing this, and combining the result with
-the definition of $p(\theta_t \mid \theta')$, we get
-\begin{equation}\label{eq:combined}
-g(-\Delta) = \frac{p(\theta' \mid \theta_t)}{q(\theta' \mid \theta_t)\exp(\Delta)} = \frac{p(\theta_t \mid \theta')}{q(\theta_t \mid \theta')}.
-\end{equation}
-Rearranging terms and expanding $\exp(\Delta)$, we have
-\begin{equation}\label{eq:rearrange}
-\frac{p(\theta' \mid \theta_t) f(\theta_t) q(\theta' \mid \theta_t)}{q(\theta' \mid \theta_t) f(\theta') q(\theta_t \mid \theta')} = \frac{p(\theta_t \mid \theta')}{ q(\theta_t \mid \theta')}.
-\end{equation}
-Cancellations result in $f(\theta') p(\theta_t \mid \theta') = f(\theta_t) p(\theta' \mid
-\theta_t)$. Thus, detailed balance is satisfied.
+  Start with the LHS of (\ref{detbal}), substitute for $\alpha(\theta,\theta')$, and then apply the
+  identity $g(s) = \exp(s)g(-s)$:
+  \begin{equation}\label{detbal1}
+    \begin{split}
+      p(\theta)q(\theta'\mid\theta)\alpha(\theta,\theta') =~ & p(\theta)q(\theta'\mid\theta)g(\Delta(\theta,\theta'))\\
+      =~ & p(\theta)q(\theta'\mid\theta)\exp(\Delta(\theta,\theta'))g(-\Delta(\theta,\theta'))
+    \end{split}
+  \end{equation}
+  Note then that $-\Delta(\theta,\theta') = \Delta(\theta',\theta)$ because $\Delta$ is the log of ratios of
+  terms involving $\theta$ and $\theta'$ and exchanging the two inverts all these ratios, negating the
+  logarithm. Continuing:
+  \begin{equation}\label{detbal2}
+    \begin{split}
+    p(\theta)q(\theta'\mid\theta)\exp(\Delta(\theta,\theta'))g(-\Delta(\theta,\theta')) = ~ & p(\theta)q(\theta'\mid\theta)\exp(\Delta(\theta,\theta'))g(\Delta(\theta',\theta))\\
+    = ~ & p(\theta)q(\theta'\mid\theta)\exp(\Delta(\theta,\theta'))\alpha(\theta',\theta)
+    \end{split}
+  \end{equation}
+  Substituting now for $\Delta(\theta,\theta')$ from equation (\ref{eq:delta0}) gives
+  \begin{equation*}\label{detbal3}
+    p(\theta)q(\theta'\mid\theta)\frac{p(\theta')q(\theta\mid\theta')}{p(\theta)q(\theta'\mid\theta)}\alpha(\theta',\theta)
+      = p(\theta')q(\theta\mid\theta')\alpha(\theta',\theta) = RHS
+  \end{equation*}
 \end{proof}
 
-As a sanity check, the standard Metropolis-Hastings acceptance function $g(\Delta) = \min\{1,
-e^\Delta \} = \min\left\{1, \frac{f(\theta')q(\theta_t \mid \theta')}{f(\theta_t)q(\theta' \mid
-  \theta_t)}\right\}$ satisfies the condition $g(\Delta) = \exp(\Delta)g(-\Delta)$. In fact it is
-the optimal acceptance function in terms of acceptance rate, since it accepts with probability
-1 for $\Delta > 0$. 
+As a sanity check, choosing $g(s) = \min\{1, \exp(s) \}$ produces the
+standard Metropolis acceptance test $\alpha(\theta,\theta') = g(\Delta(\theta,\theta')) = 
+\min\left\{1, \frac{p(\theta')q(\theta \mid
+  \theta')}{p(\theta)q(\theta' \mid \theta)}\right\}$. $g(s)$ satisfies
+the condition $g(s) = \exp(s)g(-s)$, and therefore detailed
+balance. In fact it is the optimal acceptance function in terms of
+acceptance rate, since it accepts with probability 1 for $\Delta > 0$.
 
 \subsubsection{Logistic Acceptance Function}\label{ssec:deltas_full}
-For our new MH test we use the logistic function: $g(\Delta) =
-(1+\exp(-\Delta))^{-1}$. Straightforward arithmetic shows that it satisfies the condition in
-Lemma~\ref{lem:detailed_balance}.  The logistic function is nice because we can easily sample from
-it using the following procedure. At any iteration with a current parameter $\theta_t$ and a
-candidate sample $\theta'$, we can compute $\Delta$. Let $u$ be a uniform random variable $u \sim
-{\rm Unif}[0,1]$. We accept $\theta'$ if $g(\Delta) > u$, and reject otherwise. This process is
-equivalent to sampling a random variable $X$ with cumulative distribution function $F_X(x) = g(x)$,
-and accepting if $\Delta > X$ and rejecting otherwise. We can define $X = g^{-1}(u)$ so that its CDF
-is the logistic function, which follows because for arbitrary $X = x$, we have
-\[
-F_X(x) = {\rm Pr}(X \le x) = {\rm Pr}(g^{-1}(u) \le x) = {\rm Pr}(u \le g(x)) = \int_{0}^{g(x)} 1 dx = g(x),
-\]
-as the density of $u$ is one. Thus, the criteria to accept the candidate $\theta'$ is equivalent to
-whether $\Delta > X$. Moreover, the density of $X$ (a standard logistic random variable) is
-symmetric about zero, so the acceptance criteria can also be expressed as $\Delta + X>0$.
+For our new MH test we use the logistic function: $g(s) =
+(1+\exp(-s))^{-1}$. Straightforward arithmetic shows that it satisfies the condition in
+Lemma~\ref{lem:detailed_balance}.  While it is slightly less efficient than the Metropolis
+test when used on the full dataset, we will see soon that its smoothness allows it to naturally
+tolerate substantial variance in its input argument. This in turn will lead to a much more efficient
+test on subsets of data.
+
+Assume we begin with the current sample $\theta$  and a
+candidate sample $\theta'$. Let $u$ be a uniform random variable $u \sim
+\mathcal{U}[0,1]$. We accept $\theta'$ if $g(\Delta(\theta,\theta')) > u$, and reject otherwise.
+Since $g(s)$ is monotonically increasing, its inverse $g^{-1}(s)$ is well-defined and
+unique. So an equivalent test is to accept $\theta'$ iff
+\begin{equation}
+  \Delta(\theta,\theta') > v = g^{-1}(u)
+\end{equation}
+where $v$ is a random variable with the logistic distribution (its CDF is the logistic function). To
+see this notice that $\frac{du}{dv} = g'$, that $g'$ is the density corresponding to a logistic
+CDF, and finally that $\frac{du}{dv}$ is the density of $v$. The density of $v$ is symmetric,
+so we can equivalently test whether
+\begin{equation}
+  \Delta(\theta,\theta') + v > 0
+\end{equation}
+for a logistic random $v$. 
+
 
 \subsection{A Minibatch Acceptance Test}\label{ssec:deltas_minibatch}
 
-With large datasets, $\Delta$ is intractable to compute. An intuitive fix is to replace $\Delta$
-with the minibatch version, $\Delta'$, for our MH test. The following lemma characterizes the
-distribution of $\Delta'$.
+We now move to acceptance testing using the minibatch estimator
+$\Delta^*(x,\theta,\theta')$. From equation (\ref{eq:delta3}),
+$\Delta^*(x,\theta,\theta')$ can be represented as a constant term
+plus a sum of $b$ iid terms of the form
+$\log\frac{p(x_i|\theta')}{p(x_i|\theta)}$. As $N$ increases, $\Delta^*(\theta,\theta')$
+therefore has a distribution which approaches a normal distribution by the central limit
+theorem. Later we will provide specific bounds between the CDF of $\Delta^*(\theta,\theta')$
+and a Normal CDF, but for now we use an aymptotic argument. 
 
 \begin{lemma}\label{lem:gaussian}
 If the minibatch data is chosen randomly without replacement and has sufficiently many elements,
@@ -464,12 +500,12 @@ then the distribution of $\Delta'$ is approximately Gaussian.
 \begin{proof}
 By expanding the definition of $\Delta'$ from Equation~\ref{eq:deltas}, we get
 \[
-\Delta' = \log p(\theta') - \log p(\theta_t) + \log q(\theta_t \mid \theta') - \log q(\theta' \mid \theta_t) +
-\frac{N}{n}\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta_t)).
+\Delta' = \log p(\theta') - \log p(\theta) + \log q(\theta \mid \theta') - \log q(\theta' \mid \theta) +
+\frac{N}{n}\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta)).
 \]
-During a given iteration, $\theta_t$ and $\theta'$ are fixed. Therefore, the randomness in $\Delta'$
+During a given iteration, $\theta$ and $\theta'$ are fixed. Therefore, the randomness in $\Delta'$
 comes only from the minibatch. Since the minibatch is chosen randomly, the distribution of
-$\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta_t))$ converges to a Gaussian for
+$\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta))$ converges to a Gaussian for
 sufficiently large $N$ by the Central Limit Theorem.
 \end{proof}
 
@@ -514,12 +550,12 @@ $X_{\rm norm}$ reduces to finding their standard deviations.} of $\varepsilon$ (
 Equation~\ref{eq:relationship}), then we can pretend that our $\Delta'$ is in fact $\Delta$. To
 ``insert'' $\varepsilon$ into our test, we deconvolve $X$ so that one of its components, $X_{\rm
 norm}$, plays the part of $\varepsilon$. In light of our revised MH test, the previous discussion
-raises the question: in an iteration of MCMC with current $\theta_t$ and proposed $\theta'$, how do
+raises the question: in an iteration of MCMC with current $\theta$ and proposed $\theta'$, how do
 we know the distribution of $X_{\rm corr}$? We need the correct distribution to sample the
 \emph{values} of $X_{\rm corr}$ appropriately. This procedure consists of three major steps.
 
 \begin{enumerate}[noitemsep]
-    \item We first need to estimate the standard deviation of $X_{\rm norm}$ (i.e. the standard deviation of $\Delta'$). We use one minibatch data to complete this task. From the proof of Lemma~\ref{lem:gaussian}, we know the randomness comes from $\frac{N}{n}\sum_{i=1}^n \left(\log p(x_i|\theta') - \log p(x_i|\theta_t) \right)$. Thus, ${\rm var}(\Delta') = \frac{N^2}{n^2}\sum_{i=1}^n{\rm var}\left (  \log p(x_i|\theta') - \log p(x_i|\theta_t) \right ) = \frac{N^2}{n}{\rm var}\left (  \log p(x_i|\theta') - \log p(x_i|\theta_t) \right )$. We use data instances in one minibatch to estimate the ${\rm var} \left (  \log p(x_i|\theta') - \log p(x_i|\theta_t) \right )$. Since there are $n$ data instances in one minibatch, the estimation of ${\rm var} \left (  \log p(x_i|\theta') - \log p(x_i|\theta_t) \right )$ has high accuracy. In our experiments (see Section~\ref{sec:experiments}) we also use the complete data to obtain the population variance of $\left (  \log p(x_i|\theta') - \log p(x_i|\theta_t) \right )$, and use the nonparametric Bootstrap to estimate the ${\rm std(std}(\Delta'))$, so that we can construct the confidence interval of ${\rm std}(\Delta')$ to reveal the accuracy of our estimation.
+    \item We first need to estimate the standard deviation of $X_{\rm norm}$ (i.e. the standard deviation of $\Delta'$). We use one minibatch data to complete this task. From the proof of Lemma~\ref{lem:gaussian}, we know the randomness comes from $\frac{N}{n}\sum_{i=1}^n \left(\log p(x_i|\theta') - \log p(x_i|\theta) \right)$. Thus, ${\rm var}(\Delta') = \frac{N^2}{n^2}\sum_{i=1}^n{\rm var}\left (  \log p(x_i|\theta') - \log p(x_i|\theta) \right ) = \frac{N^2}{n}{\rm var}\left (  \log p(x_i|\theta') - \log p(x_i|\theta) \right )$. We use data instances in one minibatch to estimate the ${\rm var} \left (  \log p(x_i|\theta') - \log p(x_i|\theta) \right )$. Since there are $n$ data instances in one minibatch, the estimation of ${\rm var} \left (  \log p(x_i|\theta') - \log p(x_i|\theta) \right )$ has high accuracy. In our experiments (see Section~\ref{sec:experiments}) we also use the complete data to obtain the population variance of $\left (  \log p(x_i|\theta') - \log p(x_i|\theta) \right )$, and use the nonparametric Bootstrap to estimate the ${\rm std(std}(\Delta'))$, so that we can construct the confidence interval of ${\rm std}(\Delta')$ to reveal the accuracy of our estimation.
 
 	\item If the ${\rm std}(\Delta') > 1.2$, the decomposition of $X$ (i.e. Equation~\ref{eq:deconvolution}) is unstable. We consume more minibatches to decrease the ${\rm std}(\Delta')$. We update the value of $\Delta'$ by $\Delta' = (k\Delta'_{\rm old} + \Delta'_{\rm new}) / (k+1)$, where $\Delta'_{\rm old}$ is the existing $\Delta'$ which uses $k$ minibatches to computed (usually $k=1$), and $\Delta'_{\rm new}$ is the $\Delta'$ computed from the new minibatch. We also update the value of ${\rm std}(\Delta')$ by ${\rm std}(\Delta') = \sqrt{\left ( k^2 {\rm var}(\Delta'_{\rm old}) + {\rm var}(\Delta'_{\rm new}) \right ) / (k+1)^2}$. Thus, we can decrease the ${\rm std}(\Delta')$ by consuming more data until the ${\rm std}(\Delta') > 1.2$. With help of temperature (see Section~\ref{ssec:discussion}), we will show that usually the mean of minibatch consumed per iteration is below 2 in Section~\ref{sec:experiments}. Later our efficiency analysis in Section~\ref{sec:theory} will reveal that the number of data instance consumed by our algorithm is much fewer than that of existing algorithms.
 
@@ -539,11 +575,11 @@ Algorithm~\ref{alg:our_algorithm} describes our MH test within the MCMC algorith
 \begin{algorithm}[t]
 \Input{Number of samples $T$, minibatch size $m$, pre-computed $X_{\rm
 corr}$ distribution, and initial sample $\theta_0$.}
-\Output{A chain of $T$ samples $\{\theta_1, \ldots, \theta_T\}$ from $p(\theta)$\;
+\Output{A chain of $T$ samples $\{\theta_1, \ldots, \theta\}$ from $p(\theta)$\;
 MAP/ML estimation.}
 \For{$t=\{1, \ldots, T\}$}{
     Propose a candidate $\theta'$\ from proposal distribution\;
-    Draw a minibatch of $m$ samples, compute $\Delta'(\theta',\theta_t)$ and ${\rm std}(\Delta')$ for this sample\;
+    Draw a minibatch of $m$ samples, compute $\Delta'(\theta',\theta)$ and ${\rm std}(\Delta')$ for this sample\;
     \While {${\rm std}(\Delta') \ge 1$} {
     	Draw $m$ more samples to augment the current minibatch, and update $\Delta'$ and ${\rm std}(\Delta')$ \;
     }
@@ -553,7 +589,7 @@ MAP/ML estimation.}
         \eIf{$X_c + X_n + \Delta' > 0$}{
             Accept the candidate, $\theta_{t+1} = \theta'$\;
         }{
-            Reject and re-use the old sample, $\theta_{t+1} = \theta_t$\;
+            Reject and re-use the old sample, $\theta_{t+1} = \theta$\;
         }
     
 }
@@ -642,7 +678,7 @@ $X_{\rm norm}$. We next show that ${\rm Var}(\Delta')$ is roughly proportional t
 our proposer.
 
 \begin{lemma}\label{lem:theory2}
-For one step sampling from $\theta_t$ to $\theta'$, if the jumping step $\|\theta_t - \theta'\|_2 <
+For one step sampling from $\theta$ to $\theta'$, if the jumping step $\|\theta - \theta'\|_2 <
 \epsilon$, and the gradient of the log likelihood is bounded by a constant factor, i.e. $\|\nabla
 (\log \Pr(x_i\mid \theta))\|_2 < k$, the variance of $\Delta'$ is bounded by $4\epsilon^2 k^2
 (m-\frac{m(m-1)}{N-1})$, where $m$ is the minibatch size, and $N$ is the total data size.
@@ -678,7 +714,7 @@ reverse happens with a step size too small.
 We explore the efficiency of our minibatch MH test. Theorem~\ref{thm:efficiency} indicates that our minibatch MH test only requires a constant number of instances for each step, however, recall the Lemma~\ref{lem:efficienty_cutting}, the adaptive minibatch MH test requires $O(\sqrt{N})$ number of data instance for each step. Thus, We show that our proposed minibatch MH test is much higher efficient than the known minibatch algorithms. 
 
 \begin{theorem}\label{thm:efficiency}
-We require $\frac{ C^2 \rho^2 }{\sigma^6 \varepsilon^2}$ minibatch size to ensure $|P_a -P_a'| < \varepsilon$, where $C$ is a positive constant which is smaller than 0.4748, $\sigma^2 $ and $\rho$ is the second and third moment of $(\nabla\log \Pr(x_i|\theta_t) - \nabla\log\Pr(x_i|\theta')) - E\left[ \nabla\log \Pr(x_i|\theta_t) - \nabla\log\Pr(x_i|\theta')\right]$, $P_a$ is the accept rate from the complete data, $P_a'$ is the accept rate from minibatch data by our algorithm, $\theta_t$ is the current parameter, and $\theta'$ is the proposed parameter. 
+We require $\frac{ C^2 \rho^2 }{\sigma^6 \varepsilon^2}$ minibatch size to ensure $|P_a -P_a'| < \varepsilon$, where $C$ is a positive constant which is smaller than 0.4748, $\sigma^2 $ and $\rho$ is the second and third moment of $(\nabla\log \Pr(x_i|\theta) - \nabla\log\Pr(x_i|\theta')) - E\left[ \nabla\log \Pr(x_i|\theta) - \nabla\log\Pr(x_i|\theta')\right]$, $P_a$ is the accept rate from the complete data, $P_a'$ is the accept rate from minibatch data by our algorithm, $\theta$ is the current parameter, and $\theta'$ is the proposed parameter. 
 
 \end{theorem}
 
@@ -883,10 +919,10 @@ In this appendix, we describe the following topics, with an emphasis on clarity 
 \subsection{Proof of Lemma~\ref{lem:efficienty_cutting}}\label{app:lem_efficiency}
 
 If the minibatch size is $n$, we first compute the probability that more than $n$ data instances are required for adaptive sampling method for one iteration. We denote this probability $P_{rej}$.
-\[P_{rej} = \Pr \left ( 1-\phi_{n-1} \left( \frac{|\bar{l} - \frac{1}{N} \log (u\frac{p(\theta_t)q(\theta'|\theta_t)}{p(\theta')q(\theta_t|\theta')})|}{s} \right )  \geq \varepsilon \right ) \] 
+\[P_{rej} = \Pr \left ( 1-\phi_{n-1} \left( \frac{|\bar{l} - \frac{1}{N} \log (u\frac{p(\theta)q(\theta'|\theta)}{p(\theta')q(\theta|\theta')})|}{s} \right )  \geq \varepsilon \right ) \] 
 
 where $s = \frac{s_l}{\sqrt{n}}\sqrt{1-\frac{n-1}{N-1}}$. \\
-We define random variable $Z = \frac{1}{N}\log (uQ)$, where $Q=\frac{p(\theta_t)q(\theta'|\theta_t)}{p(\theta')q(\theta_t|\theta')}$. Then $Z$ has probability density function $f_Z(z) = N \exp(zN), z \in (-\infty, \frac{1}{N} \log Q]$.
+We define random variable $Z = \frac{1}{N}\log (uQ)$, where $Q=\frac{p(\theta)q(\theta'|\theta)}{p(\theta')q(\theta|\theta')}$. Then $Z$ has probability density function $f_Z(z) = N \exp(zN), z \in (-\infty, \frac{1}{N} \log Q]$.
 
 \begin{align*} 
 P_{rej}&=  \Pr \left( 1-\varepsilon \geq \phi_{n-1} \left( \frac{|\bar{l} - Z|}{s_l \sqrt{\frac{N-n}{N-1}}} \sqrt{n} \right) \right) \\ 
@@ -914,13 +950,13 @@ value) and the Triangle Inequality.  Since $|X_\xi| < \zeta$, $|P_a - P_a'| < 2 
 
 Next, we show the distance of new distributions obtained by applying $P_i$ and $P_i'$ on an
 arbitrary distribution $D$ once is bounded if we use the same proposer, i.e.  $\|P_i\circ D -
-P'_i\circ D\| \leq 4\zeta \ell \;\; \forall D$. We write $P_i(\theta_t \mid \theta') = P_a(\theta_t, \theta')
-q(\theta'\mid \theta_t) + (1-P_a(\theta_t,\theta')) \delta_D(\theta' - \theta_t)$, where $\delta_D$
+P'_i\circ D\| \leq 4\zeta \ell \;\; \forall D$. We write $P_i(\theta \mid \theta') = P_a(\theta, \theta')
+q(\theta'\mid \theta) + (1-P_a(\theta,\theta')) \delta_D(\theta' - \theta)$, where $\delta_D$
 is the Dirac delta function. The total variation distance between two generated distributions is
 \begin{align*}
-\|P_i\circ D - P'_i\circ D\| &= \int_{\theta'} \left| \int_{\theta_t}((P_a-P_a') q(\theta'|\theta_t) + (1-P_a - 1+P_a') \delta_D(\theta_t -\theta')) dD(\theta_t) \right| d\theta' \\
-&= \int_{\theta'} \left| \int_{\theta_t} (P_a- P_a')(q(\theta'|\theta_t) - \delta_D(\theta_t - \theta')) dD(\theta_t) \right|  d\theta'\\ 
-&\leq 2 \zeta \ell \int_{\theta'} \left| \int_{\theta_t}(q(\theta'|\theta_t) + \delta_D(\theta_t - \theta')) dD(\theta_t) \right| d\theta'\\
+\|P_i\circ D - P'_i\circ D\| &= \int_{\theta'} \left| \int_{\theta}((P_a-P_a') q(\theta'|\theta) + (1-P_a - 1+P_a') \delta_D(\theta -\theta')) dD(\theta) \right| d\theta' \\
+&= \int_{\theta'} \left| \int_{\theta} (P_a- P_a')(q(\theta'|\theta) - \delta_D(\theta - \theta')) dD(\theta) \right|  d\theta'\\ 
+&\leq 2 \zeta \ell \int_{\theta'} \left| \int_{\theta}(q(\theta'|\theta) + \delta_D(\theta - \theta')) dD(\theta) \right| d\theta'\\
 &\leq 2 \zeta \ell \int_{\theta'} ( D'(\theta') + D(\theta') ) d\theta'\\
 &= 4 \zeta \ell,
 \end{align*}
@@ -931,14 +967,14 @@ desired bound.
 \subsection{Proof of Lemma~\ref{lem:theory2}}\label{app:theory2}
 
 From Lemma~\ref{lem:gaussian}, only the $\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid
-\theta_t))$ term brings randomness into $\Delta'$. To simplify the subsequent notation, we define
-$g_i(\theta) = \log p(x_i\mid \theta)$, and $q_i = g_i(\theta') - g_i(\theta_t)$. Then by Taylor's Theorem:
+\theta))$ term brings randomness into $\Delta'$. To simplify the subsequent notation, we define
+$g_i(\theta) = \log p(x_i\mid \theta)$, and $q_i = g_i(\theta') - g_i(\theta)$. Then by Taylor's Theorem:
 \[
-|q| = |g(\theta') - g(\theta_t)| = |\nabla g(\theta_t)^T(\theta' - \theta_t) + o(\theta' - \theta_t)^2| \leq 2\epsilon k.
+|q| = |g(\theta') - g(\theta)| = |\nabla g(\theta)^T(\theta' - \theta) + o(\theta' - \theta)^2| \leq 2\epsilon k.
 \]
 Thus, given $\theta$ and $\theta'$, the variance of $\Delta'$ can be written as:
 \begin{align*}
-{\rm Var}(\Delta') &= {\rm Var}\left[\sum_{i=1}^m g_i(\theta') - g_i(\theta_t)\right] = {\rm Var}\left(\sum_{i=1}^m q_i\right) \\
+{\rm Var}(\Delta') &= {\rm Var}\left[\sum_{i=1}^m g_i(\theta') - g_i(\theta)\right] = {\rm Var}\left(\sum_{i=1}^m q_i\right) \\
 &= m {\rm Var} (q_i) + m(m-1) {\rm Cov}_{i \neq j}(q_i,q_j) \\
 &= m{\rm Var}(q_i) - \frac{m(m-1)}{N-1} {\rm Var}(q_i) \\
 &\leq 4\left(m - \frac{m(m-1)}{N-1}\right)k^2 \epsilon^2,
@@ -964,7 +1000,7 @@ where $\alpha = \frac{\epsilon_i C}{1-\eta}$.  Thus, we get:
 as desired.
 
 \subsection{Proof of Theorem~\ref{thm:efficiency}}\label{app:theory4}
-Since only the $\frac{N}{nT}\sum_{i=1}^n \left(\log p(x_i|\theta') - \log p(x_i|\theta_t) \right)$ term brings randomness into $\Delta'$. Define $X_i = \frac{N}{T}\left(\log p(x_i|\theta') - \log p (x_i|theta_t) \right)$, $\tilde{X_i} = X_i - E(X_i)$, and $Y_n = \frac{\sum_{i=1}^n \tilde{X_i}}{n}$ (i.e. $Y_n$ is the $\Delta' - E(\Delta')$). From Berry-Esseen theorem, $|F_n(x) - \Phi(x)| \leq \frac{C\rho}{\sigma^3\sqrt{n}}$, where $\Phi()$ is the CDF of standard normal distribution, $F_n()$ is the CDF of $Y_n$, $C$ is the constant parameter which is below 0.4748, $\rho = E(|\tilde{X_i}|^3)$, and $\sigma^2 = E(\tilde{X_i}^2)$. Since $\Delta'$ is an unbiased estimator of $\Delta$, the CDFs between $\Delta'$ and $\Delta + X_{\rm norm}$ has the same max gap (i.e. $\frac{C\rho}{\sigma^3\sqrt{n}}$).
+Since only the $\frac{N}{nT}\sum_{i=1}^n \left(\log p(x_i|\theta') - \log p(x_i|\theta) \right)$ term brings randomness into $\Delta'$. Define $X_i = \frac{N}{T}\left(\log p(x_i|\theta') - \log p (x_i|theta_t) \right)$, $\tilde{X_i} = X_i - E(X_i)$, and $Y_n = \frac{\sum_{i=1}^n \tilde{X_i}}{n}$ (i.e. $Y_n$ is the $\Delta' - E(\Delta')$). From Berry-Esseen theorem, $|F_n(x) - \Phi(x)| \leq \frac{C\rho}{\sigma^3\sqrt{n}}$, where $\Phi()$ is the CDF of standard normal distribution, $F_n()$ is the CDF of $Y_n$, $C$ is the constant parameter which is below 0.4748, $\rho = E(|\tilde{X_i}|^3)$, and $\sigma^2 = E(\tilde{X_i}^2)$. Since $\Delta'$ is an unbiased estimator of $\Delta$, the CDFs between $\Delta'$ and $\Delta + X_{\rm norm}$ has the same max gap (i.e. $\frac{C\rho}{\sigma^3\sqrt{n}}$).
 
 From Equation~\ref{eq:criteria}, we show we want to use $\Delta' + X_{\rm corr}$ to approximate $\Delta + X_{\rm norm} + X_{\rm corr}$. Since $|F_{\Delta'} - F_{\Delta + X_{\rm norm}}| \leq \frac{C\rho}{\sigma^3\sqrt{n}}$, for the worst case, assume $\exists \xi, ~{\rm s.t.} |f_{\Delta'}(\xi) - f_{\Delta + X_{\rm norm}} (\xi)| = \max_x |f_{\Delta'}(x) - f_{\Delta + X_{\rm norm}}(x)| \overset{\Delta}{=} \eta $, where $f()$ represents the PDF function. Because PDF of $X_{\rm corr}$ has the positive value and unit area, we have: 
 \begin{align*} 
