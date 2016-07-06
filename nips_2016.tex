@@ -37,7 +37,7 @@ framexleftmargin=20pt}
 \newtheorem{lemma}{Lemma}
 \newtheorem{theorem}{Theorem}
 
-\title{An Efficient Minibatch Acceptance Test for MCMC}
+\title{An Efficient Minibatch Acceptance Test for Metropolis-Hastings}
 
 % The \author macro works with any number of authors. There are two commands used to separate the
 % names and addresses of multiple authors: \And and \AND.
@@ -87,19 +87,20 @@ framexleftmargin=20pt}
 \begin{abstract}
 Markov chain Monte Carlo (MCMC) methods have many applications in
 machine learning. We are particularly interested in their application
-to modeling very large datasets, where it is impractical to
-perform Metropolis-Hastings tests on the full data. Previous work on reducing
+to modeling very large datasets, where it is impractical to perform
+Metropolis-Hastings tests on the full data. Previous work on reducing
 the cost of Metropolis-Hastings tests yield variable data reductions
-and in the worst case require the entire dataset. 
-Here we present a simple test which requires constant size minibatches
-if an auxiliary condition is met. We describe several cases under which
-this condition can be satisfied. Our new test is naturally tolerant
-of ``noisy'' estimates of the transition probability ratio. To achieve
-this, we replace the classical Metropolis-Hastings test with a smooth
-acceptance function which is a sigmoid (a logistic function). 
+and in the worst case require the entire dataset.  Here we present a
+simple test which requires constant size minibatches if an auxiliary
+condition is met. We describe several cases under which this condition
+can be satisfied. Our new test is naturally tolerant of ``noisy''
+estimates of the transition probability ratio. To achieve this, we
+replace the classical Metropolis-Hastings acceptance test with a
+smooth acceptance function which is a sigmoid (logistic)
+function of the log likelihood ratio.
 The resulting test can be combined with minibatch proposals to yield
-updates with the same complexity as a simple SGD update. In this paper we
-derive the test, discuss its implementation, and present several
+updates with the same complexity as a simple SGD update. In this paper
+we derive the test, discuss its implementation, and present several
 experiments.
 \end{abstract}
 
@@ -271,6 +272,7 @@ bound of average number of data instances consumed for one iteration of
 ~\cite{cutting_mh_2014} and ~\cite{icml2014c1_bardenet14} is
 $\Omega(N)$, where $N$ is the number of data points.
 
+\subsection{An Example}
 Consider a simple model where samples $x_i$ for $i=1,\ldots,N$ are
 drawn from a Normal distribution $\mathcal{N}(\theta,1)$ where
 $\theta=0.5$, and with a uniform prior on $\theta$. The log likelihood ratio is
@@ -302,7 +304,7 @@ u$.
   For the model above, there
   exists a fixed (independent of $N$) constant $c$ such that with probability $ \geq c$ over the joint
   distribution of $(\theta, \theta', u)$, the
-  test from \cite{icml2014c1_bardenet14} consumes all $N$ samples. 
+  tests from \cite{icml2014c1_bardenet14} and \cite{cutting_mh_2014} consume all $N$ samples. 
 \end{lemma}
 
 \begin{proof} Assume $(\theta' - \theta) \in \pm\frac{1}{\sqrt{N}}[0.5,1]$ and
@@ -353,6 +355,17 @@ and consider the range of $u$ values
   and $u$ are drawn independently and so the probability of the conjunction of these events is
   $c = p_0 p_1 p_2 = 0.009$.
 \end{proof}
+
+Similar results can be proved for other distributions and proposals, by identifying
+regions in product space $(\theta,\theta'-\theta,u)$ such that the hypothesis test
+needs to separate nearly-equal values. 
+
+It follows that the accelerated M-H tests in \cite{icml2014c1_bardenet14} and
+\cite{cutting_mh_2014} require at least a constant fraction $\geq c$
+in the amount of data consumed per test, compared to full-dataset tests.
+i.e. their speed-up is at most $1/c$.
+
+\subsection{MCMC Posterior Inference}
 There is a separate line of MCMC work drawing principles from
 statistical physics. By viewing random variables as particles in a
 system, one can apply Hamiltonian Monte Carlo
