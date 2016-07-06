@@ -464,21 +464,22 @@ tolerate substantial variance in its input argument. This in turn will lead to a
 test on subsets of data.
 
 Assume we begin with the current sample $\theta$  and a
-candidate sample $\theta'$. Let $u$ be a uniform random variable $u \sim
-\mathcal{U}[0,1]$. We accept $\theta'$ if $g(\Delta(\theta,\theta')) > u$, and reject otherwise.
+candidate sample $\theta'$. Let $V$ be a uniform random variable $V \sim
+\mathcal{U}(0,1)$. We accept $\theta'$ if $g(\Delta(\theta,\theta')) > V$, and reject otherwise.
 Since $g(s)$ is monotonically increasing, its inverse $g^{-1}(s)$ is well-defined and
 unique. So an equivalent test is to accept $\theta'$ iff
 \begin{equation}
-  \Delta(\theta,\theta') > v = g^{-1}(u)
+  \Delta(\theta,\theta') > X = g^{-1}(V)
 \end{equation}
-where $v$ is a random variable with the logistic distribution (its CDF is the logistic function). To
-see this notice that $\frac{du}{dv} = g'$, that $g'$ is the density corresponding to a logistic
-CDF, and finally that $\frac{du}{dv}$ is the density of $v$. The density of $v$ is symmetric,
+where $X$ is a random variable with the logistic distribution (its CDF is the logistic function). To
+see this notice that $\frac{dV}{dX} = g'$, that $g'$ is the density corresponding to a logistic
+CDF, and finally that $\frac{dV}{dX}$ is the density of $X$. The density of $X$ is symmetric,
 so we can equivalently test whether
 \begin{equation}
-  \Delta(\theta,\theta') + v > 0
+  \label{theexacttest}
+  \Delta(\theta,\theta') + X > 0
 \end{equation}
-for a logistic random $v$. 
+for a logistic random $X$. 
 
 
 \subsection{A Minibatch Acceptance Test}\label{ssec:deltas_minibatch}
@@ -490,58 +491,31 @@ plus a sum of $b$ iid terms of the form
 $\log\frac{p(x_i|\theta')}{p(x_i|\theta)}$. As $N$ increases, $\Delta^*(\theta,\theta')$
 therefore has a distribution which approaches a normal distribution by the central limit
 theorem. Later we will provide specific bounds between the CDF of $\Delta^*(\theta,\theta')$
-and a Normal CDF, but for now we use an aymptotic argument. 
+and a Normal CDF, but for now we use an asymptotic argument. 
 
-\begin{lemma}\label{lem:gaussian}
-If the minibatch data is chosen randomly without replacement and has sufficiently many elements,
-then the distribution of $\Delta'$ is approximately Gaussian.
-\end{lemma}
-
-\begin{proof}
-By expanding the definition of $\Delta'$ from Equation~\ref{eq:deltas}, we get
-\[
-\Delta' = \log p(\theta') - \log p(\theta) + \log q(\theta \mid \theta') - \log q(\theta' \mid \theta) +
-\frac{N}{n}\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta)).
-\]
-During a given iteration, $\theta$ and $\theta'$ are fixed. Therefore, the randomness in $\Delta'$
-comes only from the minibatch. Since the minibatch is chosen randomly, the distribution of
-$\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid \theta))$ converges to a Gaussian for
-sufficiently large $N$ by the Central Limit Theorem.
-\end{proof}
-
-% Daniel: I decided to put the figure here, so it's closer to the text that references it.
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=1\textwidth]{mh_convolution_diagram_v2}
-    \caption{
-    Three examples of $X_{\rm norm}$ and $X_{\rm corr}$ distributions that convolve to form the
-    standard logistic distribution. We use three standard deviation values of $X_{\rm norm}$. The
-    two red (respectively, blue, green) curves form the logistic. The $y$-axis is capped at 0.5.
-    This figure must be viewed in color.
-    }
-    \label{fig:deconvolution}
-    %\vspace{-10pt}
-\end{figure}
-
-From Lemma~\ref{lem:gaussian}, since $\Delta'$ is a noisy approximation of $\Delta$, the
-relationship is expressed as
+In the limit, since $\Delta^*$ is normally distributed about its mean $\Delta$, we
+can write
 \begin{equation}\label{eq:relationship}
-\Delta' = \Delta + \varepsilon, \quad \varepsilon \sim \mathcal{N}(0, \sigma^2),
+\Delta^* = \Delta + X_{\rm norm}, \quad X_{\rm norm} \sim \mathcal{\bar{N}}(0, \sigma^2(\Delta^*)),
 \end{equation}
-for a Gaussian noise term $\varepsilon$.  The noise means we cannot just replace $\Delta+X$ with
-$\Delta'+X$ for our test, so we need to slightly change our acceptance criteria. Our insight is to
-decompose $X$ as
+where $\mathcal{\bar{N}}(0, \sigma^2(\Delta^*))$ denotes a distribution which is approximately
+normal with variance $\sigma^2(\Delta^*)$. 
+But to perform the test in equation (\ref{theexacttest}) we want $\Delta + X$ for
+a logistic random $X$ (call it $X_{\rm logistic}$ from now on). 
+Our approach is to decompose $X_{\rm logistic}$ as
 \begin{equation}\label{eq:deconvolution}
-X = X_{\rm norm}+X_{\rm corr},
+X_{\rm logistic} = X_{\rm norm}+X_{\rm corr},
 \end{equation}
 where we assume $X_{\rm norm}$ is a zero-mean Gaussian and $X_{\rm corr}$ is a zero-mean
-``correction'' term.  These two add (i.e., their distributions convolve) to form $X$. The criteria
-to accept is now
+``correction'' term.  These two add (i.e., their distributions convolve) to form $X_{\rm logistic}$. The acceptance
+test is now:
 \begin{equation}\label{eq:criteria}
-\Delta + X = \Delta + X_{\rm norm} + X_{\rm corr} \approx \Delta' + X_{\rm corr} >0.
+\Delta + X_{\rm logistic} = (\Delta + X_{\rm norm}) + X_{\rm corr} = \Delta^* + X_{\rm corr} >0.
 \end{equation}
-The approximation exists because $X_{\rm norm}$ is an estimate of $\varepsilon$. If $X_{\rm norm}$
-is exact, then we get the same MH test with $\Delta'$ as we do with the full data version $\Delta$.
+If $\mathcal{\bar{N}}(0, \sigma^2(\Delta^*))$ is exactly $\mathcal{N}(0, \sigma^2(\Delta^*))$,
+the above test is exact as well. And as we will see later,  if there is a maximum error $\epsilon$ between
+the CDF of $\mathcal{\bar{N}}(0, \sigma^2(\Delta^*))$ and the CDF of $\mathcal{N}(0, \sigma^2(\Delta^*))$,
+then the acceptance test has an error of at most $\epsilon$. 
 
 It is important to understand why we use Equations~\ref{eq:deconvolution} and~\ref{eq:criteria}. The
 deconvolution process allows us to use $\Delta' + X_{\rm corr}$ as a proxy for $\Delta + X$. It
