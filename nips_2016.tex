@@ -512,10 +512,27 @@ test is now:
 \begin{equation}\label{eq:criteria}
 \Delta + X_{\rm logistic} = (\Delta + X_{\rm norm}) + X_{\rm corr} = \Delta^* + X_{\rm corr} >0.
 \end{equation}
+i.e. given an approximate estimate $\Delta^*$ from the current data minibatch (assuming its
+variance is small enough) we test acceptance by adding a random variable $X_{\rm corr}$ and
+then accept $\theta'$ if the result is positive.
+
 If $\mathcal{\bar{N}}(0, \sigma^2(\Delta^*))$ is exactly $\mathcal{N}(0, \sigma^2(\Delta^*))$,
 the above test is exact as well. And as we will see later,  if there is a maximum error $\epsilon$ between
 the CDF of $\mathcal{\bar{N}}(0, \sigma^2(\Delta^*))$ and the CDF of $\mathcal{N}(0, \sigma^2(\Delta^*))$,
 then the acceptance test has an error of at most $\epsilon$. 
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=1\textwidth]{mh_convolution_diagram_v2}
+    \caption{
+    Three examples of $X_{\rm norm}$ and $X_{\rm corr}$ distributions that convolve to form the
+    standard logistic distribution. We use three standard deviation values of $X_{\rm norm}$. The
+    two red curves convolve to form the logistic, etc. The $y$-axis is capped at 0.5 for
+    readability. This figure must be viewed in color.
+    }
+    \label{fig:deconvolution}
+    %\vspace{-10pt}
+\end{figure}
 
 It is important to understand why we use Equations~\ref{eq:deconvolution} and~\ref{eq:criteria}. The
 deconvolution process allows us to use $\Delta' + X_{\rm corr}$ as a proxy for $\Delta + X$. It
