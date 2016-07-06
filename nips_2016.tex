@@ -36,6 +36,7 @@ framexleftmargin=20pt}
 
 \newtheorem{lemma}{Lemma}
 \newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}
 
 \title{An Efficient Minibatch Acceptance Test for Metropolis-Hastings}
 
@@ -468,13 +469,14 @@ the condition $g(s) = \exp(s)g(-s)$, and therefore detailed
 balance. In fact it is the optimal acceptance function in terms of
 acceptance rate, since it accepts with probability 1 for $\Delta > 0$.
 
-\subsubsection{Logistic Acceptance Function}\label{ssec:deltas_full}
-For our new MH test we use the logistic function: $g(s) =
-(1+\exp(-s))^{-1}$. Straightforward arithmetic shows that it satisfies the condition in
-Lemma~\ref{lem:detailed_balance}.  While it is slightly less efficient than the Metropolis
-test when used on the full dataset, we will see soon that its smoothness allows it to naturally
-tolerate substantial variance in its input argument. This in turn will lead to a much more efficient
-test on subsets of data.
+\subsection{Logistic Acceptance Function}
+For our new MH test we use the logistic function:
+$g(s)=(1+\exp(-s))^{-1}$. Straightforward arithmetic shows that it
+satisfies the condition in Lemma~\ref{lem:detailed_balance}.  While it
+is slightly less efficient than the Metropolis test when used on the
+full dataset, we will see soon that its smoothness allows it to
+naturally tolerate substantial variance in its input argument. This in
+turn will lead to a much more efficient test on subsets of data.
 
 Assume we begin with the current sample $\theta$  and a
 candidate sample $\theta'$. Let $V$ be a uniform random variable $V \sim
@@ -514,18 +516,28 @@ can write
 where $\mathcal{\bar{N}}(0, \sigma^2(\Delta^*))$ denotes a distribution which is approximately
 normal with variance $\sigma^2(\Delta^*)$. 
 But to perform the test in equation (\ref{theexacttest}) we want $\Delta + X$ for
-a logistic random $X$ (call it $X_{\rm logistic}$ from now on). 
-Our approach is to decompose $X_{\rm logistic}$ as
+a logistic random $X$ (call it $X_{\rm log}$ from now on). 
+Our approach is to decompose $X_{\rm log}$ as
 \begin{equation}\label{eq:deconvolution}
-X_{\rm logistic} = X_{\rm norm}+X_{\rm corr},
+X_{\rm log} = X_{\rm norm}+X_{\rm corr},
 \end{equation}
-where we assume $X_{\rm norm}$ is a zero-mean Gaussian and $X_{\rm corr}$ is a zero-mean
-``correction'' term.  These two add (i.e., their distributions convolve) to form $X_{\rm logistic}$. The acceptance
-test is now:
+where we assume $X_{\rm norm}$ is a zero-mean Gaussian and $X_{\rm
+  corr}$ is a zero-mean ``correction'' term with distribution $C(X)$.
+The two variables are added (i.e., their distributions convolve) to
+form $X_{\rm log}$. It will be convenient to express this relationship
+in terms of the CDFs $N(X_{\rm norm}) = \Phi(X_{\rm norm}/\sigma)$ and
+$S(X_{\rm log})$, where $\Phi(.)$ is the Normal CDF with zero mean and
+unit variance and $S(.)$ is the standard logistic function.
+ 
+Equation (\ref{eq:deconvolution}) implies that $S = N * C$ where $*$ denotes convolution. We will later
+derive a numerical representation of $C$ by deconvolution, and using this we can generate
+samples of $X_{\rm corr}$. 
+
+  The acceptance test is now:
 \begin{equation}\label{eq:criteria}
-\Delta + X_{\rm logistic} = (\Delta + X_{\rm norm}) + X_{\rm corr} = \Delta^* + X_{\rm corr} >0.
+\Delta + X_{\rm log} = (\Delta + X_{\rm norm}) + X_{\rm corr} = \Delta^* + X_{\rm corr} >0.
 \end{equation}
-i.e. given an approximate estimate $\Delta^*$ from the current data minibatch (assuming its
+i.e. given an estimate $\Delta^*$ from the current data minibatch (assuming its
 variance is small enough) we test acceptance by adding a random variable $X_{\rm corr}$ and
 then accept $\theta'$ if the result is positive.
 
@@ -547,180 +559,307 @@ then the acceptance test has an error of at most $\epsilon$.
     %\vspace{-10pt}
 \end{figure}
 
-It is important to understand why we use Equations~\ref{eq:deconvolution} and~\ref{eq:criteria}. The
-deconvolution process allows us to use $\Delta' + X_{\rm corr}$ as a proxy for $\Delta + X$. It
-works because if we know the distribution\footnote{Computing the distributions of $\varepsilon$ and
-$X_{\rm norm}$ reduces to finding their standard deviations.} of $\varepsilon$ (from
-Equation~\ref{eq:relationship}), then we can pretend that our $\Delta'$ is in fact $\Delta$. To
-``insert'' $\varepsilon$ into our test, we deconvolve $X$ so that one of its components, $X_{\rm
-norm}$, plays the part of $\varepsilon$. In light of our revised MH test, the previous discussion
-raises the question: in an iteration of MCMC with current $\theta$ and proposed $\theta'$, how do
-we know the distribution of $X_{\rm corr}$? We need the correct distribution to sample the
-\emph{values} of $X_{\rm corr}$ appropriately. This procedure consists of three major steps.
+%% It is important to understand why we use Equations~\ref{eq:deconvolution} and~\ref{eq:criteria}. The
+%% deconvolution process allows us to use $\Delta' + X_{\rm corr}$ as a proxy for $\Delta + X$. It
+%% works because if we know the distribution\footnote{Computing the distributions of $\varepsilon$ and
+%% $X_{\rm norm}$ reduces to finding their standard deviations.} of $\varepsilon$ (from
+%% Equation~\ref{eq:relationship}), then we can pretend that our $\Delta'$ is in fact $\Delta$. To
+%% ``insert'' $\varepsilon$ into our test, we deconvolve $X$ so that one of its components, $X_{\rm
+%% norm}$, plays the part of $\varepsilon$. In light of our revised MH test, the previous discussion
+%% raises the question: in an iteration of MCMC with current $\theta$ and proposed $\theta'$, how do
+%% we know the distribution of $X_{\rm corr}$? We need the correct distribution to sample the
+%% \emph{values} of $X_{\rm corr}$ appropriately. This procedure consists of three major steps.
 
-\begin{enumerate}[noitemsep]
-    \item We first need to estimate the standard deviation of $X_{\rm norm}$ (i.e. the standard deviation of $\Delta'$). We use one minibatch data to complete this task. From the proof of Lemma~\ref{lem:gaussian}, we know the randomness comes from $\frac{N}{n}\sum_{i=1}^n \left(\log p(x_i|\theta') - \log p(x_i|\theta) \right)$. Thus, ${\rm var}(\Delta') = \frac{N^2}{n^2}\sum_{i=1}^n{\rm var}\left (  \log p(x_i|\theta') - \log p(x_i|\theta) \right ) = \frac{N^2}{n}{\rm var}\left (  \log p(x_i|\theta') - \log p(x_i|\theta) \right )$. We use data instances in one minibatch to estimate the ${\rm var} \left (  \log p(x_i|\theta') - \log p(x_i|\theta) \right )$. Since there are $n$ data instances in one minibatch, the estimation of ${\rm var} \left (  \log p(x_i|\theta') - \log p(x_i|\theta) \right )$ has high accuracy. In our experiments (see Section~\ref{sec:experiments}) we also use the complete data to obtain the population variance of $\left (  \log p(x_i|\theta') - \log p(x_i|\theta) \right )$, and use the nonparametric Bootstrap to estimate the ${\rm std(std}(\Delta'))$, so that we can construct the confidence interval of ${\rm std}(\Delta')$ to reveal the accuracy of our estimation.
+%% \begin{enumerate}[noitemsep]
+%%     \item We first need to estimate the standard deviation of $X_{\rm norm}$ (i.e. the standard deviation of $\Delta'$). We use one minibatch data to complete this task. From the proof of Lemma~\ref{lem:gaussian}, we know the randomness comes from $\frac{N}{n}\sum_{i=1}^n \left(\log p(x_i|\theta') - \log p(x_i|\theta) \right)$. Thus, ${\rm var}(\Delta') = \frac{N^2}{n^2}\sum_{i=1}^n{\rm var}\left (  \log p(x_i|\theta') - \log p(x_i|\theta) \right ) = \frac{N^2}{n}{\rm var}\left (  \log p(x_i|\theta') - \log p(x_i|\theta) \right )$. We use data instances in one minibatch to estimate the ${\rm var} \left (  \log p(x_i|\theta') - \log p(x_i|\theta) \right )$. Since there are $n$ data instances in one minibatch, the estimation of ${\rm var} \left (  \log p(x_i|\theta') - \log p(x_i|\theta) \right )$ has high accuracy. In our experiments (see Section~\ref{sec:experiments}) we also use the complete data to obtain the population variance of $\left (  \log p(x_i|\theta') - \log p(x_i|\theta) \right )$, and use the nonparametric Bootstrap to estimate the ${\rm std(std}(\Delta'))$, so that we can construct the confidence interval of ${\rm std}(\Delta')$ to reveal the accuracy of our estimation.
 
-	\item If the ${\rm std}(\Delta') > 1.2$, the decomposition of $X$ (i.e. Equation~\ref{eq:deconvolution}) is unstable. We consume more minibatches to decrease the ${\rm std}(\Delta')$. We update the value of $\Delta'$ by $\Delta' = (k\Delta'_{\rm old} + \Delta'_{\rm new}) / (k+1)$, where $\Delta'_{\rm old}$ is the existing $\Delta'$ which uses $k$ minibatches to computed (usually $k=1$), and $\Delta'_{\rm new}$ is the $\Delta'$ computed from the new minibatch. We also update the value of ${\rm std}(\Delta')$ by ${\rm std}(\Delta') = \sqrt{\left ( k^2 {\rm var}(\Delta'_{\rm old}) + {\rm var}(\Delta'_{\rm new}) \right ) / (k+1)^2}$. Thus, we can decrease the ${\rm std}(\Delta')$ by consuming more data until the ${\rm std}(\Delta') > 1.2$. With help of temperature (see Section~\ref{ssec:discussion}), we will show that usually the mean of minibatch consumed per iteration is below 2 in Section~\ref{sec:experiments}. Later our efficiency analysis in Section~\ref{sec:theory} will reveal that the number of data instance consumed by our algorithm is much fewer than that of existing algorithms.
+%% 	\item If the ${\rm std}(\Delta') > 1.2$, the decomposition of $X$ (i.e. Equation~\ref{eq:deconvolution}) is unstable. We consume more minibatches to decrease the ${\rm std}(\Delta')$. We update the value of $\Delta'$ by $\Delta' = (k\Delta'_{\rm old} + \Delta'_{\rm new}) / (k+1)$, where $\Delta'_{\rm old}$ is the existing $\Delta'$ which uses $k$ minibatches to computed (usually $k=1$), and $\Delta'_{\rm new}$ is the $\Delta'$ computed from the new minibatch. We also update the value of ${\rm std}(\Delta')$ by ${\rm std}(\Delta') = \sqrt{\left ( k^2 {\rm var}(\Delta'_{\rm old}) + {\rm var}(\Delta'_{\rm new}) \right ) / (k+1)^2}$. Thus, we can decrease the ${\rm std}(\Delta')$ by consuming more data until the ${\rm std}(\Delta') > 1.2$. With help of temperature (see Section~\ref{ssec:discussion}), we will show that usually the mean of minibatch consumed per iteration is below 2 in Section~\ref{sec:experiments}. Later our efficiency analysis in Section~\ref{sec:theory} will reveal that the number of data instance consumed by our algorithm is much fewer than that of existing algorithms.
 
-    \item Once we have ${\rm std}(\Delta')$, we can determine the distribution of $X_{\rm corr}$
-    from standard deconvolution techniques. These rely on the well-known fact that the Fourier
-    transform of a convolution is the product of the individual Fourier transforms. In practice, we
-    pre-compute distributions of $X_{\rm corr}$ for different ${\rm std}(\Delta')$ values to
-    facilitate the sampling process.
-\end{enumerate}
+%%     \item Once we have ${\rm std}(\Delta')$, we can determine the distribution of $X_{\rm corr}$
+%%     from standard deconvolution techniques. These rely on the well-known fact that the Fourier
+%%     transform of a convolution is the product of the individual Fourier transforms. In practice, we
+%%     pre-compute distributions of $X_{\rm corr}$ for different ${\rm std}(\Delta')$ values to
+%%     facilitate the sampling process.
+%% \end{enumerate}
 
-Algorithm~\ref{alg:our_algorithm} describes our MH test within the MCMC algorithm.
-
-\subsection{Discussions and Practical Considerations of the New MH Test}\label{ssec:discussion}
+Algorithm~\ref{alg:our_algorithm} describes the M-H iteration using our acceptance test.
 
 \SetKwInOut{Input}{Input}
 \SetKwInOut{Output}{Output}
+
 \begin{algorithm}[t]
 \Input{Number of samples $T$, minibatch size $m$, pre-computed $X_{\rm
-corr}$ distribution, and initial sample $\theta_0$.}
-\Output{A chain of $T$ samples $\{\theta_1, \ldots, \theta\}$ from $p(\theta)$\;
-MAP/ML estimation.}
+corr}$ distribution, and initial sample $\theta_1$.}
+\Output{A chain of $T$ samples $\{\theta_1, \ldots, \theta_T\}$ from $p(\theta)$\;}
 \For{$t=\{1, \ldots, T\}$}{
-    Propose a candidate $\theta'$\ from proposal distribution\;
-    Draw a minibatch of $m$ samples, compute $\Delta'(\theta',\theta)$ and ${\rm std}(\Delta')$ for this sample\;
-    \While {${\rm std}(\Delta') \ge 1$} {
-    	Draw $m$ more samples to augment the current minibatch, and update $\Delta'$ and ${\rm std}(\Delta')$ \;
+    Propose a candidate $\theta'$\ from proposal distribution $q(\theta'\mid\theta_t)$\;
+    Draw a minibatch of $m$ points $x_i$, compute $\Delta^*(x,\theta_t,\theta')$ and sample variance $\sigma^2(\Delta^*)$\;
+    \While {$\sigma^2(\Delta^*) \ge 1$} {
+    	Draw $m$ more samples to augment the current minibatch, and update $\Delta^*$ and $\sigma^2(\Delta^*)$ \;
     }
-    Let $\sigma = \sqrt{1 - {\rm std}(\Delta')^2}$, draw a normal variable $X_n \in Norm(0,\sigma)$ and
+    Let $\sigma_n^2 = 1 - \sigma^2(\Delta^*)$, draw a normal variable $X_n \in \mathcal{N}(0,\sigma_n^2)$ and
     $X_c$ from the correction distribution\;
         
-        \eIf{$X_c + X_n + \Delta' > 0$}{
+        \eIf{$\Delta^* + X_n + X_c > 0$}{
             Accept the candidate, $\theta_{t+1} = \theta'$\;
         }{
-            Reject and re-use the old sample, $\theta_{t+1} = \theta$\;
+            Reject and re-use the old sample, $\theta_{t+1} = \theta_t$\;
         }
     
 }
-\caption{A description of our MH test within the MCMC algorithm.}
+\caption{A description of M-H sampling with our acceptance test.}
 \label{alg:our_algorithm}
 %\vspace{-10pt}
 \end{algorithm}
 
-\textbf{The Convolution}. Figure~\ref{fig:deconvolution} demonstrates
-Equation~\ref{eq:deconvolution} and provides three (color-coded) examples of densities for $X_{\rm
-norm}$ and $X_{\rm corr}$. The density of $X$, a logistic random variable with mean $\mu = 0$ and
-scale $s=1$, is known, as are the $X_{\rm norm}$ densities for different standard deviations. The
-deconvolution provides us with the $X_{\rm corr}$ distributions. Note, however, that as the standard
-deviation of $X_{\rm norm}$ increases, the $X_{\rm corr}$ distribution becomes increasingly unstable
-and ``bumpier'', because the logistic curve has fatter tails than Gaussians. In addition, we cap
-the standard deviation possibilities of $X_{\rm norm}$ at $\approx 1.2$ in our experiments. In our
-experiments, we discretize the possible standard deviations of $X_{\rm norm}$, and we also limit the
-densities to consider the range $[-10,10]$ as shown in Figure~\ref{fig:deconvolution}.
+\section{Analysis}\label{sec:analysis}
 
-\textbf{Variance Preconditioning}. Returning to the discussion from Section~\ref{sec:introduction},
-our test requires a variance check. Equation~\ref{eq:deconvolution} means that the variance of $X$,
-which is $\pi^2/3\approx 3.29$ is an upper bound on the variances of $X_{\rm norm}$. Therefore, the
-test cannot work if the variance of $X_{\rm norm}$ is too large. The standard deviation of $X$
-is about $\sqrt{3.29}\approx 1.81$, so this bounds ${\rm std}(X_{\rm norm})$ (as well as ${\rm
-std}(\Delta')$). From the discussion above, we bound the standard deviation at 1.2 so that $X_{\rm
-corr}$ can handle the remaining noise. Recall from Section~\ref{ssec:deltas_minibatch} that we
-estimate the ${\rm std}(X_{\rm norm})$ each iteration. If the variance/standard deviation test
-fails, then we can (a) skip the iteration, (b) increase the minibatch size, (c) change the proposal
-to decrease step sizes, or (d) increase temperature, as we now discuss.
+In this section we derive error bounds for our M-H test, and for the approximate target
+distribution that it generates. We discuss generation of the correction variable in the
+next section. To cut to the chase, it is possible to generate samples $X_{\rm corr}$ with
+a CDF error of at most single-precision floating point error, and possibly better. We
+therefore treat the $X_{\rm corr}$ variable as a sample from the exact correction distribution
+and we will not analyze its errors.
 
-\textbf{Temperature}. One way to satisfy the variance precondition is to increase the temperature of
-the target distribution. For a temperature $T>1$, the augmented target distribution would become
-\begin{equation}\label{eq:log_temperature}
-\log p(\theta \mid x_1,\ldots,x_N) \approx \log p(\theta) + \frac{1}{T}\frac{N}{n} \sum_{i=1}^n\log p(x_i \mid \theta).
+In the most similar prior works, \cite{cutting_mh_2014} uses asymptotic arguments based
+on the central limit theorem to argue that its approximate acceptance test error tends to
+zero as batch size increases. But no quantitative bounds are given. In
+\cite{icml2014c1_bardenet14}, explicit bounds are given, but they depend on a bound on
+the quantity:
+\begin{equation}
+  \max_{1\leq i\leq N}|\log p(x_i|\theta') - \log p(x_i|\theta)|
 \end{equation}
-with an extra $1/T$ term augmented. As the temperature increases, the values of $\Delta'$ get
-smaller in absolute value, thus reducing variance. The flatter posterior results in easier mixing.
+while such bounds can be derived easily for simple models, its unclear how to derive them
+for a complex model such as a neural network.
 
+In this paper, we rely on quantitave forms of the central limit theorem which rely on measurable
+statistics from the minibatch $\{x_i\}$. Thus a sampler using our approach does not need to ``see''
+data beyond the current minibatch. This supports use of the sampler on very large datasets, and
+in online mode where the dataset is presented as a stream.
 
+The outline of this section is as follows: we first present bounds on the absolute
+and relative error (in CDF) of the distribution of $\Delta^*$ vs a Normal distribution. We then show that
+these errors bounds are preserved after the addition of other random variables, in particular
+$X_n$ and $X_c$. From this it follows that the acceptance test has the same error bound.
 
+The quantitative central-limit result below comes from \cite{explicit-clt05}:
+  
 
-\section{Analysis}\label{sec:theory}
-
-In this section, we first perform an error analysis for our new
-acceptance test. Second, we follow the implications of this analysis for accuracy of
-the estimated target distribution. Third, we compare the speed and accuracy of
-our test with prior work. Due to space constraints, all our proofs
-are in Appendix~\ref{app:proofs}.
-
-We first introduce some notation. Let our true (full dataset) and
-approximate (minibatch) acceptance probabilities be $P_a = g(\Delta) =
-\Pr(\Delta + X > 0)$ and $P_a' = \Pr(\Delta' + X_{\rm corr} > 0)$.
-Define $X_{\xi} = \varepsilon - X_{\rm norm}$ which means, invoking
-Equations~\ref{eq:relationship} and~\ref{eq:deconvolution}, that
-$X_\xi$ is the random variable characterizing the accuracy of our
-$X_{\rm norm}$.  Thus, $\Delta' = \Delta + X_{\rm norm} + X_\xi$. We
-assume the standard deviation of $X_{\rm norm}$ is less than
-$\pi/\sqrt{3}$, so that we can use Equation~\ref{eq:deconvolution}.
-We denote $F_X(x)$ as the CDF of $X$.
-
-We use some terms from standard Markov chain theory~\cite{Meyn2009}. Let the \emph{transition
-kernels} of MCMC on complete and minibatch data at step $i$ be $P_i$ and $P_i'$, respectively. When
-these kernels (e.g., $P_i$) are applied on a probability distribution $D_1$, they generate a new
-distribution $D_2$, which we write as $P_i \circ D_1 = D_2$. Define $\pi$ to be the stationary
-distribution obtained by $P_i$, and $\pi_i'$ to be the stationary distribution obtained by $P_i'$
-($\pi'$ needs a subscript in this case).  Finally, we indicate the \emph{total variation distance}
-between two kernels using $\| \cdot \|$.
-
-Our first result shows that the distance $\|P_i\circ D - P_i'\circ D\| \le 4\zeta \ell$ for all
-distributions $D$.
-
-% Our first result shows that the distance between $P_i$ and $P_i'$ is proportional to our estimation
-% error $X_{\xi}$.
-
-\begin{lemma}\label{lem:theory1}
-If $|X_\xi| < \zeta$ and $|\nabla F_X(x)| < \ell$ for all $x$, then $\|P_i\circ D-P_i'\circ D\| \le
-4\zeta \ell \;\;\forall D$.
+\begin{lemma}\label{lem:quant_clt}
+  Let $X_1,\ldots,X_n$ be
+a set of zero-mean, independent, identically-distributed random variables with sample mean $\hat{X}$ and
+variance $\sigma^2(\hat{X})$ where:
+\begin{equation}
+  \hat{X} = \frac{1}{n}\sum_{i=1}^nX_i \qquad   \sigma(\hat{X}) = \frac{1}{n}\left(\sum_{i=1}^n(X_i-\hat{X})^2\right)^{\frac{1}{2}}
+\end{equation}
+then $t=\hat{X}/\sigma(\hat{X})$ has an approximate Student's distribution which approaches a normal
+distribution in the limit. Then from \cite{explicit-clt05}:
+\begin{equation}\label{eq:clt-bounds}
+ \sup_x|{\rm Pr}(t<x) - \Phi(x)| \leq \frac{6.4E|X|^3+2E|X|}{\sqrt{n}}
+  \end{equation}
 \end{lemma}
 
-%% \begin{proof}
-%% See Appendix~\ref{app:theory1}.
-%% \end{proof}
+So as long as we know the first and third absolute moments $E|X|$ and $E|X|^3$, we can bound the
+error of the normal approximation, which decays as $O(n^{-\frac{1}{2}})$. Making the change of variables
+$y = x \sigma(\hat{X})$, equation (\ref{eq:clt-bounds}) becomes
+\begin{equation}\label{eq:clt-bounds2}
+   \sup_y\left|{\rm Pr}(\hat{X}< y) - \Phi\left(\frac{y}{\sigma(\hat{X})}\right)\right| \leq \frac{6.4E|X|^3+2E|X|}{\sqrt{n}}
+\end{equation}
+which shows that the distribution of $\hat{X}$ approaches the normal distribution $\mathcal{N}(0,\sigma^2(\hat{X}))$
+whose variance is $\sigma^2(\hat{X})$, measured from the sample.
 
-Thus, the accuracy of our transition kernel $P_i'$ is related to the quality of our estimated
-$X_{\rm norm}$. We next show that ${\rm Var}(\Delta')$ is roughly proportional to the step size of
-our proposer.
+To apply this to our test, let $\mu = \frac{1}{N}\sum_{i=1}^N\log\frac{p(x_i|\theta')}{p(x_i|\theta)}$ which is
+the expected log data probability ratio across the entire dataset. Then
+Let $X_i = N(\log\frac{p(x_i|\theta')}{p(x_i|\theta)}-\mu)$, are zero-mean, IID variables.
+Take $n=b$ the minibatch size, and then:
+\begin{equation}
+  \Delta^*(x,\theta,\theta') = \hat{X} + \Delta(x,\theta,\theta')
+\end{equation}
+so that $\sigma(\hat{X}) = \sigma(\Delta^*)$.
+\begin{corollary}
+  We can now substitute into equation (\ref{eq:clt-bounds2}) and displace by the mean, giving:
+\begin{equation}\label{eq:clt-bounds3}
+   \sup_y\left|{\rm Pr}(\Delta^*< y) - \Phi\left(\frac{y-\Delta}{\sigma(\Delta^*)}\right)\right| \leq \frac{6.4E|X|^3+2E|X|}{\sqrt{b}} = \epsilon(\theta,\theta',b)
+\end{equation}
+\end{corollary}
 
-\begin{lemma}\label{lem:theory2}
-For one step sampling from $\theta$ to $\theta'$, if the jumping step $\|\theta - \theta'\|_2 <
-\epsilon$, and the gradient of the log likelihood is bounded by a constant factor, i.e. $\|\nabla
-(\log \Pr(x_i\mid \theta))\|_2 < k$, the variance of $\Delta'$ is bounded by $4\epsilon^2 k^2
-(m-\frac{m(m-1)}{N-1})$, where $m$ is the minibatch size, and $N$ is the total data size.
-\end{lemma}
+We have shown that the distribution of $\Delta^*$ approximates a
+Normal distribution with mean $\Delta$ and variance
+$\sigma^2(\Delta^*)$, and bounded its error with estimable
+quantities. Both $E|X|$ and $E|X|^3$ can be estimated as means of
+$|X_i - \hat{X}|$ and $|X_i - \hat{X}|^3$ respectively on each minibatch. We expect this
+will often be accurate enough on minibatches with hundreds or
+thousands of points, but otherwise bootstrap CIs can be computed from
+those sequences. Since the bounds are monotone in $E|X|$ and $E|X|^3$,
+using upper bootstrap CI limits will provide high-confidence error bounds. 
 
-%% \begin{proof}
-%% See Appendix~\ref{app:theory2}.
-%% \end{proof}
+\begin{lemma} Let $P(x)$ and $Q(x)$ be two cumulative distributions satisfying $\sup_x|P(x)-Q(x)|\leq \epsilon$ with
+  $x$ in some real range. Let $R(y)$ be the {\em density} of another
+  random variable $y$. Let $P'$ be the convolution $P*R$ and $Q'$ be
+  the convolution $Q*R$. Then $P'(z)$ (resp. $Q'(z)$) is the CDF of sum
+  $z=x+y$ of independent random variables $x$ with CDF $P(x)$ (resp. $Q(x)$) and y
+  with density $R(y)$.  Then
+  \begin{equation}
+    \sup_x|P'(x)-Q'(x)|\leq \epsilon
+  \end{equation}
+  \end{lemma}
+\begin{proof}
+  \begin{equation}
+    \begin{split}
+      P'(z) - Q'(z) = \int_{-\infty}^{+\infty}(P(z-x)-Q(z-x))R(x) dx
+    \end{split}
+  \end{equation}
+  and since $\sup_x|P(x)-Q(x)|\leq \epsilon$ it follows that for all $z$:
+  \begin{equation}
+- \epsilon = \int_{-\infty}^{+\infty} -\epsilon R(x) dx \leq \int_{-\infty}^{+\infty}(P(z-x)-Q(z-x))R(x) dx \leq \int_{-\infty}^{+\infty}\epsilon R(x) dx = \epsilon
+  \end{equation}
+\end{proof}
 
-Since ${\rm Var}(\Delta') < 4\epsilon^2 k^2 (m - \frac{m(m-1)}{N-1}) $, we can assume the maximum
-value of $X_{\xi}$ is proportional to the standard deviation of $\Delta'$, i.e. $\epsilon$. Thus, we
-can assume $\zeta=\epsilon C$, where $C$ is a constant factor. We finally introduce
-Theorem~\ref{thm:theory3} to characterize the convergence of our samples.
+\begin{corollary}
+  If $|{\rm Pr}(\Delta^* < y) - \Phi(\frac{y-\Delta}{\sigma(\Delta^*)})| \leq \epsilon(\theta,\theta',b)$,
+  then
+  \begin{equation}
+    |{\rm Pr}(\Delta^*+X_n+X_c < y) - S(y-\Delta)| \leq \epsilon(\theta,\theta',b)
+  \end{equation}
+  where $S(x)$ is the standard logistic function, and $X_n$ and $X_c$ are generated as per Algorithm 1. 
+  \end{corollary}
+%% \subsection{Discussions and Practical Considerations of the New MH Test}\label{ssec:discussion}
+\begin{proof}
+  Apply the previous lemma twice. First take:
+  \begin{equation}
+    P(y) = Pr(\Delta^* < y) \qquad {\rm and}\qquad Q(y) = \Phi\left(\frac{y-\Delta}{\sigma(\Delta^*)}\right)
+  \end{equation}
+  and convolve with the distribution of $X_n$ which has density $\phi(X/\sigma_n)$ where $\sigma_n^2
+  = 1 - \sigma^2(\Delta^*)$. This yields the next iteration of $P$ and $Q$
+  \begin{equation}
+    P'(y) = Pr(\Delta^*+X_n < y) \qquad {\rm and}\qquad Q'(y) = \Phi\left({y-\Delta}\right)
+  \end{equation}
+  Now we convolve with the distribution of $X_c$ which gives:
+  \begin{equation}
+    P''(y) = Pr(\Delta^*+X_n+X_c < y) \qquad {\rm and}\qquad Q''(y) = S\left({y-\Delta}\right)
+  \end{equation}
+  Both steps preserve the error bound $\epsilon(\theta,\theta',b)$
+\end{proof}
 
-\begin{theorem}\label{thm:theory3}
-Assume $\pi$ satisfies $\|P_i \circ D_0 - \pi\| \leq \eta \|D_0 - \pi\|$, where $\eta \in [0, 1)$ for
-all distributions $D_0$. Also assume there exists $0 < \rho_t < 1$ such that $\|P'_i \circ D -
-\pi_i'\| \leq 2\rho_i \;\; \forall D$. We can get $\| P_t' \circ P_{t-1}' \circ \cdots \circ P_1' \circ D_0 - \pi
-\| \leq \sum_{s=1}^t \{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\} \rho_s \alpha_s + \alpha_t $, where
-$\alpha_i = \frac{\epsilon_i C }{1-\eta}$ and $\epsilon_i$ is the step size at iteration $i$.
-\end{theorem}
+%% \textbf{The Convolution}. Figure~\ref{fig:deconvolution} demonstrates
+%% Equation~\ref{eq:deconvolution} and provides three (color-coded) examples of densities for $X_{\rm
+%% norm}$ and $X_{\rm corr}$. The density of $X$, a logistic random variable with mean $\mu = 0$ and
+%% scale $s=1$, is known, as are the $X_{\rm norm}$ densities for different standard deviations. The
+%% deconvolution provides us with the $X_{\rm corr}$ distributions. Note, however, that as the standard
+%% deviation of $X_{\rm norm}$ increases, the $X_{\rm corr}$ distribution becomes increasingly unstable
+%% and ``bumpier'', because the logistic curve has fatter tails than Gaussians. In addition, we cap
+%% the standard deviation possibilities of $X_{\rm norm}$ at $\approx 1.2$ in our experiments. In our
+%% experiments, we discretize the possible standard deviations of $X_{\rm norm}$, and we also limit the
+%% densities to consider the range $[-10,10]$ as shown in Figure~\ref{fig:deconvolution}.
 
-%% \begin{proof}
-%% See Appendix~\ref{app:theory3}.
-%% \end{proof}
+%% \textbf{Variance Preconditioning}. Returning to the discussion from Section~\ref{sec:introduction},
+%% our test requires a variance check. Equation~\ref{eq:deconvolution} means that the variance of $X$,
+%% which is $\pi^2/3\approx 3.29$ is an upper bound on the variances of $X_{\rm norm}$. Therefore, the
+%% test cannot work if the variance of $X_{\rm norm}$ is too large. The standard deviation of $X$
+%% is about $\sqrt{3.29}\approx 1.81$, so this bounds ${\rm std}(X_{\rm norm})$ (as well as ${\rm
+%% std}(\Delta')$). From the discussion above, we bound the standard deviation at 1.2 so that $X_{\rm
+%% corr}$ can handle the remaining noise. Recall from Section~\ref{ssec:deltas_minibatch} that we
+%% estimate the ${\rm std}(X_{\rm norm})$ each iteration. If the variance/standard deviation test
+%% fails, then we can (a) skip the iteration, (b) increase the minibatch size, (c) change the proposal
+%% to decrease step sizes, or (d) increase temperature, as we now discuss.
 
-Theorem~\ref{thm:theory3} indicates that the difference between the target and sampled distributions
-consists of two components: $\rho_i$, which is determined by the efficiency of $P'_i$, and the
-$\alpha_i$s, which are determined by the error of our transition kernels. These involve competing
-objectives: the larger the step size, the more efficient the $P_i'$ but its error increases.  The
-reverse happens with a step size too small.
+%% \textbf{Temperature}. One way to satisfy the variance precondition is to increase the temperature of
+%% the target distribution. For a temperature $T>1$, the augmented target distribution would become
+%% \begin{equation}\label{eq:log_temperature}
+%% \log p(\theta \mid x_1,\ldots,x_N) \approx \log p(\theta) + \frac{1}{T}\frac{N}{n} \sum_{i=1}^n\log p(x_i \mid \theta).
+%% \end{equation}
+%% with an extra $1/T$ term augmented. As the temperature increases, the values of $\Delta'$ get
+%% smaller in absolute value, thus reducing variance. The flatter posterior results in easier mixing.
 
-We explore the efficiency of our minibatch MH test. Theorem~\ref{thm:efficiency} indicates that our minibatch MH test only requires a constant number of instances for each step, however, recall the Lemma~\ref{lem:efficienty_cutting}, the adaptive minibatch MH test requires $O(\sqrt{N})$ number of data instance for each step. Thus, We show that our proposed minibatch MH test is much higher efficient than the known minibatch algorithms. 
 
-\begin{theorem}\label{thm:efficiency}
-We require $\frac{ C^2 \rho^2 }{\sigma^6 \varepsilon^2}$ minibatch size to ensure $|P_a -P_a'| < \varepsilon$, where $C$ is a positive constant which is smaller than 0.4748, $\sigma^2 $ and $\rho$ is the second and third moment of $(\nabla\log \Pr(x_i|\theta) - \nabla\log\Pr(x_i|\theta')) - E\left[ \nabla\log \Pr(x_i|\theta) - \nabla\log\Pr(x_i|\theta')\right]$, $P_a$ is the accept rate from the complete data, $P_a'$ is the accept rate from minibatch data by our algorithm, $\theta$ is the current parameter, and $\theta'$ is the proposed parameter. 
 
-\end{theorem}
+
+%% \section{Analysis}\label{sec:theory}
+
+%% In this section, we first perform an error analysis for our new
+%% acceptance test. Second, we follow the implications of this analysis for accuracy of
+%% the estimated target distribution. Third, we compare the speed and accuracy of
+%% our test with prior work. Due to space constraints, all our proofs
+%% are in Appendix~\ref{app:proofs}.
+
+%% We first introduce some notation. Let our true (full dataset) and
+%% approximate (minibatch) acceptance probabilities be $P_a = g(\Delta) =
+%% \Pr(\Delta + X > 0)$ and $P_a' = \Pr(\Delta' + X_{\rm corr} > 0)$.
+%% Define $X_{\xi} = \varepsilon - X_{\rm norm}$ which means, invoking
+%% Equations~\ref{eq:relationship} and~\ref{eq:deconvolution}, that
+%% $X_\xi$ is the random variable characterizing the accuracy of our
+%% $X_{\rm norm}$.  Thus, $\Delta' = \Delta + X_{\rm norm} + X_\xi$. We
+%% assume the standard deviation of $X_{\rm norm}$ is less than
+%% $\pi/\sqrt{3}$, so that we can use Equation~\ref{eq:deconvolution}.
+%% We denote $F_X(x)$ as the CDF of $X$.
+
+%% We use some terms from standard Markov chain theory~\cite{Meyn2009}. Let the \emph{transition
+%% kernels} of MCMC on complete and minibatch data at step $i$ be $P_i$ and $P_i'$, respectively. When
+%% these kernels (e.g., $P_i$) are applied on a probability distribution $D_1$, they generate a new
+%% distribution $D_2$, which we write as $P_i \circ D_1 = D_2$. Define $\pi$ to be the stationary
+%% distribution obtained by $P_i$, and $\pi_i'$ to be the stationary distribution obtained by $P_i'$
+%% ($\pi'$ needs a subscript in this case).  Finally, we indicate the \emph{total variation distance}
+%% between two kernels using $\| \cdot \|$.
+
+%% Our first result shows that the distance $\|P_i\circ D - P_i'\circ D\| \le 4\zeta \ell$ for all
+%% distributions $D$.
+
+%% % Our first result shows that the distance between $P_i$ and $P_i'$ is proportional to our estimation
+%% % error $X_{\xi}$.
+
+%% \begin{lemma}\label{lem:theory1}
+%% If $|X_\xi| < \zeta$ and $|\nabla F_X(x)| < \ell$ for all $x$, then $\|P_i\circ D-P_i'\circ D\| \le
+%% 4\zeta \ell \;\;\forall D$.
+%% \end{lemma}
+
+%% %% \begin{proof}
+%% %% See Appendix~\ref{app:theory1}.
+%% %% \end{proof}
+
+%% Thus, the accuracy of our transition kernel $P_i'$ is related to the quality of our estimated
+%% $X_{\rm norm}$. We next show that ${\rm Var}(\Delta')$ is roughly proportional to the step size of
+%% our proposer.
+
+%% \begin{lemma}\label{lem:theory2}
+%% For one step sampling from $\theta$ to $\theta'$, if the jumping step $\|\theta - \theta'\|_2 <
+%% \epsilon$, and the gradient of the log likelihood is bounded by a constant factor, i.e. $\|\nabla
+%% (\log \Pr(x_i\mid \theta))\|_2 < k$, the variance of $\Delta'$ is bounded by $4\epsilon^2 k^2
+%% (m-\frac{m(m-1)}{N-1})$, where $m$ is the minibatch size, and $N$ is the total data size.
+%% \end{lemma}
+
+%% %% \begin{proof}
+%% %% See Appendix~\ref{app:theory2}.
+%% %% \end{proof}
+
+%% Since ${\rm Var}(\Delta') < 4\epsilon^2 k^2 (m - \frac{m(m-1)}{N-1}) $, we can assume the maximum
+%% value of $X_{\xi}$ is proportional to the standard deviation of $\Delta'$, i.e. $\epsilon$. Thus, we
+%% can assume $\zeta=\epsilon C$, where $C$ is a constant factor. We finally introduce
+%% Theorem~\ref{thm:theory3} to characterize the convergence of our samples.
+
+%% \begin{theorem}\label{thm:theory3}
+%% Assume $\pi$ satisfies $\|P_i \circ D_0 - \pi\| \leq \eta \|D_0 - \pi\|$, where $\eta \in [0, 1)$ for
+%% all distributions $D_0$. Also assume there exists $0 < \rho_t < 1$ such that $\|P'_i \circ D -
+%% \pi_i'\| \leq 2\rho_i \;\; \forall D$. We can get $\| P_t' \circ P_{t-1}' \circ \cdots \circ P_1' \circ D_0 - \pi
+%% \| \leq \sum_{s=1}^t \{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\} \rho_s \alpha_s + \alpha_t $, where
+%% $\alpha_i = \frac{\epsilon_i C }{1-\eta}$ and $\epsilon_i$ is the step size at iteration $i$.
+%% \end{theorem}
+
+%% %% \begin{proof}
+%% %% See Appendix~\ref{app:theory3}.
+%% %% \end{proof}
+
+%% Theorem~\ref{thm:theory3} indicates that the difference between the target and sampled distributions
+%% consists of two components: $\rho_i$, which is determined by the efficiency of $P'_i$, and the
+%% $\alpha_i$s, which are determined by the error of our transition kernels. These involve competing
+%% objectives: the larger the step size, the more efficient the $P_i'$ but its error increases.  The
+%% reverse happens with a step size too small.
+
+%% We explore the efficiency of our minibatch MH test. Theorem~\ref{thm:efficiency} indicates that our minibatch MH test only requires a constant number of instances for each step, however, recall the Lemma~\ref{lem:efficienty_cutting}, the adaptive minibatch MH test requires $O(\sqrt{N})$ number of data instance for each step. Thus, We show that our proposed minibatch MH test is much higher efficient than the known minibatch algorithms. 
+
+%% \begin{theorem}\label{thm:efficiency}
+%% We require $\frac{ C^2 \rho^2 }{\sigma^6 \varepsilon^2}$ minibatch size to ensure $|P_a -P_a'| < \varepsilon$, where $C$ is a positive constant which is smaller than 0.4748, $\sigma^2 $ and $\rho$ is the second and third moment of $(\nabla\log \Pr(x_i|\theta) - \nabla\log\Pr(x_i|\theta')) - E\left[ \nabla\log \Pr(x_i|\theta) - \nabla\log\Pr(x_i|\theta')\right]$, $P_a$ is the accept rate from the complete data, $P_a'$ is the accept rate from minibatch data by our algorithm, $\theta$ is the current parameter, and $\theta'$ is the proposed parameter. 
+
+%% \end{theorem}
 
 
 \section{Experiments}\label{sec:experiments}
@@ -912,112 +1051,111 @@ MCMC~\cite{conf/uai/AngelinoKWSA14,conf/icml/AhnSW14} concepts.
 In this appendix, we describe the following topics, with an emphasis on clarity and understanding:
 
 \begin{itemize}[noitemsep]
-    \item Proofs for material in Section~\ref{sec:theory}.
     \item More information on Section~\ref{ssec:gaussians}.
     \item More information on Section~\ref{ssec:logistic}.
     \item More information on Section~\ref{ssec:nets}.
 \end{itemize}
 
-\section{Proofs}\label{app:proofs}
+%% \section{Proofs}\label{app:proofs}
 
-\subsection{Proof of Lemma~\ref{lem:efficienty_cutting}}\label{app:lem_efficiency}
+%% \subsection{Proof of Lemma~\ref{lem:efficienty_cutting}}\label{app:lem_efficiency}
 
-If the minibatch size is $n$, we first compute the probability that more than $n$ data instances are required for adaptive sampling method for one iteration. We denote this probability $P_{rej}$.
-\[P_{rej} = \Pr \left ( 1-\phi_{n-1} \left( \frac{|\bar{l} - \frac{1}{N} \log (u\frac{p(\theta)q(\theta'|\theta)}{p(\theta')q(\theta|\theta')})|}{s} \right )  \geq \varepsilon \right ) \] 
+%% If the minibatch size is $n$, we first compute the probability that more than $n$ data instances are required for adaptive sampling method for one iteration. We denote this probability $P_{rej}$.
+%% \[P_{rej} = \Pr \left ( 1-\phi_{n-1} \left( \frac{|\bar{l} - \frac{1}{N} \log (u\frac{p(\theta)q(\theta'|\theta)}{p(\theta')q(\theta|\theta')})|}{s} \right )  \geq \varepsilon \right ) \] 
 
-where $s = \frac{s_l}{\sqrt{n}}\sqrt{1-\frac{n-1}{N-1}}$. \\
-We define random variable $Z = \frac{1}{N}\log (uQ)$, where $Q=\frac{p(\theta)q(\theta'|\theta)}{p(\theta')q(\theta|\theta')}$. Then $Z$ has probability density function $f_Z(z) = N \exp(zN), z \in (-\infty, \frac{1}{N} \log Q]$.
+%% where $s = \frac{s_l}{\sqrt{n}}\sqrt{1-\frac{n-1}{N-1}}$. \\
+%% We define random variable $Z = \frac{1}{N}\log (uQ)$, where $Q=\frac{p(\theta)q(\theta'|\theta)}{p(\theta')q(\theta|\theta')}$. Then $Z$ has probability density function $f_Z(z) = N \exp(zN), z \in (-\infty, \frac{1}{N} \log Q]$.
 
-\begin{align*} 
-P_{rej}&=  \Pr \left( 1-\varepsilon \geq \phi_{n-1} \left( \frac{|\bar{l} - Z|}{s_l \sqrt{\frac{N-n}{N-1}}} \sqrt{n} \right) \right) \\ 
-&=  \Pr \left(\phi^{-1}_{n-1} \left (1-\varepsilon \right) \frac{s_l }{\sqrt{n}} \sqrt{\frac{N-n}{N-1}} \geq |\bar{l} -Z| \right) = \Pr \left( |\bar{l} - Z| \leq \frac{\eta s_l}{\sqrt{n}}\sqrt{\frac{N-n}{N-1}} \right) \\
-&= \Pr \left(Z - \frac{\eta s_l}{\sqrt{n}}\sqrt{\frac{N-n}{N-1}} \leq \bar{l} \leq Z + \frac{\eta s_l}{\sqrt{n}}\sqrt{\frac{N-n}{N-1}} \right) \\
-&= \int_{-\infty} ^{\frac{\log Q}{N}} N \exp (zN)dz \int_{z - \frac{\eta s_l}{\sqrt{n}}\sqrt{\frac{N-n}{N-1}}} ^{z+ \frac{\eta s_l}{\sqrt{n}}\sqrt{\frac{N-n}{N-1}}} \frac{1}{2L} d\bar{l} = \frac{\eta s_l}{L\sqrt{n}}\sqrt{\frac{N-n}{N-1}} \int_{-\infty} ^{\frac{\log Q}{N}} N \exp(zN) dz \\
-&= \frac{\eta s_l}{L\sqrt{n}}\sqrt{\frac{N-n}{N-1}} Q
-\end{align*}
- If we define the random variable $X$ the number of instance for one minibatch, we have $\Pr (X>n) = P_{rej} = \frac{\eta s_l}{L\sqrt{n}}\sqrt{\frac{N-n}{N-1}} Q, \mbox{ for } n \in [1,N], n \in Z^+$. Since $X$ is nonnegative, we have $E(X) \geq \Pr (X >x)x, \forall x$. If we choose $x=N/2$, we have $E(X) \geq \frac{\eta s_l}{L\sqrt{N/2}}\sqrt{\frac{N-N/2}{N-1}} Q \frac{N}{2} \geq \frac{\eta s_{l}Q}{2L}\sqrt{N}$.
+%% \begin{align*} 
+%% P_{rej}&=  \Pr \left( 1-\varepsilon \geq \phi_{n-1} \left( \frac{|\bar{l} - Z|}{s_l \sqrt{\frac{N-n}{N-1}}} \sqrt{n} \right) \right) \\ 
+%% &=  \Pr \left(\phi^{-1}_{n-1} \left (1-\varepsilon \right) \frac{s_l }{\sqrt{n}} \sqrt{\frac{N-n}{N-1}} \geq |\bar{l} -Z| \right) = \Pr \left( |\bar{l} - Z| \leq \frac{\eta s_l}{\sqrt{n}}\sqrt{\frac{N-n}{N-1}} \right) \\
+%% &= \Pr \left(Z - \frac{\eta s_l}{\sqrt{n}}\sqrt{\frac{N-n}{N-1}} \leq \bar{l} \leq Z + \frac{\eta s_l}{\sqrt{n}}\sqrt{\frac{N-n}{N-1}} \right) \\
+%% &= \int_{-\infty} ^{\frac{\log Q}{N}} N \exp (zN)dz \int_{z - \frac{\eta s_l}{\sqrt{n}}\sqrt{\frac{N-n}{N-1}}} ^{z+ \frac{\eta s_l}{\sqrt{n}}\sqrt{\frac{N-n}{N-1}}} \frac{1}{2L} d\bar{l} = \frac{\eta s_l}{L\sqrt{n}}\sqrt{\frac{N-n}{N-1}} \int_{-\infty} ^{\frac{\log Q}{N}} N \exp(zN) dz \\
+%% &= \frac{\eta s_l}{L\sqrt{n}}\sqrt{\frac{N-n}{N-1}} Q
+%% \end{align*}
+%%  If we define the random variable $X$ the number of instance for one minibatch, we have $\Pr (X>n) = P_{rej} = \frac{\eta s_l}{L\sqrt{n}}\sqrt{\frac{N-n}{N-1}} Q, \mbox{ for } n \in [1,N], n \in Z^+$. Since $X$ is nonnegative, we have $E(X) \geq \Pr (X >x)x, \forall x$. If we choose $x=N/2$, we have $E(X) \geq \frac{\eta s_l}{L\sqrt{N/2}}\sqrt{\frac{N-N/2}{N-1}} Q \frac{N}{2} \geq \frac{\eta s_{l}Q}{2L}\sqrt{N}$.
 
-\subsection{Proof of Lemma~\ref{lem:theory1}}\label{app:theory1}
+%% \subsection{Proof of Lemma~\ref{lem:theory1}}\label{app:theory1}
 
-We first prove that the difference in our acceptance rates is bounded: $|P_a - P_a'| \leq 2\zeta
-\ell$ for some small constant $\zeta > 0$. Given $X_\xi = \xi$ the distance $|P_a - P_a'|$ is:
-\begin{align*}
-|P_a - P_a'| &= |\Pr(\Delta + X >0) - \Pr(\Delta' + X_{\rm corr} > 0)|\\
-& = | \Pr (\Delta + X > 0) - \Pr (\Delta + X_{\rm norm} + \xi + X_{\rm corr} >0) |    \\
-&= |\Pr (\Delta + X > 0) -\Pr(\Delta + X + \xi >0)| \\
-&= |F_X(-\Delta)- F_X(-\Delta - \xi)| \\
-&= |\nabla F(-\Delta) \xi + o(\xi^2)|\\
-&\leq  |\nabla F(-\Delta) \xi| +| o(\xi^2)| \leq 2|\nabla F(-\Delta)| |\xi| \leq 2\ell \xi,
-\end{align*}
-where we use Taylor's Theorem ($o(\xi^2)$ represents higher-order terms that have smaller absolute
-value) and the Triangle Inequality.  Since $|X_\xi| < \zeta$, $|P_a - P_a'| < 2 \zeta \ell$.
+%% We first prove that the difference in our acceptance rates is bounded: $|P_a - P_a'| \leq 2\zeta
+%% \ell$ for some small constant $\zeta > 0$. Given $X_\xi = \xi$ the distance $|P_a - P_a'|$ is:
+%% \begin{align*}
+%% |P_a - P_a'| &= |\Pr(\Delta + X >0) - \Pr(\Delta' + X_{\rm corr} > 0)|\\
+%% & = | \Pr (\Delta + X > 0) - \Pr (\Delta + X_{\rm norm} + \xi + X_{\rm corr} >0) |    \\
+%% &= |\Pr (\Delta + X > 0) -\Pr(\Delta + X + \xi >0)| \\
+%% &= |F_X(-\Delta)- F_X(-\Delta - \xi)| \\
+%% &= |\nabla F(-\Delta) \xi + o(\xi^2)|\\
+%% &\leq  |\nabla F(-\Delta) \xi| +| o(\xi^2)| \leq 2|\nabla F(-\Delta)| |\xi| \leq 2\ell \xi,
+%% \end{align*}
+%% where we use Taylor's Theorem ($o(\xi^2)$ represents higher-order terms that have smaller absolute
+%% value) and the Triangle Inequality.  Since $|X_\xi| < \zeta$, $|P_a - P_a'| < 2 \zeta \ell$.
 
-Next, we show the distance of new distributions obtained by applying $P_i$ and $P_i'$ on an
-arbitrary distribution $D$ once is bounded if we use the same proposer, i.e.  $\|P_i\circ D -
-P'_i\circ D\| \leq 4\zeta \ell \;\; \forall D$. We write $P_i(\theta \mid \theta') = P_a(\theta, \theta')
-q(\theta'\mid \theta) + (1-P_a(\theta,\theta')) \delta_D(\theta' - \theta)$, where $\delta_D$
-is the Dirac delta function. The total variation distance between two generated distributions is
-\begin{align*}
-\|P_i\circ D - P'_i\circ D\| &= \int_{\theta'} \left| \int_{\theta}((P_a-P_a') q(\theta'|\theta) + (1-P_a - 1+P_a') \delta_D(\theta -\theta')) dD(\theta) \right| d\theta' \\
-&= \int_{\theta'} \left| \int_{\theta} (P_a- P_a')(q(\theta'|\theta) - \delta_D(\theta - \theta')) dD(\theta) \right|  d\theta'\\ 
-&\leq 2 \zeta \ell \int_{\theta'} \left| \int_{\theta}(q(\theta'|\theta) + \delta_D(\theta - \theta')) dD(\theta) \right| d\theta'\\
-&\leq 2 \zeta \ell \int_{\theta'} ( D'(\theta') + D(\theta') ) d\theta'\\
-&= 4 \zeta \ell,
-\end{align*}
-where $D'$ is the distribution generated if we always accept the proposed point. (In the last line,
-we integrate two probability density functions, resulting in a value of two.) This matches our
-desired bound.
+%% Next, we show the distance of new distributions obtained by applying $P_i$ and $P_i'$ on an
+%% arbitrary distribution $D$ once is bounded if we use the same proposer, i.e.  $\|P_i\circ D -
+%% P'_i\circ D\| \leq 4\zeta \ell \;\; \forall D$. We write $P_i(\theta \mid \theta') = P_a(\theta, \theta')
+%% q(\theta'\mid \theta) + (1-P_a(\theta,\theta')) \delta_D(\theta' - \theta)$, where $\delta_D$
+%% is the Dirac delta function. The total variation distance between two generated distributions is
+%% \begin{align*}
+%% \|P_i\circ D - P'_i\circ D\| &= \int_{\theta'} \left| \int_{\theta}((P_a-P_a') q(\theta'|\theta) + (1-P_a - 1+P_a') \delta_D(\theta -\theta')) dD(\theta) \right| d\theta' \\
+%% &= \int_{\theta'} \left| \int_{\theta} (P_a- P_a')(q(\theta'|\theta) - \delta_D(\theta - \theta')) dD(\theta) \right|  d\theta'\\ 
+%% &\leq 2 \zeta \ell \int_{\theta'} \left| \int_{\theta}(q(\theta'|\theta) + \delta_D(\theta - \theta')) dD(\theta) \right| d\theta'\\
+%% &\leq 2 \zeta \ell \int_{\theta'} ( D'(\theta') + D(\theta') ) d\theta'\\
+%% &= 4 \zeta \ell,
+%% \end{align*}
+%% where $D'$ is the distribution generated if we always accept the proposed point. (In the last line,
+%% we integrate two probability density functions, resulting in a value of two.) This matches our
+%% desired bound.
 
-\subsection{Proof of Lemma~\ref{lem:theory2}}\label{app:theory2}
+%% \subsection{Proof of Lemma~\ref{lem:theory2}}\label{app:theory2}
 
-From Lemma~\ref{lem:gaussian}, only the $\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid
-\theta))$ term brings randomness into $\Delta'$. To simplify the subsequent notation, we define
-$g_i(\theta) = \log p(x_i\mid \theta)$, and $q_i = g_i(\theta') - g_i(\theta)$. Then by Taylor's Theorem:
-\[
-|q| = |g(\theta') - g(\theta)| = |\nabla g(\theta)^T(\theta' - \theta) + o(\theta' - \theta)^2| \leq 2\epsilon k.
-\]
-Thus, given $\theta$ and $\theta'$, the variance of $\Delta'$ can be written as:
-\begin{align*}
-{\rm Var}(\Delta') &= {\rm Var}\left[\sum_{i=1}^m g_i(\theta') - g_i(\theta)\right] = {\rm Var}\left(\sum_{i=1}^m q_i\right) \\
-&= m {\rm Var} (q_i) + m(m-1) {\rm Cov}_{i \neq j}(q_i,q_j) \\
-&= m{\rm Var}(q_i) - \frac{m(m-1)}{N-1} {\rm Var}(q_i) \\
-&\leq 4\left(m - \frac{m(m-1)}{N-1}\right)k^2 \epsilon^2,
-\end{align*}
-as desired.
+%% From Lemma~\ref{lem:gaussian}, only the $\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid
+%% \theta))$ term brings randomness into $\Delta'$. To simplify the subsequent notation, we define
+%% $g_i(\theta) = \log p(x_i\mid \theta)$, and $q_i = g_i(\theta') - g_i(\theta)$. Then by Taylor's Theorem:
+%% \[
+%% |q| = |g(\theta') - g(\theta)| = |\nabla g(\theta)^T(\theta' - \theta) + o(\theta' - \theta)^2| \leq 2\epsilon k.
+%% \]
+%% Thus, given $\theta$ and $\theta'$, the variance of $\Delta'$ can be written as:
+%% \begin{align*}
+%% {\rm Var}(\Delta') &= {\rm Var}\left[\sum_{i=1}^m g_i(\theta') - g_i(\theta)\right] = {\rm Var}\left(\sum_{i=1}^m q_i\right) \\
+%% &= m {\rm Var} (q_i) + m(m-1) {\rm Cov}_{i \neq j}(q_i,q_j) \\
+%% &= m{\rm Var}(q_i) - \frac{m(m-1)}{N-1} {\rm Var}(q_i) \\
+%% &\leq 4\left(m - \frac{m(m-1)}{N-1}\right)k^2 \epsilon^2,
+%% \end{align*}
+%% as desired.
 
-\subsection{Proof of Theorem~\ref{thm:theory3}}\label{app:theory3}
+%% \subsection{Proof of Theorem~\ref{thm:theory3}}\label{app:theory3}
 
-First, by Theorem 1 in~\cite{cutting_mh_2014}, $\|P_i \circ D_0 - \pi\| \leq \eta \|D_0
-- \pi\|$ and $\|P_i\circ D-P'_i\circ D\| \leq \epsilon_i C$ for all $D$. The norm between the
-stationary distributions is $\|\pi - \pi_i'\|\leq \frac{\epsilon_i C}{1-\eta}$.
+%% First, by Theorem 1 in~\cite{cutting_mh_2014}, $\|P_i \circ D_0 - \pi\| \leq \eta \|D_0
+%% - \pi\|$ and $\|P_i\circ D-P'_i\circ D\| \leq \epsilon_i C$ for all $D$. The norm between the
+%% stationary distributions is $\|\pi - \pi_i'\|\leq \frac{\epsilon_i C}{1-\eta}$.
 
-Second, by Theorem 3.6 in~\cite{yang2013sequential}, we have 
-\[
-\| P_t' \circ \cdots \circ P_1' \circ D_0 - \pi_t \| \leq \sum_{s=1}^t \left\{\prod _{u=s+1}^t
-\rho_u (1-\alpha_u)\right\} \rho_s \alpha_s,
-\]
-where $\alpha = \frac{\epsilon_i C}{1-\eta}$.  Thus, we get:
-\begin{align*}
- \| P_t' \circ \cdots \circ P_1' \circ D_0 - \pi_0 \| &\leq \|P_t' \circ \cdots \circ P_1' \circ D_0 - \pi_t\| + \|\pi_t - \pi_0\| \\
- &\leq \sum_{s=1}^t \left\{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\right\} \rho_s \alpha_s + \alpha_t,
-\end{align*}
-as desired.
+%% Second, by Theorem 3.6 in~\cite{yang2013sequential}, we have 
+%% \[
+%% \| P_t' \circ \cdots \circ P_1' \circ D_0 - \pi_t \| \leq \sum_{s=1}^t \left\{\prod _{u=s+1}^t
+%% \rho_u (1-\alpha_u)\right\} \rho_s \alpha_s,
+%% \]
+%% where $\alpha = \frac{\epsilon_i C}{1-\eta}$.  Thus, we get:
+%% \begin{align*}
+%%  \| P_t' \circ \cdots \circ P_1' \circ D_0 - \pi_0 \| &\leq \|P_t' \circ \cdots \circ P_1' \circ D_0 - \pi_t\| + \|\pi_t - \pi_0\| \\
+%%  &\leq \sum_{s=1}^t \left\{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\right\} \rho_s \alpha_s + \alpha_t,
+%% \end{align*}
+%% as desired.
 
-\subsection{Proof of Theorem~\ref{thm:efficiency}}\label{app:theory4}
-Since only the $\frac{N}{nT}\sum_{i=1}^n \left(\log p(x_i|\theta') - \log p(x_i|\theta) \right)$ term brings randomness into $\Delta'$. Define $X_i = \frac{N}{T}\left(\log p(x_i|\theta') - \log p (x_i|theta_t) \right)$, $\tilde{X_i} = X_i - E(X_i)$, and $Y_n = \frac{\sum_{i=1}^n \tilde{X_i}}{n}$ (i.e. $Y_n$ is the $\Delta' - E(\Delta')$). From Berry-Esseen theorem, $|F_n(x) - \Phi(x)| \leq \frac{C\rho}{\sigma^3\sqrt{n}}$, where $\Phi()$ is the CDF of standard normal distribution, $F_n()$ is the CDF of $Y_n$, $C$ is the constant parameter which is below 0.4748, $\rho = E(|\tilde{X_i}|^3)$, and $\sigma^2 = E(\tilde{X_i}^2)$. Since $\Delta'$ is an unbiased estimator of $\Delta$, the CDFs between $\Delta'$ and $\Delta + X_{\rm norm}$ has the same max gap (i.e. $\frac{C\rho}{\sigma^3\sqrt{n}}$).
+%% \subsection{Proof of Theorem~\ref{thm:efficiency}}\label{app:theory4}
+%% Since only the $\frac{N}{nT}\sum_{i=1}^n \left(\log p(x_i|\theta') - \log p(x_i|\theta) \right)$ term brings randomness into $\Delta'$. Define $X_i = \frac{N}{T}\left(\log p(x_i|\theta') - \log p (x_i|theta_t) \right)$, $\tilde{X_i} = X_i - E(X_i)$, and $Y_n = \frac{\sum_{i=1}^n \tilde{X_i}}{n}$ (i.e. $Y_n$ is the $\Delta' - E(\Delta')$). From Berry-Esseen theorem, $|F_n(x) - \Phi(x)| \leq \frac{C\rho}{\sigma^3\sqrt{n}}$, where $\Phi()$ is the CDF of standard normal distribution, $F_n()$ is the CDF of $Y_n$, $C$ is the constant parameter which is below 0.4748, $\rho = E(|\tilde{X_i}|^3)$, and $\sigma^2 = E(\tilde{X_i}^2)$. Since $\Delta'$ is an unbiased estimator of $\Delta$, the CDFs between $\Delta'$ and $\Delta + X_{\rm norm}$ has the same max gap (i.e. $\frac{C\rho}{\sigma^3\sqrt{n}}$).
 
-From Equation~\ref{eq:criteria}, we show we want to use $\Delta' + X_{\rm corr}$ to approximate $\Delta + X_{\rm norm} + X_{\rm corr}$. Since $|F_{\Delta'} - F_{\Delta + X_{\rm norm}}| \leq \frac{C\rho}{\sigma^3\sqrt{n}}$, for the worst case, assume $\exists \xi, ~{\rm s.t.} |f_{\Delta'}(\xi) - f_{\Delta + X_{\rm norm}} (\xi)| = \max_x |f_{\Delta'}(x) - f_{\Delta + X_{\rm norm}}(x)| \overset{\Delta}{=} \eta $, where $f()$ represents the PDF function. Because PDF of $X_{\rm corr}$ has the positive value and unit area, we have: 
-\begin{align*} 
-& |(f_{\Delta'}*f_{X_{\rm corr}})(\xi) - (f_{\Delta+X_{\rm norm}}*f_{X_{\rm corr}})(\xi)| \\
-& = |\int_{-\infty}^{\infty}f_{\Delta'}(\xi-\tau)f_{X_{\rm corr}}(\tau)d\tau - \int_{-\infty}^{\infty}f_{\Delta + X_{\rm norm}} (\xi -\tau) f_{X_{\rm corr}} (\tau) d\tau| \\
-& = |\int_{-\infty}^{\infty} (f_{\Delta'}(\xi-\tau) - f_{\Delta + X_{\rm norm}} (\xi -\tau)) f_{X_{\rm corr}} (\tau) d\tau| \\
-& \leq \int_{-\infty}^{\infty} |f_{\Delta'}(\xi-\tau) - f_{\Delta + X_{\rm norm}} (\xi -\tau) |f_{X_{\rm corr}} (\tau) d\tau  \\
-& \leq \int_{-\infty}^{\infty} \eta f_{X_{\rm corr}} (\tau) d\tau \leq \eta
-\end{align*}
+%% From Equation~\ref{eq:criteria}, we show we want to use $\Delta' + X_{\rm corr}$ to approximate $\Delta + X_{\rm norm} + X_{\rm corr}$. Since $|F_{\Delta'} - F_{\Delta + X_{\rm norm}}| \leq \frac{C\rho}{\sigma^3\sqrt{n}}$, for the worst case, assume $\exists \xi, ~{\rm s.t.} |f_{\Delta'}(\xi) - f_{\Delta + X_{\rm norm}} (\xi)| = \max_x |f_{\Delta'}(x) - f_{\Delta + X_{\rm norm}}(x)| \overset{\Delta}{=} \eta $, where $f()$ represents the PDF function. Because PDF of $X_{\rm corr}$ has the positive value and unit area, we have: 
+%% \begin{align*} 
+%% & |(f_{\Delta'}*f_{X_{\rm corr}})(\xi) - (f_{\Delta+X_{\rm norm}}*f_{X_{\rm corr}})(\xi)| \\
+%% & = |\int_{-\infty}^{\infty}f_{\Delta'}(\xi-\tau)f_{X_{\rm corr}}(\tau)d\tau - \int_{-\infty}^{\infty}f_{\Delta + X_{\rm norm}} (\xi -\tau) f_{X_{\rm corr}} (\tau) d\tau| \\
+%% & = |\int_{-\infty}^{\infty} (f_{\Delta'}(\xi-\tau) - f_{\Delta + X_{\rm norm}} (\xi -\tau)) f_{X_{\rm corr}} (\tau) d\tau| \\
+%% & \leq \int_{-\infty}^{\infty} |f_{\Delta'}(\xi-\tau) - f_{\Delta + X_{\rm norm}} (\xi -\tau) |f_{X_{\rm corr}} (\tau) d\tau  \\
+%% & \leq \int_{-\infty}^{\infty} \eta f_{X_{\rm corr}} (\tau) d\tau \leq \eta
+%% \end{align*}
 
-where ``*'' represents the convolution operation.
+%% where ``*'' represents the convolution operation.
 
-Thus, after convolution with $X_{\rm corr}$, the maximum gap between PDF of the $\Delta'$ and $\Delta + X_{\rm norm}$ decreases. Thus, $|F_{\Delta' + X_{\rm corr}} - F_{\Delta + X_{\rm norm} + X_{\rm corr}}| \leq |F_{\Delta'} - F_{\Delta + X_{\rm norm}}| \leq \frac{C\rho}{\sigma^3\sqrt{n}}$. Thus, $|P_a - P_a'| = |\Pr (\Delta + X_{\rm norm} + X_{\rm corr} > 0) - \Pr (\Delta' + X_{\rm corr} > 0)|=|F_{\Delta + X_{\rm norm} + X_{\rm corr}}(0) - F_{\Delta' + X_{\rm corr}}(0)| \leq \frac{C\rho}{\sigma^3\sqrt{n}}$. We can choose $n$ so that $\frac{C\rho}{\sigma^3\sqrt{n}} < \varepsilon$ to ensure $|P_a - P_a'| < \varepsilon$. Thus, the requirement for $n$ is $n \geq \frac{C^2\rho^2}{\sigma^6 \varepsilon^2}$.   
+%% Thus, after convolution with $X_{\rm corr}$, the maximum gap between PDF of the $\Delta'$ and $\Delta + X_{\rm norm}$ decreases. Thus, $|F_{\Delta' + X_{\rm corr}} - F_{\Delta + X_{\rm norm} + X_{\rm corr}}| \leq |F_{\Delta'} - F_{\Delta + X_{\rm norm}}| \leq \frac{C\rho}{\sigma^3\sqrt{n}}$. Thus, $|P_a - P_a'| = |\Pr (\Delta + X_{\rm norm} + X_{\rm corr} > 0) - \Pr (\Delta' + X_{\rm corr} > 0)|=|F_{\Delta + X_{\rm norm} + X_{\rm corr}}(0) - F_{\Delta' + X_{\rm corr}}(0)| \leq \frac{C\rho}{\sigma^3\sqrt{n}}$. We can choose $n$ so that $\frac{C\rho}{\sigma^3\sqrt{n}} < \varepsilon$ to ensure $|P_a - P_a'| < \varepsilon$. Thus, the requirement for $n$ is $n \geq \frac{C^2\rho^2}{\sigma^6 \varepsilon^2}$.   
 
 
 
