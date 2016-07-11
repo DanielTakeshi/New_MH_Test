@@ -1,0 +1,32 @@
+:silent
+val popt = 2.9f;
+val v0 = 1f;
+val v = v0 * math.sqrt(popt).toFloat*2;
+val m = 100;                                     // dimension
+val n = 100000;                                   // number of samples - for estimation only
+val nn = 10000;                                  // effective problem size
+val tt = 10000;                                  // minibatch size
+val sigma = 1f;                                  // x sigma (per coordinate)
+val tsigma = sigma/math.sqrt(nn).toFloat         // target sigma (per coordinate)
+val ssigma = sigma/math.sqrt(tt).toFloat         // target sigma (per coordinate)
+val psigma = v * tsigma/math.sqrt(m).toFloat;    // proposal sigma
+val x = normrnd(0,tsigma,m,n);
+val y = normrnd(0,ssigma,m,n);                       
+val z = normrnd(0,psigma,m,n);
+
+val p = (0.5f*nn/(sigma*sigma) * z) dot (x - y - 0.5*z);
+
+val stdx = 0.5f*nn/(sigma*sigma) * sqrt(mean(z dot z)).v * ssigma 
+
+hist(p, 100);
+
+variance(p)
+val acc = exp(min(p,0));
+val accept = mean(acc);
+val sz = z dot z;
+val speed = mean(acc *@ sz);
+
+:silent
+println("v=%5.4f, acc=%5.4f, speed=%5.4g" format (v, accept.dv, speed.dv));
+
+

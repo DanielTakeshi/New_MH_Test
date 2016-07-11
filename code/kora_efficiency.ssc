@@ -1,0 +1,27 @@
+
+val n = 1000000;
+val nmax = n;
+val v = 1f
+val temp = 10f
+val ssig = math.sqrt(temp/n).toFloat;
+val psig = math.sqrt(temp/n).toFloat * v;
+
+val samp = normrnd(0,ssig,1,n);
+val prop = normrnd(0,psig,1,n);
+val logu = ln(rand(1,n));
+val d = samp + prop/2 + logu / n / prop;
+val dabs = abs(d)
+
+val u = ceil(1f/max(0.25f * temp * dabs *@ dabs, 1f/nmax));
+
+val kora = mean(max(1,u));   // expected points per sample for Koratikara
+
+// val sigr = n * psig * (1/math.sqrt(b))
+
+val u2 = ceil((n * prop) ^ 2);
+val bb = mean(max(1, u2));
+
+println("v = %f, kora = %f, ntest = %f" format (v, kora.dv, bb.dv))
+
+
+

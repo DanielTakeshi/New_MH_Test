@@ -190,23 +190,22 @@ sample $\theta_{t+1}$ at time $t+1$ is generated using a candidate $\theta'$ fro
 distribution $q(\theta'\mid \theta_t)$, filtered by an acceptance test. The acceptance test is usually
 a Metropolis test. The Metropolis test has acceptance probability:
 \begin{equation}\label{eq:traditional}
-\alpha(\theta_t,\theta') = \min\left\{ 1, \frac{p(\theta')q(\theta_t \mid \theta')}{p(\theta_t)q(\theta' \mid \theta_t)}
-\right\}
+\alpha(\theta_t,\theta') = \frac{p(\theta')q(\theta_t \mid \theta')}{p(\theta_t)q(\theta' \mid \theta_t)} \wedge 1
 \end{equation}
-and with probability $\alpha(\theta_t,\theta')$, we accept $\theta'$
+where $a \wedge b$ denotes $\min(a,b)$.  With probability $\alpha(\theta_t,\theta')$, we accept $\theta'$
 and set $\theta_{t+1} = \theta'$, otherwise set
 $\theta_{t+1}=\theta_t$.  The test is often implemented with an
-auxiliary random variable $u \sim \mathcal{U}(0,1)$ with a comparison $u < \alpha(\theta_t,\theta')$.
+auxiliary random variable $u \sim \mathcal{U}(0,1)$ with a comparison $u < \alpha(\theta_t,\theta')$. $\mathcal{U}(a,b)$ denotes the uniform distribution on the interval $[a,b]$. 
 For notational simplicity, from now on we will drop the subscript $t$ for the current sample $\theta_t$ and
 denote is simply as $\theta$. 
 
 
 The acceptance test guarantees detailed balance, which means
 \begin{equation}\label{detailed_balance1}
-  p(\theta)p(\theta,\theta') = p(\theta')p(\theta',\theta)
+  p(\theta)p(\theta'\mid\theta) = p(\theta')p(\theta \mid\theta')
 \end{equation}
-where $p(\theta,\theta')$ is the probability of a transition from state $\theta$ to $\theta'$. Here
-$p(\theta,\theta') = q(\theta'\mid\theta)\alpha(\theta,\theta')$ so the detailed balance equation becomes
+where $p(\theta'\mid\theta)$ is the probability of a transition from state $\theta$ to $\theta'$. Here
+$p(\theta'\mid\theta) = q(\theta'\mid\theta)\alpha(\theta,\theta')$ so the detailed balance equation becomes
 \begin{equation}\label{detailed_balance2}
   p(\theta)q(\theta'\mid\theta)\alpha(\theta,\theta') = p(\theta')q(\theta\mid\theta')\alpha(\theta',\theta)
 \end{equation}
@@ -218,8 +217,8 @@ observed data $x_1,\ldots,x_N$. i.e. we want to sample from
 $p(\theta \mid x_1, \ldots, x_N)$. The acceptance probability is now:
 \begin{equation}
 \alpha(\theta,\theta') = 
-\min\left\{ 1, \frac{p_0(\theta')\prod_{i=1}^N p(x_i \mid \theta')q(\theta \mid
-\theta')}{p_0(\theta)\prod_{i=1}^N p(x_i \mid \theta)q(\theta' \mid\theta)} \right\},
+ \frac{p_0(\theta')\prod_{i=1}^N p(x_i \mid \theta')q(\theta \mid
+\theta')}{p_0(\theta)\prod_{i=1}^N p(x_i \mid \theta)q(\theta' \mid\theta)} \wedge 1
 \end{equation}
 where $p_0(\theta)$ is a prior, and $p(x_i \mid \theta)$ are the
 probabilities of the observations. Computing samples this way requires
@@ -241,31 +240,44 @@ worst case can occur about $\Omega(N)$ times during the performance of
 $N$ tests.
 
 Following ~\cite{icml2014c1_bardenet14}, we write the test $u < \alpha(\theta,\theta')$ in
-the equivalent form $\Lambda(\theta,\theta') > \psi(u,\theta,\theta')$ where
+the equivalent form $\Lambda(\theta,\theta') > \psi(u,\theta,\theta')$. Our definitions differ
+from those in \cite{icml2014c1_bardenet14} by a factor of $N$ to simplify our analysis later on. 
 \begin{equation}
-\Lambda(\theta,\theta') = \frac{1}{N}\sum_{i=1}^N \log\left(\frac{p(x_i|\theta')}{p(x_i|\theta)}\right)  
+\Lambda(\theta,\theta') = \sum_{i=1}^N \log\left(\frac{p(x_i|\theta')}{p(x_i|\theta)}\right)  
 \hspace{0.2in} {\rm and} \hspace{0.2in}
-\psi(u,\theta,\theta') = \frac{1}{N}\log\left(u\frac{q(\theta'|\theta)p_0(\theta)}{q(\theta|\theta')p_0(\theta')}\right)
+\psi(u,\theta,\theta') = \log\left(u\frac{q(\theta'|\theta)p_0(\theta)}{q(\theta|\theta')p_0(\theta')}\right)
 \end{equation}
 
 To reduce computational effort, an unbiased estimate of $\Lambda(\theta,\theta')$
 based on a minibatch can be used:
 
 \begin{equation}
-\Lambda^*(\theta,\theta') = \frac{1}{b}\sum_{i=1}^b \log\left(\frac{p(x_i|\theta')}{p(x_i|\theta)}\right)  
+\Lambda^*(\theta,\theta') = \frac{N}{b}\sum_{i=1}^b \log\left(\frac{p(x_i|\theta')}{p(x_i|\theta)}\right)  
 \end{equation}
 
-The minibatch should contain randomly selected samples, and
-by the central limit theorem, we expect $\Lambda^*(\theta,\theta')$ to be approximately
-Normal. 
-The acceptance test then becomes a statistical test of the hypothesis
-that $\Lambda(\theta,\theta') > \psi(u,\theta,\theta')$ by
-establishing that $\Lambda^*(\theta,\theta')$ is substantially larger
-than $\psi(u,\theta,\theta')$.  In ~\cite{cutting_mh_2014} an
-asymptotic central limit argument was used to derive this gap, while
-in \cite{icml2014c1_bardenet14} a concentration bound was used. In
-both cases, the resulting tests were shown to give useful reductions
-in number of samples required over using the full dataset. But no
+Finally, it will be convenient in what follows to define the individual components that
+contribute to the sums above:
+
+\begin{equation}\label{eq:individual_terms}
+\Lambda_i(\theta,\theta') = N \log\left(\frac{p(x_i|\theta')}{p(x_i|\theta)}\right)  
+\end{equation}
+
+So $\Lambda(\theta,\theta')$ is the mean of $\Lambda_i(\theta,\theta')$ over the
+entire dataset, and $\Lambda^*(\theta,\theta')$ is the mean over the minibatch
+of $\Lambda_i(\theta,\theta')$. 
+
+Since the minibatch contains randomly selected samples $x_i$, the
+values $\Lambda_i$ are independent, IID random variables.  By the central
+limit theorem, we expect $\Lambda^*(\theta,\theta')$ to be
+approximately Normal.  The acceptance test then becomes a statistical
+test of the hypothesis that $\Lambda(\theta,\theta') >
+\psi(u,\theta,\theta')$ by establishing that
+$\Lambda^*(\theta,\theta')$ is substantially larger than
+$\psi(u,\theta,\theta')$.  In ~\cite{cutting_mh_2014} an asymptotic
+central limit argument was used to derive this gap, while in
+\cite{icml2014c1_bardenet14} a concentration bound was used. In both
+cases, the resulting tests were shown to give useful reductions in
+number of samples required over using the full dataset. But no
 worst-case bounds were given on average number of samples needed.
 
 We next show that for some simple distributions, the lower
@@ -278,13 +290,13 @@ Consider a simple model where samples $x_i$ for $i=1,\ldots,N$ are
 drawn from a Normal distribution $\mathcal{N}(\theta,1)$ where
 $\theta=0.5$, and with a uniform prior on $\theta$. The log likelihood ratio is
 \begin{equation}
-\Lambda^*(\theta,\theta') =  \frac{1}{b}\sum_{i=1}^b \log\frac{p(x_i|\theta')}{p(x_i|\theta)}=
+\Lambda^*(\theta,\theta') =  \frac{N}{b}\sum_{i=1}^b \log\frac{p(x_i|\theta')}{p(x_i|\theta)}=
   %%\frac{1}{2}\left( (x_i-\theta')^2 - (x_i - \theta)^2\right) =
-  (\theta'-\theta)\left(\frac{1}{b}\sum_{i=1}^b x_i-\theta-\frac{\theta'-\theta}{2}\right)
+  N(\theta'-\theta)\left(\frac{1}{b}\sum_{i=1}^b x_i-\theta-\frac{\theta'-\theta}{2}\right)
 \end{equation}
 which is normally distributed over selection of the Normal samples $x_i$.
 Since the $x_i$ have unit variance, their mean has variance $1/b$, and the variance $\sigma^2(\Lambda^*)$
-of $\Lambda^*(\theta,\theta')$ is $(\theta'-\theta)^2/b$. In order to pass
+of $\Lambda^*(\theta,\theta')$ is $(\theta'-\theta)^2N/b$. In order to pass
 a hypothesis test that $\Lambda > \psi$, we will need to establish a
 large enough gap (several $\sigma(\Lambda^*)$) between $\Lambda^*(\theta',\theta)$
 and $\psi(u,\theta',\theta)$.
@@ -292,13 +304,14 @@ and $\psi(u,\theta',\theta)$.
 We would like to sample from the posterior distribution of $\theta$
 which is a normal distribution centered on the sample mean, and with
 variance $1/N$.  The target distribution is therefore
-$\mathcal{N}(\mu,1/N)$ where $\mu$ is the sample mean.  An efficient
+$\mathcal{N}(\mu,1/N)$ where $\mu$ is the sample mean, and $\mathcal{N}(\mu,\sigma^2)$ is a
+normal distribution with mean $\mu$ and variance $\sigma^2$.  An efficient
 proposal distribution has the same variance as the target distribution
 $\mathcal{N}(\theta'-\theta,1/N)$, so we take $q(\theta'\mid\theta) =
 \phi((\theta'-\theta)N)$, where $\phi(x)$ is the Normal density
 function with zero mean and unit variance. This proposal is symmetric
-$q(\theta',\theta)=q(\theta,\theta')$, and we assumed uniform
-prior for $\theta$, so $\psi(u,\theta',\theta)$ reduces to $1/N\log
+$q(\theta'\mid\theta)=q(\theta\mid\theta')$, and we assumed uniform
+prior for $\theta$, so $\psi(u,\theta',\theta)$ reduces to $\log
 u$.
 
 \begin{lemma}\label{lem:efficienty_cutting}
@@ -342,8 +355,8 @@ and consider the range of $u$ values
   \begin{equation}
     \log u \in \log u_0 + [-0.5,0.375]
   \end{equation}
-  the size of the range in $u$ is at least $\exp([-2,-1.125]) = [0082,0.286]$ and occurs
-  with probability at least $p_2=0.2044$. With $u$ in this range, we rewrite the test as:
+  the size of the range in $u$ is at least $\exp([-2,-1.125]) = [0.13534,0.32465]$ and occurs
+  with probability at least $p_2=0.18932$. With $u$ in this range, we rewrite the test as:
   \begin{equation}
     \frac{1}{b}\sum_{i=1}^b x_i-0.5 \hspace{0.1in} \not\approx \hspace{0.1in} \frac{\log u/u_0}{N(\theta'-\theta)}
   \end{equation}
@@ -354,7 +367,7 @@ and consider the range of $u$ values
 
   The samples $\theta$, $(\theta'-\theta)$
   and $u$ are drawn independently and so the probability of the conjunction of these events is
-  $c = p_0 p_1 p_2 = 0.009$.
+  $c = p_0 p_1 p_2 = 0.0085$.
 \end{proof}
 
 Similar results can be proved for other distributions and proposals, by identifying
@@ -404,22 +417,24 @@ First, $\Delta$ is defined as:
 \end{equation}
 and in the Bayesian case
 \begin{equation}\label{eq:delta1}
-\Delta(x,\theta,\theta')  =
+\Delta(\theta,\theta')  =
 \log \frac{p_0(\theta')\prod_{i=1}^N p(x_i \mid \theta')q(\theta \mid
   \theta')}{p_0(\theta)\prod_{i=1}^N p(x_i \mid \theta)q(\theta' \mid\theta)}
   \end{equation}
 and we can separate out terms dependent and independent of the data $x$ as:
 \begin{equation}\label{eq:delta2}
-\Delta(x,\theta,\theta') = N\psi(1,\theta,\theta') + \sum_{i=1}^N\log\frac{p(x_i\mid\theta')}{p(x_i\mid\theta)}
+  \Delta(\theta,\theta') = \sum_{i=1}^N\log\frac{p(x_i\mid\theta')}{p(x_i\mid\theta)} - \psi(1,\theta,\theta') =
+  \Lambda(\theta,\theta') -  \psi(1,\theta,\theta')
 \end{equation}
 A minibatch estimator of $\Delta$ can be defined as:
 \begin{equation}\label{eq:delta3}
-    \Delta^*(x,\theta,\theta') =
-N\psi(1,\theta,\theta') + \frac{N}{b}\sum_{i=1}^b\log\frac{p(x_i\mid\theta')}{p(x_i\mid\theta)}
+    \Delta^*(\theta,\theta') =
+\frac{N}{b}\sum_{i=1}^b\log\frac{p(x_i\mid\theta')}{p(x_i\mid\theta)} - \psi(1,\theta,\theta') =
+\Lambda^*(\theta,\theta') -     \psi(1,\theta,\theta')
 \end{equation}
 Note that $\Delta$ and $\Delta^*$ are evaluated on the full dataset and a minibatch of size $b$
-respectively. The scaling term $\frac{N}{b}$ ensures that $\Delta^*(x,\theta,\theta')$ is an
-unbiased estimator of $\Delta(x,\theta,\theta')$.
+respectively. The scaling term $\frac{N}{b}$ ensures that $\Delta^*(\theta,\theta')$ is an
+unbiased estimator of $\Delta(\theta,\theta')$.
 
 \subsection{A Full Dataset Acceptance Test}\label{ssec:deltas_full}
 
@@ -461,10 +476,10 @@ classical Metropolis test is $f(\Delta) = {\rm min}(\exp(\Delta),1)$. More gener
   \end{equation*}
 \end{proof}
 
-As a sanity check, choosing $g(s) = \min\{1, \exp(s) \}$ produces the
+As a sanity check, choosing $g(s) = \exp(s) \wedge 1$ produces the
 standard Metropolis acceptance test $\alpha(\theta,\theta') = g(\Delta(\theta,\theta')) = 
-\min\left\{1, \frac{p(\theta')q(\theta \mid
-  \theta')}{p(\theta)q(\theta' \mid \theta)}\right\}$. $g(s)$ satisfies
+\frac{p(\theta')q(\theta \mid
+  \theta')}{p(\theta)q(\theta' \mid \theta)}\wedge 1$. $g(s)$ satisfies
 the condition $g(s) = \exp(s)g(-s)$, and therefore detailed
 balance. In fact it is the optimal acceptance function in terms of
 acceptance rate, since it accepts with probability 1 for $\Delta > 0$.
@@ -500,10 +515,10 @@ for a logistic random $X$.
 \subsection{A Minibatch Acceptance Test}\label{ssec:deltas_minibatch}
 
 We now move to acceptance testing using the minibatch estimator
-$\Delta^*(x,\theta,\theta')$. From equation (\ref{eq:delta3}),
-$\Delta^*(x,\theta,\theta')$ can be represented as a constant term
-plus a sum of $b$ iid terms of the form
-$\log\frac{p(x_i|\theta')}{p(x_i|\theta)}$. As $N$ increases, $\Delta^*(\theta,\theta')$
+$\Delta^*(\theta,\theta')$. From equation (\ref{eq:delta3}),
+$\Delta^*(\theta,\theta')$ can be represented as a constant term
+plus the mean of $b$ IID terms $\Lambda_i(\theta,\theta')$ of the form
+$N\log\frac{p(x_i|\theta')}{p(x_i|\theta)}$. As $b$ increases, $\Delta^*(\theta,\theta')$
 therefore has a distribution which approaches a normal distribution by the central limit
 theorem. Later we will provide specific bounds between the CDF of $\Delta^*(\theta,\theta')$
 and a Normal CDF, but for now we use an asymptotic argument. 
@@ -521,15 +536,16 @@ Our approach is to decompose $X_{\rm log}$ as
 \begin{equation}\label{eq:deconvolution}
 X_{\rm log} = X_{\rm norm}+X_{\rm corr},
 \end{equation}
-where we assume $X_{\rm norm}$ is a zero-mean Gaussian and $X_{\rm
-  corr}$ is a zero-mean ``correction'' term with distribution $C(X)$.
-The two variables are added (i.e., their distributions convolve) to
-form $X_{\rm log}$. It will be convenient to express this relationship
-in terms of the CDFs $N(X_{\rm norm}) = \Phi(X_{\rm norm}/\sigma)$ and
-$S(X_{\rm log})$, where $\Phi(.)$ is the Normal CDF with zero mean and
-unit variance and $S(.)$ is the standard logistic function.
+where we assume $X_{\rm norm}$ has zero-mean, Normal distribution with
+variance $\sigma^2$, and $X_{\rm corr}$ is a zero-mean ``correction''
+term with density $C_{\sigma}(X)$.  The two variables are added
+(i.e., their distributions convolve) to form $X_{\rm log}$. It will be
+convenient to express this relationship in terms of the CDFs $N_{\sigma}(X_{\rm
+  norm}) = \Phi(X_{\rm norm}/\sigma)$ and $S(X_{\rm log})$, where
+$\Phi(.)$ is the Normal CDF with zero mean and variance $\sigma^2$ and
+$S(.)$ is the standard logistic function.
  
-Equation (\ref{eq:deconvolution}) implies that $S = N * C$ where $*$ denotes convolution. We will later
+Equation (\ref{eq:deconvolution}) implies that $S = N_{\sigma} * C_{\sigma}$ where $*$ denotes convolution. We will later
 derive a numerical representation of $C$ by deconvolution, and using this we can generate
 samples of $X_{\rm corr}$. 
 
@@ -588,19 +604,19 @@ Algorithm~\ref{alg:our_algorithm} describes the M-H iteration using our acceptan
 \SetKwInOut{Output}{Output}
 
 \begin{algorithm}[t]
-\Input{Number of samples $T$, minibatch size $m$, pre-computed $X_{\rm
-corr}$ distribution, and initial sample $\theta_1$.}
+\Input{Number of samples $T$, minibatch size $m$, error bound $\delta$, pre-computed correction $C_1(X)$ distribution, initial sample $\theta_1$.}
 \Output{A chain of $T$ samples $\{\theta_1, \ldots, \theta_T\}$ from $p(\theta)$\;}
 \For{$t=\{1, \ldots, T\}$}{
     Propose a candidate $\theta'$\ from proposal distribution $q(\theta'\mid\theta_t)$\;
-    Draw a minibatch of $m$ points $x_i$, compute $\Delta^*(x,\theta_t,\theta')$ and sample variance $\sigma^2(\Delta^*)$\;
-    \While {$\sigma^2(\Delta^*) \ge 1$} {
-    	Draw $m$ more samples to augment the current minibatch, and update $\Delta^*$ and $\sigma^2(\Delta^*)$ \;
+    Draw a minibatch of $m$ points $x_i$, compute $\Delta^*(\theta_t,\theta')$ and sample variance $\sigma^2(\Delta^*)$\;
+    Estimate moments $E|\Lambda_i-\Lambda|$ and $E|\Lambda_i-\Lambda|^3$ from the sample, and error $\epsilon$ from equation (\ref{eq:clt-bounds3})\;
+    \While {$\sigma^2(\Delta^*) \ge 1$ {\bf or} $\epsilon > \delta$}{
+    	Draw $m$ more samples to augment the minibatch, update $\Delta^*$, $\sigma^2(\Delta^*)$ and $\epsilon$ estimates\;
     }
-    Let $\sigma_n^2 = 1 - \sigma^2(\Delta^*)$, draw a normal variable $X_n \in \mathcal{N}(0,\sigma_n^2)$ and
-    $X_c$ from the correction distribution\;
+    Draw $X_{\rm norm} \in \mathcal{N}(0,1-\sigma^2(\Delta*))$ and
+    $X_{\rm corr}$ from the correction distribution $C_1(X)$\;
         
-        \eIf{$\Delta^* + X_n + X_c > 0$}{
+        \eIf{$\Delta^* + X_{\rm norm} + X_{\rm corr} > 0$}{
             Accept the candidate, $\theta_{t+1} = \theta'$\;
         }{
             Reject and re-use the old sample, $\theta_{t+1} = \theta_t$\;
@@ -640,7 +656,7 @@ in online mode where the dataset is presented as a stream.
 The outline of this section is as follows: we first present bounds on the absolute
 and relative error (in CDF) of the distribution of $\Delta^*$ vs a Normal distribution. We then show that
 these errors bounds are preserved after the addition of other random variables, in particular
-$X_n$ and $X_c$. From this it follows that the acceptance test has the same error bound.
+$X_{\rm norm}$ and $X_{\rm corr}$. From this it follows that the acceptance test has the same error bound.
 
 The quantitative central-limit result below comes from \cite{explicit-clt05}:
   
@@ -668,12 +684,11 @@ $y = x \sigma(\hat{X})$, equation (\ref{eq:clt-bounds}) becomes
 which shows that the distribution of $\hat{X}$ approaches the normal distribution $\mathcal{N}(0,\sigma^2(\hat{X}))$
 whose variance is $\sigma^2(\hat{X})$, measured from the sample.
 
-To apply this to our test, let $\mu = \frac{1}{N}\sum_{i=1}^N\log\frac{p(x_i|\theta')}{p(x_i|\theta)}$ which is
-the expected log data probability ratio across the entire dataset. Then
-Let $X_i = N(\log\frac{p(x_i|\theta')}{p(x_i|\theta)}-\mu)$, are zero-mean, IID variables.
+To apply this to our test, let $X_i = \Lambda_i(\theta,\theta') - \Lambda(\theta,\theta')$,
+then the $X_i$ are zero-mean, IID variables.
 Take $n=b$ the minibatch size, and then:
 \begin{equation}
-  \Delta^*(x,\theta,\theta') = \hat{X} + \Delta(x,\theta,\theta')
+\hat{X} = \Delta^*(\theta,\theta') - \Delta(\theta,\theta') 
 \end{equation}
 so that $\sigma(\hat{X}) = \sigma(\Delta^*)$.
 \begin{corollary}
@@ -687,7 +702,7 @@ We have shown that the distribution of $\Delta^*$ approximates a
 Normal distribution with mean $\Delta$ and variance
 $\sigma^2(\Delta^*)$, and bounded its error with estimable
 quantities. Both $E|X|$ and $E|X|^3$ can be estimated as means of
-$|X_i - \hat{X}|$ and $|X_i - \hat{X}|^3$ respectively on each minibatch. We expect this
+$|\Lambda_i - \Lambda|$ and $|\Lambda_i - \Lambda|^3$ respectively on each minibatch. We expect this
 will often be accurate enough on minibatches with hundreds or
 thousands of points, but otherwise bootstrap CIs can be computed from
 those sequences. Since the bounds are monotone in $E|X|$ and $E|X|^3$,
@@ -716,12 +731,12 @@ using upper bootstrap CI limits will provide high-confidence error bounds.
 \end{proof}
 
 \begin{corollary}
-  If $|{\rm Pr}(\Delta^* < y) - \Phi(\frac{y-\Delta}{\sigma(\Delta^*)})| \leq \epsilon(\theta,\theta',b)$,
+  If $\sup_y|{\rm Pr}(\Delta^* < y) - \Phi(\frac{y-\Delta}{\sigma(\Delta^*)})| \leq \epsilon(\theta,\theta',b)$,
   then
   \begin{equation}
-    |{\rm Pr}(\Delta^*+X_n+X_c < y) - S(y-\Delta)| \leq \epsilon(\theta,\theta',b)
+    \sup_y|{\rm Pr}(\Delta^*+X_{\rm norm}+X_{\rm corr} < y) - S(y-\Delta)| \leq \epsilon(\theta,\theta',b)
   \end{equation}
-  where $S(x)$ is the standard logistic function, and $X_n$ and $X_c$ are generated as per Algorithm 1. 
+  where $S(x)$ is the standard logistic function, and $X_{\rm norm}$ and $X_{\rm corr}$ are generated as per Algorithm 1. 
   \end{corollary}
 %% \subsection{Discussions and Practical Considerations of the New MH Test}\label{ssec:discussion}
 \begin{proof}
@@ -732,13 +747,20 @@ using upper bootstrap CI limits will provide high-confidence error bounds.
   and convolve with the distribution of $X_n$ which has density $\phi(X/\sigma_n)$ where $\sigma_n^2
   = 1 - \sigma^2(\Delta^*)$. This yields the next iteration of $P$ and $Q$
   \begin{equation}
-    P'(y) = Pr(\Delta^*+X_n < y) \qquad {\rm and}\qquad Q'(y) = \Phi\left({y-\Delta}\right)
+    P'(y) = Pr(\Delta^*+X_{\rm norm} < y) \qquad {\rm and}\qquad Q'(y) = \Phi\left({y-\Delta}\right)
   \end{equation}
-  Now we convolve with the distribution of $X_c$ which gives:
+  Now we convolve with the distribution of $X_{\rm corr}$ which gives:
   \begin{equation}
-    P''(y) = Pr(\Delta^*+X_n+X_c < y) \qquad {\rm and}\qquad Q''(y) = S\left({y-\Delta}\right)
+    P''(y) = Pr(\Delta^*+X_{\rm norm}+X_{\rm corr} < y) \qquad {\rm and}\qquad Q''(y) = S\left({y-\Delta}\right)
   \end{equation}
-  Both steps preserve the error bound $\epsilon(\theta,\theta',b)$
+  Both steps preserve the error bound
+  $\epsilon(\theta,\theta',b)$. Finally $S(y-\Delta)$ is a logistic
+  CDF centered at $\Delta$, and so $S(y-\Delta) = {\rm Pr}(\Delta +
+  X_{\rm log} < y)$ for a logistic random $X_{\rm log}$. We
+  conclude that the probability of acceptance for the actual test ${\rm Pr}(\Delta^*+X_{\rm norm}+X_{\rm
+    corr} > 0)$ differs from the exact test ${\rm Pr}(\Delta+X_{\rm
+    log} > 0)$ by at most $\epsilon$.
+  
 \end{proof}
 
 %% \textbf{The Convolution}. Figure~\ref{fig:deconvolution} demonstrates

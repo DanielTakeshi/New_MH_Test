@@ -1,0 +1,105 @@
+:silent
+val ndim = 100;
+val nreps = 10000;
+val sigma = 1.0;
+//val sigmap = 1.81*sigma/math.sqrt(ndim);
+val l = 2.3;
+//val l = 1.0;
+val sigmap = l*sigma/math.sqrt(ndim);
+val pi = 3.14159265358979;
+val ntimes = 100;
+
+val speeds = dzeros(ntimes,2);
+val accepts = dzeros(ntimes,2);
+val efficiencies = dzeros(ntimes,2);
+
+def normcdf(a:DMat):DMat = {
+    0.5 + 0.5 * erf(a / math.sqrt(2));
+};
+
+def invnormcdf(a:DMat):DMat = {
+    math.sqrt(2) * erfinv(2*a - 1);
+};
+
+def evalpoints(m:DMat,sigmax:Double):DMat = {
+  val r = m dot m;
+  - ln(2*pi*sigmax) * ndim/2  - (r / (2*sigmax*sigmax));
+};
+
+def efficiency(a:DMat):DMat = {
+  a *@ (invnormcdf(a / 2) ^ 2)
+};
+
+var pr:DMat = null;
+
+for (i <- 0 until ntimes) {
+val peq = dnormrnd(0,sigma,ndim,nreps);
+val pprop = dnormrnd(0,1,ndim,nreps) * sigmap;
+
+val p0 = evalpoints(peq, sigma);
+val pp = evalpoints(peq + pprop, sigma);
+
+pr = (pp - p0);
+
+val acc = DMat(exp(min(pr,0.0)));
+val acclog = DMat(GLM.preds(FMat(pr), iones(1,1), 10L));
+
+val doacc = (rand(1, nreps) < acc);
+val doacclog = (rand(1, nreps) < acclog);
+
+val dpprop = pprop dot pprop;
+
+val speed1 = mean(dpprop *@ acc);
+val speed2 = mean(dpprop *@ acclog);
+
+speeds(i,0) = speed1.dv;
+speeds(i,1) = speed2.dv;
+
+accepts(i,0) = mean(acc).dv;
+accepts(i,1) = mean(acclog).dv;
+
+efficiencies(i,0) = efficiency(mean(acc)).dv;
+efficiencies(i,1) = efficiency(mean(acclog)).dv;
+
+// val step1 = pprop *@ doacc;
+// val step2 = pprop *@ doacclog;
+
+// val newpeq1 = peq + step1;
+// val newpeq2 = peq + step2;
+
+// val pprop2 = dnormrnd(0,1,ndim,nreps) * sigmap;
+
+// val p01 = evalpoints(newpeq1, sigma);
+// val p02 = evalpoints(newpeq2, sigma);
+
+// val pp1 = evalpoints(newpeq1 + pprop2, sigma);
+// val pp2 = evalpoints(newpeq2 + pprop2, sigma);
+
+// val pr1 = (pp1 - p01);
+// val pr2 = (pp2 - p02);
+
+// val acc1 = DMat(exp(min(pr1,0.0)));
+// val acc2 = DMat(GLM.preds(FMat(pr2), iones(1,1), 10L));
+
+// val doacc1 = (rand(1, nreps) < acc1);
+// val doacc2 = (rand(1, nreps) < acc2);
+
+// val newstep1 = pprop2 *@ doacc1;
+// val newstep2 = pprop2 *@ doacc2;
+
+// val corr1 = mean(step1 dot newstep1)/sqrt(mean(step1 dot step1) * mean(newstep1 dot newstep1))
+// val corr2 = mean(step2 dot newstep2)/sqrt(mean(step2 dot step2) * mean(newstep2 dot newstep2))
+print(".");
+}
+println("");
+:silent
+
+l;
+
+mean(accepts);
+
+mean(efficiencies);
+
+mean(speeds);
+
+sqrt(variance(speeds)/ntimes);
