@@ -1,5 +1,6 @@
 :silent
-val ndim = 100;
+
+val ndim = 100;                          
 val nreps = 10000;
 val sigma = 1.0;
 //val sigmap = 1.81*sigma/math.sqrt(ndim);
