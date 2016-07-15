@@ -63,6 +63,7 @@ def newstep(data:DMat, size:Int, here:Int, theta:DMat, ttheta:DMat, evalfn:(DMat
 	    ntheta = nth;
 	} else {
 	    step = math.min(step*2, data.ncols);
+	    if (step == data.ncols) throw new RuntimeException("New test failed variance condition");
 	}
     }
     (there, ntheta);
