@@ -4,34 +4,33 @@ def normlogrnd(m:Int, n:Int):DMat = {
     a;
 };
 
-def newtest(batch:DMat, theta:DMat, ttheta:DMat, evalfn:(DMat, DMat)=>DMat):(Boolean, DMat) = {
-    val diff = evalfn(batch, ttheta) - evalfn(batch, theta);
+def newtest(diff:DMat, logu:Double, nsig:Double):(Boolean, Boolean) = {
     val tvar = (variance(diff)/length(diff)).v;
     if (tvar >= 1) {
-	(false, null);
+	if (nsig == 0) throw new RuntimeException("New test failed variance condition");
+	(false, false);
     } else {
 	val x = mean(diff);
 	val xn = dnormrnd(0, math.sqrt(1 - tvar), 1, 1);
 	val xc = normlogrnd(1,1);
 	if ((x + xn + xc).v > 0) {
-	    (true, ttheta);
+	    (true, true);
 	} else {
-	    (true, theta);
+	    (true, false);
 	}
     }
 };
 
-def oldtest(batch:DMat, theta:DMat, ttheta:DMat, logu:Double, nsig:Double, evalfn:(DMat, DMat)=>DMat):(Boolean, DMat) = {
-    val diff = evalfn(batch, ttheta) - evalfn(batch, theta) - logu;
+def oldtest(diff:DMat, logu:Double, nsig:Double):(Boolean, Boolean) = {
     val tstd = sqrt(variance(diff)/length(diff)).v
-    val ndiff = mean(diff).v / tstd;
+    val ndiff = mean(diff - logu).v / tstd;
     if (math.abs(ndiff) < nsig) {
-	(false, null);
+	(false, false);
     } else {
 	if (ndiff > 0) {
-	    (true, ttheta);
+	    (true, true);
 	} else {
-	    (true, theta);
+	    (true, false);
 	}
     }
 };
@@ -49,27 +48,9 @@ def getbatch(data:DMat, here:Int, size:Int):DMat = {
     batch;
 };    
 
-def newstep(data:DMat, size:Int, here:Int, theta:DMat, ttheta:DMat, evalfn:(DMat,DMat)=>DMat):(Int, DMat) = {
-    var step = size;
-    var done = false;
-    var ntheta:DMat = null;
-    var there = 0;
-    while (! done) {
-	val batch = getbatch(data, here, step);
-	val (moved, nth) = newtest(batch, theta, ttheta, evalfn);
-	done = moved;
-	if (done) {
-	    there = (here + step) % data.ncols;
-	    ntheta = nth;
-	} else {
-	    step = math.min(step*2, data.ncols);
-	    if (step == data.ncols) throw new RuntimeException("New test failed variance condition");
-	}
-    }
-    (there, ntheta);
-};
-
-def oldstep(data:DMat, size:Int, here:Int, theta:DMat, ttheta:DMat, nsig:Double, evalfn:(DMat,DMat)=>DMat):(Int, DMat) = {
+def dostep(data:DMat, size:Int, here:Int, theta:DMat, ttheta:DMat, nsig:Double, explin:Boolean,
+	   evalfn:(DMat,DMat)=>DMat,
+	   testfn:(DMat,Double,Double)=>(Boolean,Boolean)):(Int, DMat) = {
     var step = size;
     var done = false;
     var ntheta:DMat = null;
@@ -78,20 +59,25 @@ def oldstep(data:DMat, size:Int, here:Int, theta:DMat, ttheta:DMat, nsig:Double,
     var nsig0 = nsig;
     while (! done) {
 	val batch = getbatch(data, here, step);
-	val (moved, nth) = oldtest(batch, theta, ttheta, logu, nsig0, evalfn);
+	val diff = evalfn(batch, ttheta) - evalfn(batch, theta);
+	val (moved, takestep) = testfn(diff, logu, nsig0);
 	done = moved;
 	if (done) {
 	    there = (here + step) % data.ncols;
-	    ntheta = nth;
+	    ntheta = if (takestep) ttheta else theta;
 	} else {
-	    step = math.min(step*2, data.ncols);
+	    step = math.min(if (explin) (step*2) else (step + size), data.ncols);
 	    if (step == data.ncols) nsig0 = 0;
 	}
     }
     (there, ntheta);
 };
 
-def newsimm(data:DMat, size:Int, nsamps:Int, initfn:() => DMat, proposalfn:(DMat)=>DMat, evalfn:(DMat,DMat)=>DMat):(DMat,LMat) = {
+def dosimm(data:DMat, size:Int, nsamps:Int, nsig:Double, explin:Boolean,
+	   initfn:() => DMat,
+	   proposalfn:(DMat)=>DMat,
+	   evalfn:(DMat,DMat)=>DMat,
+	   testfn:(DMat,Double,Double)=>(Boolean,Boolean)):(DMat,LMat) = {
     var theta = initfn();
     val samples = dzeros(theta.length, nsamps);
     val sizes = lzeros(1, nsamps);
@@ -99,7 +85,7 @@ def newsimm(data:DMat, size:Int, nsamps:Int, initfn:() => DMat, proposalfn:(DMat
     var i = 0;
     while (i < nsamps) {
 	val ttheta = proposalfn(theta);
-	val (there, nth) = newstep(data, size, here, theta, ttheta, evalfn);
+	val (there, nth) = dostep(data, size, here, theta, ttheta, nsig, explin, evalfn, testfn);
 	sizes(i) = if (there > here) (there - here) else (there - here + data.ncols);
 	here = there;
 	theta = nth;
@@ -109,23 +95,6 @@ def newsimm(data:DMat, size:Int, nsamps:Int, initfn:() => DMat, proposalfn:(DMat
     (samples, sizes);
 };
 
-def oldsimm(data:DMat, size:Int, nsamps:Int, nsig:Double, initfn:() => DMat, proposalfn:(DMat)=>DMat, evalfn:(DMat,DMat)=>DMat):(DMat,LMat) = {
-    var theta = initfn();
-    val samples = dzeros(theta.length, nsamps);
-    val sizes = lzeros(1, nsamps);
-    var here = 0;
-    var i = 0;
-    while (i < nsamps) {
-	val ttheta = proposalfn(theta);
-	val (there, nth) = oldstep(data, size, here, theta, ttheta, nsig, evalfn);
-	sizes(i) = if (there > here) (there - here) else (there - here + data.ncols);
-	here = there;
-	theta = nth;
-	samples(?, i) = theta;
-	i += 1;
-    }
-    (samples, sizes);
-};
     
 abstract class MHmodel(val ndim:Int, val n:Int, val sigma:Double, val pscale:Double, val v:Double) {
     val data:DMat;
@@ -135,11 +104,11 @@ abstract class MHmodel(val ndim:Int, val n:Int, val sigma:Double, val pscale:Dou
 };
 
 def newsim(mod:MHmodel, size:Int, nsamps:Int):(DMat, LMat) = {
-  newsimm(mod.data, size, nsamps, mod.initfn, mod.proposalfn, mod.evalfn);
+    dosimm(mod.data, size, nsamps, 1f, false, mod.initfn, mod.proposalfn, mod.evalfn, newtest);
 };	       
 
 def oldsim(mod:MHmodel, size:Int, nsamps:Int, nsig:Double):(DMat, LMat) = {
-  oldsimm(mod.data, size, nsamps, nsig, mod.initfn, mod.proposalfn, mod.evalfn);
+    dosimm(mod.data, size, nsamps, nsig, true, mod.initfn, mod.proposalfn, mod.evalfn, oldtest);
 };
 
 class NormModel(ndim:Int, n:Int, sigma:Double, pscale:Double, v:Double) extends MHmodel(ndim, n, sigma, pscale, v) {
@@ -161,8 +130,8 @@ class NormModel(ndim:Int, n:Int, sigma:Double, pscale:Double, v:Double) extends 
 val nn = new NormModel(ndim=1, n=100000, sigma=1, pscale=1, v=0.1);
 
 tic
-//val (samples, sizes) = newsim(nn, 1000, 20000);
-val (samples, sizes) = oldsim(nn, 1000, 10000, 2f);
+val (samples, sizes) = newsim(nn, 1000, 20000);
+//val (samples, sizes) = oldsim(nn, 1000, 10000, 2f);
 val tt= toc;
 
 val bsize = 100;
