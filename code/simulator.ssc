@@ -1,148 +1,177 @@
+val n2lsigma = 1.0;
+val nn2l = 2000;
+val norm2logdata = loadDMat("norm2log%d_20_%2.1f.txt" format (nn2l, n2lsigma));
+val n2ld = norm2logdata(?,0) \ cumsum(norm2logdata(?,1));
+
+abstract class MHmodel(val ndim:Int, val n:Int, val sigma:Double, val pscale:Double, val v:Double) {
+    val data:Mat;
+    def initfn():Mat;
+    def proposalfn(theta:Mat):Mat;
+    def evalfn(batch:Mat,theta:Mat):Mat;
+};
+
+abstract class MHtestType {
+    def testfn(diff:Mat, logu:Double, nsig:Double):(Boolean, Boolean);
+    val explin:Boolean;
+};
 
 def normlogrnd(m:Int, n:Int):DMat = {
-    val a = dnormrnd(0, 1.4f, m, n);
-    a;
-};
-
-def newtest(diff:DMat, logu:Double, nsig:Double):(Boolean, Boolean) = {
-    val tvar = (variance(diff)/length(diff)).v;
-    if (tvar >= 1) {
-	if (nsig == 0) throw new RuntimeException("New test failed variance condition");
-	(false, false);
-    } else {
-	val x = mean(diff);
-	val xn = dnormrnd(0, math.sqrt(1 - tvar), 1, 1);
-	val xc = normlogrnd(1,1);
-	if ((x + xn + xc).v > 0) {
-	    (true, true);
-	} else {
-	    (true, false);
+    val rr = drand(m, n);
+    var i = 0;
+    while (i < rr.length) {
+	val rv = rr.data(i);
+	var top = n2ld.nrows;
+	var bottom = 0;
+	while (top - bottom > 1) {
+	    val mid = (top + bottom) / 2;
+	    if (rv > n2ld(mid, 1)) {
+		bottom = mid;
+	    } else {
+		top = mid;
+	    }
 	}
+	val y0 = n2ld(bottom, 1);
+	val y1 = n2ld(math.min(top, n2ld.nrows-1), 1);
+	val alpha = if (y1 != y0) ((rv - y0) / (y1 - y0)) else 0.0;
+	val x0 = n2ld(bottom, 0);
+	val x1 = n2ld(math.min(top, n2ld.nrows-1), 0);
+	val newx = alpha * x1 + (1-alpha) * x0;
+	rr.data(i) = newx;
+	i += 1;
     }
+    rr;
 };
 
-def oldtest(diff:DMat, logu:Double, nsig:Double):(Boolean, Boolean) = {
-    val tstd = sqrt(variance(diff)/length(diff)).v
-    val ndiff = mean(diff - logu).v / tstd;
-    if (math.abs(ndiff) < nsig) {
-	(false, false);
-    } else {
-	if (ndiff > 0) {
-	    (true, true);
+class NewTest extends MHtestType {
+    def testfn(diff:Mat, logu:Double, nsig:Double):(Boolean, Boolean) = {
+	val targvar = n2lsigma * n2lsigma;
+	val tvar = variance(diff).dv/diff.length;
+	if (tvar >= targvar) {
+	    if (nsig == 0) throw new RuntimeException("New test failed variance condition");
+	    (false, false);
 	} else {
-	    (true, false);
+	    val x = mean(diff).dv;
+	    val xn = dnormrnd(0, math.sqrt(targvar - tvar), 1, 1).dv;
+	    val xc = normlogrnd(1,1).dv;
+	    if ((x + xn + xc) > 0) {
+		(true, true);
+	    } else {
+		(true, false);
+	    }
 	}
-    }
+    };
+    val explin = true;
 };
 
-def getbatch(data:DMat, here:Int, size:Int):DMat = {
+class OldTest extends MHtestType {
+    def testfn(diff:Mat, logu:Double, nsig:Double):(Boolean, Boolean) = {
+	val tstd = math.sqrt(variance(diff).dv/diff.length);
+	val ndiff = mean(diff - logu).dv / tstd;
+	if (math.abs(ndiff) < nsig) {
+	    (false, false);
+	} else {
+	    if (ndiff > 0) {
+		(true, true);
+	    } else {
+		(true, false);
+	    }
+	}
+    };
+    val explin = false;
+};
+
+def getbatch(data:Mat, here:Int, size:Int):Mat = {
     val there = here + size;
     val nthere = math.min(there, data.ncols);
     val iwrap = math.max(0, there - data.ncols);
-    val batch0 = data(?, here->nthere);
+    val batch0 = data.colslice(here, nthere, null);
     val batch = if (iwrap > 0) {
-	batch0 \ data(?, 0->iwrap);
+	batch0 \ data.colslice(0, iwrap, null);
     } else {
 	batch0;
     }
     batch;
 };    
 
-def dostep(data:DMat, size:Int, here:Int, theta:DMat, ttheta:DMat, nsig:Double, explin:Boolean,
-	   evalfn:(DMat,DMat)=>DMat,
-	   testfn:(DMat,Double,Double)=>(Boolean,Boolean)):(Int, DMat) = {
+def dostep(mod:MHmodel, test:MHtestType, data:Mat, size:Int, here:Int, theta:Mat, ttheta:Mat, nsig:Double):(Int, Mat) = {
     var step = size;
     var done = false;
-    var ntheta:DMat = null;
+    var ntheta:Mat = null;
     var there = 0;
     var logu = ln(rand(1,1)).v;
     var nsig0 = nsig;
     while (! done) {
-	val batch = getbatch(data, here, step);
-	val diff = evalfn(batch, ttheta) - evalfn(batch, theta);
-	val (moved, takestep) = testfn(diff, logu, nsig0);
+	val batch = getbatch(mod.data, here, step);
+	val diff = mod.evalfn(batch, ttheta) - mod.evalfn(batch, theta);
+	val (moved, takestep) = test.testfn(diff, logu, nsig0);
 	done = moved;
 	if (done) {
 	    there = (here + step) % data.ncols;
 	    ntheta = if (takestep) ttheta else theta;
 	} else {
-	    step = math.min(if (explin) (step*2) else (step + size), data.ncols);
+	    step = math.min(if (test.explin) (step*2) else (step + size), data.ncols);
 	    if (step == data.ncols) nsig0 = 0;
 	}
     }
     (there, ntheta);
 };
 
-def dosimm(data:DMat, size:Int, nsamps:Int, nsig:Double, explin:Boolean,
-	   initfn:() => DMat,
-	   proposalfn:(DMat)=>DMat,
-	   evalfn:(DMat,DMat)=>DMat,
-	   testfn:(DMat,Double,Double)=>(Boolean,Boolean)):(DMat,LMat) = {
-    var theta = initfn();
+def dosimm(mod:MHmodel, test:MHtestType, size:Int, nsamps:Int, nsig:Double):(DMat,LMat) = {
+    var theta = mod.initfn();
     val samples = dzeros(theta.length, nsamps);
     val sizes = lzeros(1, nsamps);
     var here = 0;
     var i = 0;
     while (i < nsamps) {
-	val ttheta = proposalfn(theta);
-	val (there, nth) = dostep(data, size, here, theta, ttheta, nsig, explin, evalfn, testfn);
-	sizes(i) = if (there > here) (there - here) else (there - here + data.ncols);
+	val ttheta = mod.proposalfn(theta);
+	val (there, nth) = dostep(mod, test, mod.data, size, here, theta, ttheta, nsig);
+	sizes(i) = if (there > here) (there - here) else (there - here + mod.data.ncols);
 	here = there;
 	theta = nth;
-	samples(?, i) = theta;
+	samples(?, i) = DMat(theta);
 	i += 1;
     }
     (samples, sizes);
-};
-
-    
-abstract class MHmodel(val ndim:Int, val n:Int, val sigma:Double, val pscale:Double, val v:Double) {
-    val data:DMat;
-    def initfn():DMat;
-    def proposalfn(theta:DMat):DMat;
-    def evalfn(batch:DMat,theta:DMat):DMat;
-};
-
-def newsim(mod:MHmodel, size:Int, nsamps:Int):(DMat, LMat) = {
-    dosimm(mod.data, size, nsamps, 1f, false, mod.initfn, mod.proposalfn, mod.evalfn, newtest);
-};	       
-
-def oldsim(mod:MHmodel, size:Int, nsamps:Int, nsig:Double):(DMat, LMat) = {
-    dosimm(mod.data, size, nsamps, nsig, true, mod.initfn, mod.proposalfn, mod.evalfn, oldtest);
 };
 
 class NormModel(ndim:Int, n:Int, sigma:Double, pscale:Double, v:Double) extends MHmodel(ndim, n, sigma, pscale, v) {
     val data = dnormrnd(0, sigma, ndim, n);
     val sigmat = sigma/math.sqrt(n);
     val sigmap = sigmat*pscale*v/math.sqrt(ndim);
-    def initfn():DMat = {
-	dnormrnd(0, sigmat, ndim, 1);
+    var temp = 1.0;
+    
+    def initfn():Mat = {
+	dnormrnd(0, sigmat * math.sqrt(temp), ndim, 1);
     };
-    def proposalfn(theta:DMat):DMat = {
-	theta + dnormrnd(0, sigmap, ndim, 1);
+    
+    def proposalfn(theta:Mat):Mat = {
+	theta + dnormrnd(0, sigmap * math.sqrt(temp), ndim, 1);
     };
-    def evalfn(batch:DMat,theta:DMat):DMat = {
+    
+    def evalfn(batch:Mat,theta:Mat):Mat = {
 	val dd = batch - theta;
-	-(n / (2 * sigma * sigma)) * (dd dot dd);
+	-(n / (2 * sigma * sigma * temp)) * (dd dot dd);
     };
 };
 
 val nn = new NormModel(ndim=1, n=100000, sigma=1, pscale=1, v=0.1);
+nn.temp = 10;
+val newtest = new NewTest;
+val oldtest = new OldTest;
 
-tic
-val (samples, sizes) = newsim(nn, 1000, 20000);
-//val (samples, sizes) = oldsim(nn, 1000, 10000, 2f);
-val tt= toc;
+tic;
+val (samples, sizes) = dosimm(mod=nn, test=newtest, size=1000, nsamps=2000000, nsig=2f);
+val t1 = toc;
+//val (samples, sizes) = dosimm(mod=nn, test=oldtest, size=1000, nsamps=10000, nsig=2f);
+val t2 = toc;
 
 val bsize = 100;
 val d0 = nn.data(?,0->bsize);
-val t0 = nn.initfn();
-val t1 = nn.proposalfn(t0);
-val dd = nn.evalfn(d0,t1) - nn.evalfn(d0,t0);
+val theta0 = nn.initfn();
+val theta1 = nn.proposalfn(theta0);
+val dd = nn.evalfn(d0,theta1) - nn.evalfn(d0,theta0);
 val xmean = mean(dd);
-val xstd = math.sqrt(variance(dd).v/dd.length);
+val xstd = math.sqrt(variance(dd).dv/dd.length);
 
 
     
-
-
