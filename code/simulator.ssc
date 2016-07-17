@@ -1,4 +1,4 @@
-val n2lsigma = 1.0;
+val n2lsigma = 0.9;
 val nn2l = 2000;
 val norm2logdata = loadDMat("norm2log%d_20_%2.1f.txt" format (nn2l, n2lsigma));
 val n2ld = norm2logdata(?,0) \ cumsum(norm2logdata(?,1));
@@ -160,9 +160,9 @@ val newtest = new NewTest;
 val oldtest = new OldTest;
 
 tic;
-val (samples, sizes) = dosimm(mod=nn, test=newtest, size=1000, nsamps=2000000, nsig=2f);
+//val (samples, sizes) = dosimm(mod=nn, test=newtest, size=1000, nsamps=200000, nsig=2f);
 val t1 = toc;
-//val (samples, sizes) = dosimm(mod=nn, test=oldtest, size=1000, nsamps=10000, nsig=2f);
+val (samples, sizes) = dosimm(mod=nn, test=oldtest, size=1000, nsamps=100000, nsig=2f);
 val t2 = toc;
 
 val bsize = 100;
