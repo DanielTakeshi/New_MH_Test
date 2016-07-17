@@ -60,7 +60,7 @@ class NewTest extends MHtestType {
 	    }
 	}
     };
-    val explin = true;
+    val explin = false;
 };
 
 class OldTest extends MHtestType {
@@ -77,7 +77,7 @@ class OldTest extends MHtestType {
 	    }
 	}
     };
-    val explin = false;
+    val explin = true;
 };
 
 def getbatch(data:Mat, here:Int, size:Int):Mat = {
@@ -155,17 +155,17 @@ class NormModel(ndim:Int, n:Int, sigma:Double, pscale:Double, v:Double) extends 
 };
 
 val nn = new NormModel(ndim=1, n=100000, sigma=1, pscale=1, v=0.1);
-nn.temp = 10;
+nn.temp = 100;
 val newtest = new NewTest;
 val oldtest = new OldTest;
 
 tic;
-//val (samples, sizes) = dosimm(mod=nn, test=newtest, size=1000, nsamps=200000, nsig=2f);
+val (samples, sizes) = dosimm(mod=nn, test=newtest, size=1000, nsamps=200000, nsig=2f);
 val t1 = toc;
-val (samples, sizes) = dosimm(mod=nn, test=oldtest, size=1000, nsamps=100000, nsig=2f);
-val t2 = toc;
+val (samples2, sizes2) = dosimm(mod=nn, test=oldtest, size=1000, nsamps=100000, nsig=2f);
+val t2 = toc - t1;
 
-val bsize = 100;
+val bsize = 1;
 val d0 = nn.data(?,0->bsize);
 val theta0 = nn.initfn();
 val theta1 = nn.proposalfn(theta0);
