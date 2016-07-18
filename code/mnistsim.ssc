@@ -1,0 +1,33 @@
+class MNISTModel(sigma:Double, pscale:Double) extends MHmodel(784, 100000, sigma, pscale) {
+    val data = loadFMat("/code/BIDMach/data/MNIST8M/allsample.fmat.lz4");
+    val sigmat = sigma/math.sqrt(n);
+    val sigmap = sigmat/math.sqrt(ndim) * pscale;
+    var temp = 1.0;
+    
+    def initfn():Mat = {
+	dnormrnd(0, sigmat * math.sqrt(temp), ndim, 1);
+    };
+    
+    def proposalfn(theta:Mat):Mat = {
+	theta + dnormrnd(0, sigmap * math.sqrt(temp), ndim, 1);
+    };
+    
+    def evalfn(batch:Mat,theta:Mat):Mat = {
+    	val etheta = zeros(10,1) on theta;
+	val rp = etheta ^* batch;
+	val targ = (batch(7, ?) > 0.0) * 2.0 - 1.0;
+	val prod = targ *@ rp;
+	-ln(1.0 + exp(- prod)) * n;
+    };
+};
+
+val mm = new MNISTModel(sigma=0.1, pscale=0.008);
+mm.temp = 1000;
+
+tic;
+val (samples, sizes, lls) = dosimm(mod=mm, test=newtest, size=100, nsamps=1000, acc=0.05);
+val t1=toc;
+
+val lastmod = samples(?,samples.ncols-1);
+
+plot(exp(lls/mm.n))

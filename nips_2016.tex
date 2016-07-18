@@ -306,8 +306,9 @@ which is a normal distribution centered on the sample mean, and with
 variance $1/N$.  The target distribution is therefore
 $\mathcal{N}(\mu,1/N)$ where $\mu$ is the sample mean, and $\mathcal{N}(\mu,\sigma^2)$ is a
 normal distribution with mean $\mu$ and variance $\sigma^2$.  An efficient
-proposal distribution has the same variance as the target distribution
-$\mathcal{N}(\theta'-\theta,1/N)$, so we take $q(\theta'\mid\theta) =
+proposal distribution has the same variance as the target distribution in one dimension
+\cite{OptimalScaling01}, so take the proposal
+$\mathcal{N}(\theta'-\theta,1/N)$, which is implemented as $q(\theta'\mid\theta) =
 \phi((\theta'-\theta)N)$, where $\phi(x)$ is the Normal density
 function with zero mean and unit variance. This proposal is symmetric
 $q(\theta'\mid\theta)=q(\theta\mid\theta')$, and we assumed uniform
