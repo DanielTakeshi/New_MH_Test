@@ -90,19 +90,18 @@ Markov chain Monte Carlo (MCMC) methods have many applications in
 machine learning. We are particularly interested in their application
 to modeling very large datasets, where it is impractical to perform
 Metropolis-Hastings tests on the full data. Previous work on reducing
-the cost of Metropolis-Hastings tests yield variable data reductions
-and in the worst case require the entire dataset.  Here we present a
-simple test which requires constant size minibatches if an auxiliary
-condition is met. We describe several cases under which this condition
-can be satisfied. Our new test is naturally tolerant of ``noisy''
-estimates of the transition probability ratio. To achieve this, we
-replace the classical Metropolis-Hastings acceptance test with a
-smooth acceptance function which is a sigmoid (logistic)
-function of the log likelihood ratio.
-The resulting test can be combined with minibatch proposals to yield
+the cost of Metropolis-Hastings tests yield variable data consumed per
+sample, with only constant factor reductions vs. using the full
+dataset for each sample.  Here we present a method that can be tuned
+to provide arbitrarily small batch sizes, by adjusting either proposal
+step size or temperature. Our approach uses the natural noise present
+in minibatch likelihood esimates to furnish the randomness in a
+Metropolis-Hastings test. Our test uses the noise-tolerant Barker
+acceptance test with a novel additive correction variable.  The
+resulting test can be combined with minibatch proposals to yield
 updates with the same complexity as a simple SGD update. In this paper
-we derive the test, discuss its implementation, and present several
-experiments.
+we derive the test, analyze its performance, discuss its
+implementation, and present several experiments.
 \end{abstract}
 
 
@@ -143,40 +142,81 @@ only available for relatively simple distributions.
 Here we derive a new test which incorporates the variability in
 minibatch statistics as {\em a natural part of the test}. Because of
 this, the amount of data required for each test is fixed with high
-probability and in expected value. Our test requires a bound on the
-(relative) variance of the log acceptance probability. This variance
-is small when the proposal distribution is efficient, that is when samples
-diffuse at an optimal rate.
+probability and in expected value. We use a Barker
+test function \cite{Barker65} rather than a Metropolis test, which
+makes the test naturally error tolerant. Similar ideas were presented
+in \cite{Bardenet15} section 6.3. But the asymptotic test statistic
+CDF and the Barker function are different, which leads to fixed
+errors for the approach in \cite{Bardenet15}. Here we show that the
+difference between the distributions can be corrected with an
+additive random variable. This leads to a test which is fast, and
+whose error can be made arbitrarily small.
 
-The variance of the log acceptance probability can be controlled in
-three ways, and these allow the test to be applied to modest-sized
-minibatches. The first two allow the test to be applied when the
-minibatch size is fixed a-priori.
+Our test is applicable when the variance (over data samples) of the
+log acceptance probability is small enough (less than 1). Its not
+clear at first why this quantity should be so bounded. But we will see
+that it is ``natural'' for well-specified models running
+Metroplis-Hastings sampling with optimal proposals
+\cite{OptimalScaling01} on a full dataset. When we reduce the amount
+of data for the test, the variance goes up, and we have to reduce
+it in one of several ways. Either:
 
 \begin{itemize}
   
 \item Increase the temperature of the target distribution. Log likelihoods
   scale as $1/T$, and so the variance of the likelihood ratio will
-  vary as $1/T^2$.
+  vary as $1/T^2$. Our model is no longer well-specified (we are doing inference
+  at a temperature different from that assumed during data generation), but
+  higher temperature can be advantageous for parameter exploration.
 
 \item For continuous probability distributions, reduce the proposal
-  step size and variance (for stochastic proposals). 
+  step size and variance (for stochastic proposals) compared to an optimal
+  proposal. The variance of the log acceptance probability scales as the
+  square of proposal step size. 
 
-\item Increase the minibatch size. Relative variance scales as $1/k$ vs the
-  minibatch size $k$. Increased minibatch size also reduces the error of
+\item Increase the minibatch size. log acceptance variance scales as $1/k$ vs the
+  minibatch size $k$. Increased minibatch size also reduces the error rate for
   the test. 
 
 \end{itemize}
 
+Its worth discussing at this point what are the goals (typically) of
+M-H sampling on very large datasets.  By the Bernstein-von Mises
+theorem, the posterior distribution of the parameter $\theta$ for a
+Bayesian inference task is asymptotically normal, and has variance
+that scales inversely with the number of data samples $N$. This mode
+is extremely sharp for large datasets, which may contain millions or
+billions of samples. Simply sampling from this distribution is one
+application, but an efficient proposal distribution
+\cite{OptimalScaling01} has similar variance to the target
+distribution and will diffuse to it extremely slowly from an random
+initialization value. If there are any other strong modes, it is very
+likely for the sampler to find one of them and become trapped in it
+when run at the normal distribution temperature (T=1). A common
+solution is to anneal the sampler, running first at high temperature
+(scaling log likelihoods by 1/T) which flattens the likelihood
+landscape.  This is turn reduces the variance of the log acceptance
+probability and allows our acceptance test to be applied.
+
+A second question concerns step size. Once we have fixed temperature,
+our variance constraint implies that we have to trade-off proposal
+step size $s$ and batch size $b$ ($b \propto p^2$). i.e. we can make
+many small steps, or one large step, with a given batch of data. One
+of the primary drivers of this work is our belief in the value of
+small steps. For applications to neural networks or other models where
+the posterior is multimodel, posterior inference is arguably a search
+process. Covering the search space densely with small steps is much
+more valuable than few sparse steps toward the nearest optimum.
+
 The contributions of this paper are as follows:
 
 \begin{itemize}
-\item We develop a new, more efficient (in samples per test) minibatch acceptance test which incorporates
-online  estimates of its error probability.
+\item We develop a new, more efficient (in samples per test) minibatch acceptance test with quantifiable error bounds. The test
+  uses a novel additive correction variable to implement a Barker test based on minibatch mean and variance. 
 \item We analyze the test for accuracy and speed.
 \item We compared performance of our new test and prior approaches on several datasets. We demonstrate the test is several orders
   of magnitude more efficient than prior work measured as data consumed per test, and that it does not suffer
-  from long-tailed data requirements (up to the dataset size). 
+  from long-tailed batch sizes (up to the dataset size). 
 \end{itemize}
 
 
@@ -543,7 +583,7 @@ term with density $C_{\sigma}(X)$.  The two variables are added
 (i.e., their distributions convolve) to form $X_{\rm log}$. It will be
 convenient to express this relationship in terms of the CDFs $N_{\sigma}(X_{\rm
   norm}) = \Phi(X_{\rm norm}/\sigma)$ and $S(X_{\rm log})$, where
-$\Phi(.)$ is the Normal CDF with zero mean and variance $\sigma^2$ and
+$\Phi(.)$ is the Normal CDF with zero mean and unit variance and
 $S(.)$ is the standard logistic function.
  
 Equation (\ref{eq:deconvolution}) implies that $S = N_{\sigma} * C_{\sigma}$ where $*$ denotes convolution. We will later
@@ -628,6 +668,91 @@ Algorithm~\ref{alg:our_algorithm} describes the M-H iteration using our acceptan
 \label{alg:our_algorithm}
 %\vspace{-10pt}
 \end{algorithm}
+
+\section{Computing the Correction Distribution}\label{sec:correction}
+Our goal is to compute the distribution of the correction variable $X_{\rm corr}$ such that
+$X_{\rm norm} + X_{\rm corr} = X_{\rm log}$, where $X_{\rm norm} \in \mathcal{N}(0,\sigma)$
+and $X_{\rm log}$ has a standard logistic CDF $(1+\exp(-X))^{-1}$.
+In the next section we show that the accuracy of the test depends on the absolute
+error between the CDFs of $X_{\rm norm} + X_{\rm corr}$ and the distribution of $X_{\rm log}$.
+So we minimize this in our construction.
+
+Our goal then is to minimize
+\begin{equation}
+  |\Phi_{\sigma} * C_{\sigma} - S|
+\end{equation}
+where $\Phi_{\sigma}(X) = \Phi(X/\sigma)$ and $\Phi$ is the standard
+normal CDF, $S(X)$ is the logistic function, $C_{\sigma}(X)$ is the
+{\em density} of the correction distribution, and $*$ denotes
+convolution. In continuous form, this value is
+\begin{equation}
+  \label{eq:conv1}
+  \sup_X\left|\int_{-V}^{V}\Phi_{\sigma}(X-Y) C_{\sigma}(Y) dY - S(X)\right|
+  \end{equation}
+Assuming $X_{\rm corr}$ lies in the interval $[-V,V]$. For computation of $C_{\sigma}(Y)$, we
+discretize $X$ and $Y$ into $4N+1$ and $2N+1$ values respectively, with $X \in [-2V,2V]$ and
+$Y \in [-V,V]$. Writing $X_i = i * V / N$ and $Y_j = j * V / N$, the condition in
+equation (\ref{eq:conv1}) can be written:
+\begin{equation}
+  \max_{i \in \{-2N,\ldots,2N\}}\left|\sum_{j = -N}^{N}\Phi_{\sigma}(X_i-Y_j) C_{\sigma}(Y_j) - S(X_i)\right|
+\end{equation}
+and defining a matrix $M_{ij} = \Phi_{\sigma}(X_i-Y_j)$, vectors $U_j = C_{\sigma}(Y_j)$ and $V_i = S(X_i)$, the
+above is equivalent to minimizing the 1-norm:
+\begin{equation}
+  \label{eq:error_norm}
+  ||MU-V||_1
+\end{equation}
+wrt $U$. We have an additional constraint that $U_j > 0$ for all $j$, since $U$ represents
+a density. We first explored optimizing this system with linear programming to find the $U$ such that:
+\begin{equation}
+  \begin{split}
+    & \min(\epsilon) \qquad \hbox{where} \\
+    & -\epsilon \leq MU - V \leq \epsilon \\
+    & U \geq 0
+  \end{split}
+\end{equation}
+which was tractable up to a few hundred dimensions. However, the discretization error is bounded by
+the curvature of the underlying functions which are here slightly less than one. i.e.
+the errors are of the order of $(V/N)^2$. Here we chose $V=20$ to provide adequate containment of
+the distributions (the CDFs are extremely close to either zero or one outside this range). So
+with 200 points, we have a discretization error of approximately 0.01. This is quite high. To yield
+higher resolution and lower error, we switched to a least squares solution. 
+Thus we seek to find $U$ that minimizes
+\begin{equation}
+  ||MU-V||_2
+\end{equation}
+Its not clear that this will yield a good 1-norm for equation (\ref{eq:error_norm}), but in practice it does.
+Because the solution of this system is not very stable, especially in high dimensions, we actually
+minimize a regularized version
+\begin{equation}
+  ||MU-V||_2 + \lambda||U||_2
+\end{equation}
+the solution is
+\begin{equation}
+  U = (M^T M + \lambda I)^{-1}V
+\end{equation}
+with this approach, there is no guarantee that $U \geq 0$. However, we have some
+flexibility in the choice of $\sigma$ in equation (\ref{eq:conv1}). As we decrease
+the variance of $X_{\rm norm}$, the variance of $X_{\rm corr}$ grows by the same amount
+and is in fact the result of convolution with a gaussian whose variance is the difference.
+Thus as $\sigma$ decreases, $C(X)$ grows and approaches the derivative of a
+logistic function at $\sigma = 0$. It retains some very weak negative values for $\sigma > 0$
+but removal of those values leads to very small error.
+\begin{table}[h]
+  \centering
+  \begin{tabular}{|l|l|l|l|}
+    \hline
+     N & $\sigma$ & $\lambda$ & L1 error  \\
+        \hline
+     4000 & 0.9 & 1 & 1.0e-4  \\
+     4000 & 0.8 & 0.03 & 5.0e-6 \\
+     \hline
+    \end{tabular}
+\end{table}
+
+
+
+
 
 \section{Analysis}\label{sec:analysis}
 
