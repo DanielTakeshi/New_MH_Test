@@ -22,12 +22,12 @@ class MNISTModel(sigma:Double, pscale:Double) extends MHmodel(784, 100000, sigma
 };
 
 val mm = new MNISTModel(sigma=0.05, pscale=0.3);
-mm.temp = 10;
+mm.temp = 100;
 
 tic;
-val (samples, sizes, lls) = dosimm(mod=mm, test=newtest, size=1000, nsamps=1000, acc=0.05);
+val (samples, sizes, lls) = dosimm(mod=mm, test=newtest, size=100, nsamps=2000, acc=0.05);
 val t1=toc;
-val (samples2, sizes2, lls2) = dosimm(mod=mm, test=oldtest, size=1000, nsamps=1000, acc=0.05);
+val (samples2, sizes2, lls2) = dosimm(mod=mm, test=oldtest, size=100, nsamps=2000, acc=0.05);
 val t2=toc-t1;
 
 val lastmod = samples(?,samples.ncols-1);
@@ -35,7 +35,9 @@ val lastmod = samples(?,samples.ncols-1);
 val probs=exp(lls*(mm.temp/mm.n));
 val probs2=exp(lls2*(mm.temp/mm.n));
 val xs = DMat(row(0->lls.length));
+val xs2 = DMat(row(0->lls2.length));
 
-plot(xs,probs,xs,probs2)
+plot(xs,probs,xs2,probs2)
+//plot(xs,probs)
 
 (mean(DMat(sizes)), mean(DMat(sizes2)))
