@@ -142,13 +142,14 @@ only available for relatively simple distributions.
 Here we derive a new test which incorporates the variability in
 minibatch statistics as {\em a natural part of the test}. Because of
 this, the amount of data required for each test is fixed with high
-probability and in expected value. We use a Barker
-test function \cite{Barker65} rather than a Metropolis test, which
-makes the test naturally error tolerant. Similar ideas were presented
-in \cite{Bardenet15} section 6.3. But the asymptotic test statistic
-CDF and the Barker function are different, which leads to fixed
-errors for the approach in \cite{Bardenet15}. Here we show that the
-difference between the distributions can be corrected with an
+probability and in expected value. We use a Barker test function
+\cite{Barker65} rather than a Metropolis test, which makes the test
+naturally error tolerant. The idea of using a noise-tolerant test
+using Barker's test function were suggested but not explored
+empirically in \cite{Bardenet15} section 6.3. But the asymptotic test
+statistic CDF and the Barker function are different, which leads to
+fixed errors for the approach in \cite{Bardenet15}. Here we show that
+the difference between the distributions can be corrected with an
 additive random variable. This leads to a test which is fast, and
 whose error can be made arbitrarily small.
 
@@ -189,14 +190,15 @@ is extremely sharp for large datasets, which may contain millions or
 billions of samples. Simply sampling from this distribution is one
 application, but an efficient proposal distribution
 \cite{OptimalScaling01} has similar variance to the target
-distribution and will diffuse to it extremely slowly from an random
-initialization value. If there are any other strong modes, it is very
-likely for the sampler to find one of them and become trapped in it
-when run at the normal distribution temperature (T=1). A common
-solution is to anneal the sampler, running first at high temperature
-(scaling log likelihoods by 1/T) which flattens the likelihood
-landscape.  This is turn reduces the variance of the log acceptance
-probability and allows our acceptance test to be applied.
+distribution and will diffuse to it extremely slowly from an
+initialization value which is (likely to be) many standard deviations
+away. If there are any other strong modes, it is very likely for the
+sampler to find one of them and become trapped in it when run at the
+normal distribution temperature (T=1). A common solution is to anneal
+the sampler, running first at high temperature (scaling log
+likelihoods by 1/T) which flattens the likelihood landscape.  This is
+turn reduces the variance of the log acceptance probability and allows
+our acceptance test to be applied.
 
 A second question concerns step size. Once we have fixed temperature,
 our variance constraint implies that we have to trade-off proposal
@@ -206,7 +208,17 @@ of the primary drivers of this work is our belief in the value of
 small steps. For applications to neural networks or other models where
 the posterior is multimodel, posterior inference is arguably a search
 process. Covering the search space densely with small steps is much
-more valuable than few sparse steps toward the nearest optimum.
+more valuable than few sparse steps toward the nearest optimum. In
+this mode, Metropolis-Hastings can be used in similar fashion to
+Stochastic Gradient Descent. The goal in SGD is to make gradual
+progress to a posterior mode with each step, taking small steps so
+that the cumulative displacement has progressively lower variance. A
+substantial part of the computational work of MCMC on massive datasets
+will be similarly in reaching a stationary distribution, which really
+means finding a deep posterior mode. Taking noisy small steps will
+nevertheless make steady progress to a posterior mode since their bias
+is in that direction. We demonstrate this behavior with our experiments. 
+
 
 The contributions of this paper are as follows:
 
@@ -361,55 +373,7 @@ u$.
   distribution of $(\theta, \theta', u)$, the
   tests from \cite{icml2014c1_bardenet14} and \cite{cutting_mh_2014} consume all $N$ samples. 
 \end{lemma}
-
-\begin{proof} Assume $(\theta' - \theta) \in \pm\frac{1}{\sqrt{N}}[0.5,1]$ and
-  $\theta -0.5 \in \pm\frac{1}{\sqrt{N}}[0.5,1]$ with matching sign. These events
-  occur with probability $p_0=2*(\Phi(1)-\Phi(0.5)) = 0.2997$ and $p_1=(\Phi(1)-\Phi(0.5))=0.14988$ respectively,
-  and guarantee that $\Lambda^*(\theta',\theta)$ is negative, which guarantees that we can find
-  a $u$ so that $\psi(u,\theta',\theta)$ equals the expected value of $\Lambda^*(\theta',\theta)$.
-  Specifically, choose $u_0$
-  to satisfy
-  \begin{equation}
-    \log u_0 = N(\Lambda^*(\theta',\theta)-\psi(1,\theta',\theta))
-  \end{equation}
-  which evaluates to 
-  \begin{equation}
-    \log u_0 = -N(\theta'-\theta)\left(\theta-0.5+\frac{\theta'-\theta}{2}\right) 
-  \end{equation}
-  and rewrite the test now as
-  \begin{equation}
-    \frac{1}{b}\sum_{i=1}^b x_i-\left(\theta+\frac{\theta'-\theta}{2} + \frac{\log u_0}{N(\theta'-\theta)}\right)
-    \hspace{0.1in} \not\approx \hspace{0.1in} 0
-  \end{equation}
-  where $\not\approx$ means ``significantly different from'' under the distribution over samples of $x_i$. 
-  The above choice of $u_0$ ensures that the terms in parenthesis above sum to 0.5. Since the $x_i$ have mean 0.5, the
-  test will never correctly succeed.
-
-  Furthermore, if we sample values of $u$ near enough to $u_0$, the terms in parenthesis will not be sufficiently different
-  from 0.5 to allow the test to succeed. 
-  
- The choices above for $\theta$ and $\theta'$ guarantee that
-  \begin{equation}
-    \log u_0 \in -[0.5,1][0.75,1.5] = -[0.375,1.5]
-        \end{equation}
-and consider the range of $u$ values
-  \begin{equation}
-    \log u \in \log u_0 + [-0.5,0.375]
-  \end{equation}
-  the size of the range in $u$ is at least $\exp([-2,-1.125]) = [0.13534,0.32465]$ and occurs
-  with probability at least $p_2=0.18932$. With $u$ in this range, we rewrite the test as:
-  \begin{equation}
-    \frac{1}{b}\sum_{i=1}^b x_i-0.5 \hspace{0.1in} \not\approx \hspace{0.1in} \frac{\log u/u_0}{N(\theta'-\theta)}
-  \end{equation}
-  so that the LHS has expected value zero.  Given our choice of intervals for the variables, the RHS is in the range $1/\sqrt{N}[-1,0.75]$.
-  The standard deviation of the LHS given the interval constraints is at least $0.5/\sqrt{b}$. And
-  so the gap between LHS and RHS is at most $2\sqrt{b/N}$ standard deviations. 
-
-
-  The samples $\theta$, $(\theta'-\theta)$
-  and $u$ are drawn independently and so the probability of the conjunction of these events is
-  $c = p_0 p_1 p_2 = 0.0085$.
-\end{proof}
+Proof is given in the appendix.
 
 Similar results can be proved for other distributions and proposals, by identifying
 regions in product space $(\theta,\theta'-\theta,u)$ such that the hypothesis test
@@ -492,31 +456,7 @@ classical Metropolis test is $f(\Delta) = {\rm min}(\exp(\Delta),1)$. More gener
 
 \end{lemma}
 
-\begin{proof}
-  Start with the LHS of (\ref{detbal}), substitute for $\alpha(\theta,\theta')$, and then apply the
-  identity $g(s) = \exp(s)g(-s)$:
-  \begin{equation}\label{detbal1}
-    \begin{split}
-      p(\theta)q(\theta'\mid\theta)\alpha(\theta,\theta') =~ & p(\theta)q(\theta'\mid\theta)g(\Delta(\theta,\theta'))\\
-      =~ & p(\theta)q(\theta'\mid\theta)\exp(\Delta(\theta,\theta'))g(-\Delta(\theta,\theta'))
-    \end{split}
-  \end{equation}
-  Note then that $-\Delta(\theta,\theta') = \Delta(\theta',\theta)$ because $\Delta$ is the log of ratios of
-  terms involving $\theta$ and $\theta'$ and exchanging the two inverts all these ratios, negating the
-  logarithm. Continuing:
-  \begin{equation}\label{detbal2}
-    \begin{split}
-    p(\theta)q(\theta'\mid\theta)\exp(\Delta(\theta,\theta'))g(-\Delta(\theta,\theta')) = ~ & p(\theta)q(\theta'\mid\theta)\exp(\Delta(\theta,\theta'))g(\Delta(\theta',\theta))\\
-    = ~ & p(\theta)q(\theta'\mid\theta)\exp(\Delta(\theta,\theta'))\alpha(\theta',\theta)
-    \end{split}
-  \end{equation}
-  Substituting now for $\Delta(\theta,\theta')$ from equation (\ref{eq:delta0}) gives
-  \begin{equation*}\label{detbal3}
-    p(\theta)q(\theta'\mid\theta)\frac{p(\theta')q(\theta\mid\theta')}{p(\theta)q(\theta'\mid\theta)}\alpha(\theta',\theta)
-      = p(\theta')q(\theta\mid\theta')\alpha(\theta',\theta) = RHS
-  \end{equation*}
-\end{proof}
-
+This result is used in \cite{Barker65} to define the Barker acceptance test. 
 As a sanity check, choosing $g(s) = \exp(s) \wedge 1$ produces the
 standard Metropolis acceptance test $\alpha(\theta,\theta') = g(\Delta(\theta,\theta')) = 
 \frac{p(\theta')q(\theta \mid
@@ -525,9 +465,9 @@ the condition $g(s) = \exp(s)g(-s)$, and therefore detailed
 balance. In fact it is the optimal acceptance function in terms of
 acceptance rate, since it accepts with probability 1 for $\Delta > 0$.
 
-\subsection{Logistic Acceptance Function}
-For our new MH test we use the logistic function:
-$g(s)=(1+\exp(-s))^{-1}$. Straightforward arithmetic shows that it
+\subsection{Barker (Logistic) Acceptance Function}
+For our new MH test we use the Barker logistic function:
+$g(s)=(1+\exp(-s))^{-1}$ \cite{Barker65}. Straightforward arithmetic shows that it
 satisfies the condition in Lemma~\ref{lem:detailed_balance}.  While it
 is slightly less efficient than the Metropolis test when used on the
 full dataset, we will see soon that its smoothness allows it to
@@ -572,14 +512,16 @@ can write
 where $\mathcal{\bar{N}}(0, \sigma^2(\Delta^*))$ denotes a distribution which is approximately
 normal with variance $\sigma^2(\Delta^*)$. 
 But to perform the test in equation (\ref{theexacttest}) we want $\Delta + X$ for
-a logistic random $X$ (call it $X_{\rm log}$ from now on). 
-Our approach is to decompose $X_{\rm log}$ as
+a logistic random $X$ (call it $X_{\rm log}$ from now on). In \cite{Bardenet15} it was proposed to
+use $\Delta^*$ in a Barker test anyway and tolerate the fixed error caused by this approximation. 
+
+Our approach is to instead decompose $X_{\rm log}$ as
 \begin{equation}\label{eq:deconvolution}
 X_{\rm log} = X_{\rm norm}+X_{\rm corr},
 \end{equation}
 where we assume $X_{\rm norm}$ has zero-mean, Normal distribution with
 variance $\sigma^2$, and $X_{\rm corr}$ is a zero-mean ``correction''
-term with density $C_{\sigma}(X)$.  The two variables are added
+variable with density $C_{\sigma}(X)$.  The two variables are added
 (i.e., their distributions convolve) to form $X_{\rm log}$. It will be
 convenient to express this relationship in terms of the CDFs $N_{\sigma}(X_{\rm
   norm}) = \Phi(X_{\rm norm}/\sigma)$ and $S(X_{\rm log})$, where
@@ -785,7 +727,7 @@ The quantitative central-limit result below comes from \cite{explicit-clt05}:
   
 
 \begin{lemma}\label{lem:quant_clt}
-  Let $X_1,\ldots,X_n$ be
+Let $X_1,\ldots,X_n$ be
 a set of zero-mean, independent, identically-distributed random variables with sample mean $\hat{X}$ and
 variance $\sigma^2(\hat{X})$ where:
 \begin{equation}
@@ -829,7 +771,41 @@ $|\Lambda_i - \Lambda|$ and $|\Lambda_i - \Lambda|^3$ respectively on each minib
 will often be accurate enough on minibatches with hundreds or
 thousands of points, but otherwise bootstrap CIs can be computed from
 those sequences. Since the bounds are monotone in $E|X|$ and $E|X|^3$,
-using upper bootstrap CI limits will provide high-confidence error bounds. 
+using upper bootstrap CI limits will provide high-confidence error bounds.
+
+So as long as we know the first and third absolute moments $E|X|$ and $E|X|^3$, we can bound the
+error of the normal approximation, which decays as $O(n^{-\frac{1}{2}})$. Making the change of variables
+$y = x \sigma(\hat{X})$, equation (\ref{eq:clt-bounds}) becomes
+\begin{equation}\label{eq:clt-bounds2}
+   \sup_y\left|{\rm Pr}(\hat{X}< y) - \Phi\left(\frac{y}{\sigma(\hat{X})}\right)\right| \leq \frac{6.4E|X|^3+2E|X|}{\sqrt{n}}
+\end{equation}
+which shows that the distribution of $\hat{X}$ approaches the normal distribution $\mathcal{N}(0,\sigma^2(\hat{X}))$
+whose variance is $\sigma^2(\hat{X})$, measured from the sample.
+
+
+In fact we can do better than this approximation by using a more
+precise limit distribution, under an additional assumption. Let $\mu_i$ denote the $i^{th}$ moment, and $b_i$
+denote the $i^{th}$ absolute moment of $X$. Bentkus et al.'s work on Edgeworth
+expansions \cite{Bentkus97} equation 2.2 gives:
+
+\begin{lemma} Let $X_1,\ldots,X_n$ be
+a set of zero-mean, independent, identically-distributed random variables with sample mean $\hat{X}$ and with $t$ defined as in Lemma 3. Then
+\begin{equation}\label{eq:clt-bounds}
+ \sup_x\left|{\rm Pr}(t<x) - G\left(x, \frac{\mu_3}{b_2^{3/2}}\right)\right| \leq \frac{c(\epsilon,b_2,b_3,b_4,b_{4+\epsilon})}{n}
+\end{equation}
+where
+\begin{equation}
+G_N(x,y) = \Phi(x) + \frac{y(2x^2+1)}{6\sqrt{n}}\Phi'(x)
+\end{equation}
+\end{lemma}
+Here the limit $G_N(x,y)$ is a normal CDF plus a correction term that
+decays as $n^{1/2}$. Importantly, since $x^2\phi(x) = \phi^{''}(x) + \phi(x)$ where $\phi(x)=\Phi'(x)$, the correction term can be rewritten giving:
+\begin{equation}
+G_N(x,y) = \Phi(x) + \frac{y}{6\sqrt{n}}(2\phi^{''}(x)+3\phi(x))
+\end{equation}
+From which we see that $G_N(x,y)$ is a linear combination of $\Phi(x)$, $\phi(x)$ and $\phi^{''}(x)$. 
+
+
 
 \begin{lemma} Let $P(x)$ and $Q(x)$ be two cumulative distributions satisfying $\sup_x|P(x)-Q(x)|\leq \epsilon$ with
   $x$ in some real range. Let $R(y)$ be the {\em density} of another
@@ -1080,14 +1056,27 @@ other two methods. However, the fourth method (i.e. just treat the $\Delta'$ whi
 Figure~\ref{fig:gauss_mix_2} (to the left) shows a histogram of the final minibatch sizes used by
 the adaptive subsampling method each iteration (on a log scale for readability).  Usually, the method
 can make a decision with 200 samples. Occasionally, however, it must use all 10000 points, resulting
-in lots of wasted computation.  For this particular experiment, that happened eight times. The mean of adaptive minibatch size is 520 which is roughly close to $\sqrt{N}$ (i.e. 100). This number validates the claims of Theorem~\ref{thm:efficiency}. In
-contrast, our method keeps the minibatch size around 200. Figure~\ref{fig:gauss_mix_2} (in the middle) shows a histogram of the minibatch size, and the mean of our minibatch size is 247. 
+in lots of wasted computation.  For this particular experiment, that happened eight times.
 The third plot in Figure~\ref{fig:gauss_mix_2} investigates the number of times ${\rm std}(\Delta')
 \ge 1.2$ for only consuming one minibatch data. For six minibatch sizes (50, 100, 150, 200, 250, and 300), we ran MCMC with
 our MH test five times and averaged the number of ``violations.'' As the size increases, the
 number of violations decreases, as expected.
 
-Figure~\ref{fig:gauss_mix_3} (to the left) shows a histogram of ${\rm std}(\Delta')$. Figure~\ref{fig:gauss_mix_3} (to the middle) shows the confidence interval of our estimated ${\rm std}(\Delta')$ at each iteration \footnote{In order to show the confidence interval clearly, we use moving smooth to smooth the confidence interval, and plot each value by interval of 50 iterations}. The blue line represents the standard deviation comes from the complete data, which can be treated as the ``true'' ${\rm std}(\Delta')$, the green line represents our estimation of ${\rm std}(\Delta')$ from the minibatch, and the two red dash lines represent the confidence interval of ${\rm std}(\Delta')$ by adding / subtracting one ${\rm std(std(}\Delta'))$. This figure indicates that our estimation of ${\rm std}(\Delta')$ from one minibatch data is accurate. Figure~\ref{fig:gauss_mix_3} (to the right) shows the value of $\rho/\sigma^3$ at each iteration. Recall Theorem~\ref{thm:efficiency}, the number of data instance required is $\frac{4 \ell^2 C^2 \rho^2 }{\sigma^6 \varepsilon^2}$. This figure reveals that $\rho/\sigma^3$ is roughly a constant, which means the data required for each iteration is a constant value which has nothing to do with the $N$.
+Figure~\ref{fig:gauss_mix_3} (to the left) shows a histogram of ${\rm
+  std}(\Delta')$. Figure~\ref{fig:gauss_mix_3} (to the middle) shows
+the confidence interval of our estimated ${\rm std}(\Delta')$ at each
+iteration \footnote{In order to show the confidence interval clearly,
+  we use moving smooth to smooth the confidence interval, and plot
+  each value by interval of 50 iterations}. The blue line represents
+the standard deviation comes from the complete data, which can be
+treated as the ``true'' ${\rm std}(\Delta')$, the green line
+represents our estimation of ${\rm std}(\Delta')$ from the minibatch,
+and the two red dash lines represent the confidence interval of ${\rm
+  std}(\Delta')$ by adding / subtracting one ${\rm
+  std(std(}\Delta'))$. This figure indicates that our estimation of
+${\rm std}(\Delta')$ from one minibatch data is
+accurate. Figure~\ref{fig:gauss_mix_3} (to the right) shows the value
+of $\rho/\sigma^3$ at each iteration. 
 
 
 \subsection{Logistic Regression}\label{ssec:logistic}
@@ -1193,15 +1182,72 @@ MCMC~\cite{conf/uai/AngelinoKWSA14,conf/icml/AhnSW14} concepts.
 {\Large Outline of Appendix}
 \end{center}
 
-In this appendix, we describe the following topics, with an emphasis on clarity and understanding:
+In this appendix, we describe the following topics:
 
 \begin{itemize}[noitemsep]
+  \item Proofs ommitted from the main text. 
     \item More information on Section~\ref{ssec:gaussians}.
     \item More information on Section~\ref{ssec:logistic}.
     \item More information on Section~\ref{ssec:nets}.
 \end{itemize}
 
-%% \section{Proofs}\label{app:proofs}
+\section{Proofs}\label{app:proofs}
+
+{\bf lemma 1}
+{\em  For the model of section 2.1, there
+  exists a fixed (independent of $N$) constant $c$ such that with probability $ \geq c$ over the joint
+  distribution of $(\theta, \theta', u)$, the
+  tests from \cite{icml2014c1_bardenet14} and \cite{cutting_mh_2014} consume all $N$ samples. }
+
+
+\begin{proof} Assume $(\theta' - \theta) \in \pm\frac{1}{\sqrt{N}}[0.5,1]$ and
+  $\theta -0.5 \in \pm\frac{1}{\sqrt{N}}[0.5,1]$ with matching sign. These events
+  occur with probability $p_0=2*(\Phi(1)-\Phi(0.5)) = 0.2997$ and $p_1=(\Phi(1)-\Phi(0.5))=0.14988$ respectively,
+  and guarantee that $\Lambda^*(\theta',\theta)$ is negative, which guarantees that we can find
+  a $u$ so that $\psi(u,\theta',\theta)$ equals the expected value of $\Lambda^*(\theta',\theta)$.
+  Specifically, choose $u_0$
+  to satisfy
+  \begin{equation}
+    \log u_0 = N(\Lambda^*(\theta',\theta)-\psi(1,\theta',\theta))
+  \end{equation}
+  which evaluates to 
+  \begin{equation}
+    \log u_0 = -N(\theta'-\theta)\left(\theta-0.5+\frac{\theta'-\theta}{2}\right) 
+  \end{equation}
+  and rewrite the test now as
+  \begin{equation}
+    \frac{1}{b}\sum_{i=1}^b x_i-\left(\theta+\frac{\theta'-\theta}{2} + \frac{\log u_0}{N(\theta'-\theta)}\right)
+    \hspace{0.1in} \not\approx \hspace{0.1in} 0
+  \end{equation}
+  where $\not\approx$ means ``significantly different from'' under the distribution over samples of $x_i$. 
+  The above choice of $u_0$ ensures that the terms in parenthesis above sum to 0.5. Since the $x_i$ have mean 0.5, the
+  test will never correctly succeed.
+
+  Furthermore, if we sample values of $u$ near enough to $u_0$, the terms in parenthesis will not be sufficiently different
+  from 0.5 to allow the test to succeed. 
+  
+ The choices above for $\theta$ and $\theta'$ guarantee that
+  \begin{equation}
+    \log u_0 \in -[0.5,1][0.75,1.5] = -[0.375,1.5]
+        \end{equation}
+and consider the range of $u$ values
+  \begin{equation}
+    \log u \in \log u_0 + [-0.5,0.375]
+  \end{equation}
+  the size of the range in $u$ is at least $\exp([-2,-1.125]) = [0.13534,0.32465]$ and occurs
+  with probability at least $p_2=0.18932$. With $u$ in this range, we rewrite the test as:
+  \begin{equation}
+    \frac{1}{b}\sum_{i=1}^b x_i-0.5 \hspace{0.1in} \not\approx \hspace{0.1in} \frac{\log u/u_0}{N(\theta'-\theta)}
+  \end{equation}
+  so that the LHS has expected value zero.  Given our choice of intervals for the variables, the RHS is in the range $1/\sqrt{N}[-1,0.75]$.
+  The standard deviation of the LHS given the interval constraints is at least $0.5/\sqrt{b}$. And
+  so the gap between LHS and RHS is at most $2\sqrt{b/N}$ standard deviations. 
+
+
+  The samples $\theta$, $(\theta'-\theta)$
+  and $u$ are drawn independently and so the probability of the conjunction of these events is
+  $c = p_0 p_1 p_2 = 0.0085$.
+\end{proof}
 
 %% \subsection{Proof of Lemma~\ref{lem:efficienty_cutting}}\label{app:lem_efficiency}
 
