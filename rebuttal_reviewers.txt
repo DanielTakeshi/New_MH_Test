@@ -1,0 +1,51 @@
+First, we thank the reviewers for their thoughtful commentary on our paper to keep the quality of
+NIPS top-notch.
+
+General comments:
+
+We have been working continuously on the paper in the last month, and have been able to address a
+number of our reviewer comments. For instance, we have been able to demonstrate worst-case scenarios
+for references [3] and [4] with Omega(N) lower bounds for fixed proposals using Gaussians. We have
+also added rigorous, numerical error bounds based on t-statistics (from the empirical mean and
+variance) asymptotics from [13]. We have added bounds on the equilibrium distribution given bounds
+on transition kernel error (we will borrow this from [4]) with the appropriate assumptions. 
+
+
+To reviewers 1, 2, 3, and 4 regarding the Barker function:
+
+You are correct, the logistic function (aka Barker function) is less efficient with \theta' as good
+as \theta. However, the tradeoff is that using the Barker function lets us better control our error
+rates, and our newest experiments show that we are obtaining orders of magnitude improvements.
+
+To reviewers 1, 2, and 3 regarding the convolution (in)stability:
+
+To make it more stable, we can use L2 regularization and move some of the variance from X_norm to
+X_corr. i.e. widen X_corr by convolving with a Gaussian with variance sigma^2, while decreasing the
+allowed variance of X_norm by sigma^2. This ensures that X_corr has positive pdf everywhere.  We can
+achieve CDF error (X_norm + X_corr compared to X_log) of 1e-7 at sigma = 0.8 or 1e-5 at sigma = 0.9.
+We are substantially reworking this part of the paper.
+
+To reviewer 1:
+
+TODO (Daniel: Anything else you want to address)
+
+To reviewer 2:
+
+Regarding the difference between ours and [BDH] sec 6.3, that is close to what we're doing, but they
+don't attempt to correct for the difference between normal and logistic distributions with an
+additive variable, so they are stuck with a fixed error. That allows us to run our algorithm with
+arbitrarily small errors (depending on batch size of course). 
+
+TODO (Daniel: Anything else you want to address)
+
+To reviewer 3:
+
+Regarding your Lemma 2 comment, yes, you are correct, the CLT only applies for large n and N, and we
+also need n << N. We will clarify this.
+
+To reviewer 7:
+
+Yes increasing the minibatch size is one of the strategies we can use to control variance. The idea
+is to increase it just enough, and then to keep it fixed thereafter. We should emphasize this
+distinction more, and also to emphasize that this is the least desirable tactic to use (and our
+newest results show that we do not need to use it anyway).

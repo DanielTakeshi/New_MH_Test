@@ -1,0 +1,6 @@
+Over the last month, we have been substantially improving this paper. Many of our improvements
+directly answer some of the comments by the reviewers, so we would prefer that our newest revisions
+be taken into ccount. We are hoping to put a new version of this paper on arXiv (there is no public
+version right now). Nonetheless, we understand if you and the reviewers decide to reject our
+original submission based on the assumption that reading over our new changes would require another
+detailed round of reviews.
