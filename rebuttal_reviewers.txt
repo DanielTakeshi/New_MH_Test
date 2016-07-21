@@ -2,36 +2,41 @@ We thank the reviewers for their thoughtful commentary on our paper to keep the 
 top-notch. We start the rebuttal with a few general comments and then respond to specific reviewers.
 
 
-General comments:
+General:
 
 We have been working continuously on the paper in the last month, and have been able to address a
-number of our reviewer comments. For instance, we have been able to demonstrate worst-case scenarios
-for references [3] and [4] with Omega(N) lower bounds for fixed proposals using Gaussians. We have
-also added rigorous, numerical error bounds based on t-statistics (from the empirical mean and
-variance) asymptotics from [13]. We have added bounds on the equilibrium distribution given bounds
-on transition kernel error (we will borrow this from [4]) with the appropriate assumptions. 
-(This section addresses theoretical results)
+number of our reviewer comments. First, we have demonstrated worst-case scenarios for references [3]
+and [4] with Omega(N) lower bounds on the number of samples consumed per iteration, using simple
+Gaussian examples. 
+
+In addition, Section 4 (the theoretical results) has been vastly revamped.  We have added rigorous,
+numerical error bounds based on t-statistics (from the empirical mean and variance) asymptotics from
+[13]. We have added bounds on the equilibrium distribution given bounds on transition kernel error
+(we will borrow this from [4]) with the appropriate assumptions.
 
 
 To Reviewers 2, 3, and 4 regarding the Barker function:
 
-You are correct, the logistic function (aka Barker function) is less efficient with \theta' as good
-as \theta. However, the tradeoff is that using the Barker function lets us better control our error
-rates, and our newest experiments show that we are obtaining orders of magnitude improvements.
+You are correct, the logistic (Barker) function is less efficient with \theta' as good as \theta,
+and we explicitly mention this in our revision. The tradeoff is that its smoothness allows it to
+naturally tolerate substantial variance in its input argument. This in turn will lead to a much more
+efficient test on subsets of data, and our newest experiments show we have more control over error
+rates.
 
 
 To Reviewers 1, 2, and 3 regarding the convolution (in)stability:
 
-To make it more stable, we can use L2 regularization and move some of the variance from X_norm to
-X_corr. i.e. widen X_corr by convolving with a Gaussian with variance sigma^2, while decreasing the
-allowed variance of X_norm by sigma^2. This ensures that X_corr has positive pdf everywhere.  We can
-achieve CDF error (X_norm + X_corr compared to X_log) of 1e-7 at sigma = 0.8 or 1e-5 at sigma = 0.9.
-We are substantially reworking this part of the paper.
+To make the convolution more stable, we frame it as a least squares (with L2 regularization)
+minimization problem. We move some of the variance from X_norm to X_corr, i.e. widen X_corr by
+convolving with a Gaussian with variance sigma^2, while decreasing the allowed variance of X_norm by
+sigma^2. This ensures that X_corr has positive pdf everywhere.  We can achieve CDF error (X_norm +
+X_corr compared to X_log) of 1e-7 at sigma = 0.8 or 1e-5 at sigma = 0.9.  We have added an entire
+new section explaining this procedure.
 
 
-To Reviewer 2
+To Reviewer 3:
 
-(TODO?)
+(TODO respond to experiment criticism, but I really can't defend the work as it is ...)
 
 
 To Reviewers 1 and 3 regarding Lemma 2:
