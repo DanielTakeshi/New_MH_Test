@@ -1,37 +1,62 @@
-We thank the reviewers for their thoughtful commentary on our paper to keep the quality of NIPS
-top-notch. We start the rebuttal with a few general comments and then respond to specific reviewers.
+We thank the reviewers for their thoughtful commentary on our paper.
+We can only agree with the comments and appreciate the reviewers
+patience in reviewing the paper. It was an early draft. We noticed
+most of these issues ourselves in the time since we submitted the paper
+and have been working to address them. We discuss those corrections
+in detail below. 
 
 
 General:
 
-We have been working continuously on the paper in the last month, and have been able to address a
-number of our reviewer comments. First, we have demonstrated worst-case scenarios for references [3]
-and [4] with Omega(N) lower bounds on the number of samples consumed per iteration, using simple
-Gaussian examples. 
+First we established worst-case lower bounds for references [3] and [4]
+of Omega(N) bounds on the number of samples consumed per iteration,
+using simple Gaussian examples.
 
-In addition, Section 4 (the theoretical results) has been vastly revamped.  We have added rigorous,
-numerical error bounds based on t-statistics (from the empirical mean and variance) asymptotics from
-[13]. We have added bounds on the equilibrium distribution given bounds on transition kernel error
-(we will borrow this from [4]) with the appropriate assumptions.
+In addition, Section 4 (the theoretical results) has been
+substantially revised.  Rather than general appeal to CLT, we include
+bounds based on t-statistics (using both the empirical mean and
+variance) asymptotics from [A] (below) with explicit constants and an
+O(n^-0.5) error bound. We revised the analysis of the test error rate
+which now requires no additional assumptions. We include error bounds
+on the equilibrium distribution given bounds on transition kernel
+error which appeared in [3] and [4], citing those works, under the
+appropriate assumptions.
 
 
 To Reviewers 2, 3, and 4 regarding the Barker function:
 
-You are correct, the logistic (Barker) function is less efficient with \theta' as good as \theta,
-and we explicitly mention this in our revision. The tradeoff is that its smoothness allows it to
-naturally tolerate substantial variance in its input argument. This in turn will lead to a much more
-efficient test on subsets of data, and our newest experiments show we have more control over error
-rates.
+You are correct, the logistic (Barker) function is less efficient than
+the Metropolis acceptance test with \theta' close to \theta when run
+on the full dataset. However, there is no comparable result when these
+tests are used on minibatches since they are applied in completely
+different ways. Empirically, we find that we can scale proposal step
+size or temperature to achieve as small minibatch size as desired
+using our corrected Barker test, but this is not true of [3] or [4]
+which via the analysis above (and in experiments) still require
+Omega(n) samples for some single tests. Thus the approx.  Barker test
+is arbitrarily more efficient than tail tests in terms of average data
+consumed per generated distinct sample. We have revised the
+experiments so show that such gaps are up to 3 orders of magnitude for
+logistic regression and the gaussian mixture model. 
 
 
-To Reviewers 1, 2, and 3 regarding the convolution (in)stability:
 
-To make the convolution more stable, we frame it as a least squares (with L2 regularization)
-minimization problem. We move some of the variance from X_norm to X_corr, i.e. widen X_corr by
-convolving with a Gaussian with variance sigma^2, while decreasing the allowed variance of X_norm by
-sigma^2. This ensures that X_corr has positive pdf everywhere.  We can achieve CDF error (X_norm +
-X_corr compared to X_log) of 1e-7 at sigma = 0.8 or 1e-5 at sigma = 0.9.  We have added an entire
-new section explaining this procedure.
+To Reviewers 1, 2, and 3 regarding the deconvolution (in)stability:
+
+We now describe in detail the construction of the distribution of
+X_corr. We explored linear programming and least squares solutions. We
+find that the latter allow us to compute finer discrete approximations
+to the distribution of X_corr (4000 points). It also gives smaller
+absolute (i.e. L1) error. Even though least squares minimizes the L2
+norm of the error, the L1 error is also bounded down to 1e-5 by L2
+norm minimization. The solution accuracy benefits from fairly strong
+L2 regularlization, which also makes the inversion
+(i.e. deconvolution) more stable. To ensure positivity of all three
+distributions, we impose a stricter bound on the variance of X_norm.
+This effectively shifts variance to $X_corr$ by convolving it with
+another normal distribution, and guarantees that it is positive.
+We computed X_corr with variance bounds of 0.8 and 0.9 both of
+which give CDF errors below 1e-4. 
 
 
 To Reviewer 3:
@@ -39,29 +64,44 @@ To Reviewer 3:
 (TODO respond to experiment criticism, but I really can't defend the work as it is ...)
 
 
-To Reviewers 1 and 3 regarding Lemma 2:
-
-Both of you have correctly identified our implicit assumptions about Lemma 2. Reviewer_1 is right
-that we approximated it for large N, so sampling without replacement approximates sampling with
-replacement.  Reviewer_3 is correct in that the CLT only applies for large n and N, and we also need
-n << N. Note also that we generally assume n is in the several hundreds, which is often enough for
-the CLT to hold. We will clarify this in our revisions.
+Both Reviewers 1 and 3 correctly identified our implicit assumptions
+about Lemma 2. Reviewer_1 is right that we approximated it for large
+N, so sampling without replacement approximates sampling with
+replacement.  In the case of very large datasets however, it is also
+typically more reasonable to treat the dataset as itself a sample
+drawn from a still larger, or possibly infinite, dataset (e.g. this
+holds for all the examples in our paper), and the instance
+"resolution" implies that repeats have probability ~ zero. So
+distinctions between sampling with replacement and without are perhaps
+moot for these datasets. 
 
 
 To Reviewers 1 and 2:
 
-Thank you for mentioning [BDH], "MCMC Methods for Tall Data." We added this reference as part of our
-ongoing revision of the paper and will substantially address issues raised in [BDH]. We are also
-addressing Reviewer 2's other references.  In addition, we are addressing Reviewer 2's concern
-regarding the difference between ours and [BDH] Section 6.3. Yes, it's close to what we are doing,
-but they don't attempt to correct for the difference between normal and logistic distributions with
-an additive variable, so they are stuck with a fixed error.
+Thank you for mentioning [BDH], "MCMC Methods for Tall Data." We added
+this reference as part of our ongoing revision of the paper and will
+substantially address issues raised in [BDH]. In addition, we are
+addressing Reviewer 2's concern regarding the difference between ours
+and [BDH] Section 6.3. The idea of using a Barker test with minbatches
+was proposed in [BDH]. However, a crucial addition in our approach is
+the use of an additive correction variable. Thus in our approach,
+there is no lower bound on error in our approximate test, and we show
+it decreases with O(n^-0.5). In [BDH] there is no correction between
+normal and logistic CDFs, and the method has a minimum error set by
+the max absolute difference between their CDFs. Another difference is
+that the idea proposed in [BDH] was not explored experimentally. In
+particular it was not shown that tests can be done with arbitrarily
+small minibatches in [BDH].
 
 
 To Reviewer 7:
 
-We should have clarified, that we have the option of increasing minibatch sizes, and the idea is
-that we can start by increasing it just enough for the variance condition to apply. Once we have
-identified a suitable minibatch size, we keep it fixed thereafter. In our latest revisions, we rerun
-our test cases and experiment with reducing the proposal variance or increasing the temperature. By
-doing so, we can run our algorithm using arbitrarily small minibatch sizes.
+We have improved the algorithm to use an adaptive step size rather
+than fail on some tests.  Unlike [3] and [4] however, since the amount
+of data required for our test scales in proportion to the proposal
+step size, the minibatch size has a normal size bound.
+
+[A] Y. Novak, "On Self-Normalized Sums And Student’s Statistic"
+Theory of Probability and its Applications, 49(2), 336-344, 2005.
+
+
