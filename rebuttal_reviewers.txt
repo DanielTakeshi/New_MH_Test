@@ -1,5 +1,6 @@
-First, we thank the reviewers for their thoughtful commentary on our paper to keep the quality of
-NIPS top-notch.
+We thank the reviewers for their thoughtful commentary on our paper to keep the quality of NIPS
+top-notch. We start the rebuttal with a few general comments and then respond to specific reviewers.
+
 
 General comments:
 
@@ -9,15 +10,17 @@ for references [3] and [4] with Omega(N) lower bounds for fixed proposals using 
 also added rigorous, numerical error bounds based on t-statistics (from the empirical mean and
 variance) asymptotics from [13]. We have added bounds on the equilibrium distribution given bounds
 on transition kernel error (we will borrow this from [4]) with the appropriate assumptions. 
+(This section addresses theoretical results)
 
 
-To reviewers 1, 2, 3, and 4 regarding the Barker function:
+To Reviewers 2, 3, and 4 regarding the Barker function:
 
 You are correct, the logistic function (aka Barker function) is less efficient with \theta' as good
 as \theta. However, the tradeoff is that using the Barker function lets us better control our error
 rates, and our newest experiments show that we are obtaining orders of magnitude improvements.
 
-To reviewers 1, 2, and 3 regarding the convolution (in)stability:
+
+To Reviewers 1, 2, and 3 regarding the convolution (in)stability:
 
 To make it more stable, we can use L2 regularization and move some of the variance from X_norm to
 X_corr. i.e. widen X_corr by convolving with a Gaussian with variance sigma^2, while decreasing the
@@ -25,27 +28,35 @@ allowed variance of X_norm by sigma^2. This ensures that X_corr has positive pdf
 achieve CDF error (X_norm + X_corr compared to X_log) of 1e-7 at sigma = 0.8 or 1e-5 at sigma = 0.9.
 We are substantially reworking this part of the paper.
 
-To reviewer 1:
 
-TODO (Daniel: Anything else you want to address)
+To Reviewer 2
 
-To reviewer 2:
+(TODO?)
 
-Regarding the difference between ours and [BDH] sec 6.3, that is close to what we're doing, but they
-don't attempt to correct for the difference between normal and logistic distributions with an
-additive variable, so they are stuck with a fixed error. That allows us to run our algorithm with
-arbitrarily small errors (depending on batch size of course). 
 
-TODO (Daniel: Anything else you want to address)
+To Reviewers 1 and 3 regarding Lemma 2:
 
-To reviewer 3:
+Both of you have correctly identified our implicit assumptions about Lemma 2. Reviewer_1 is right
+that we approximated it for large N, so sampling without replacement approximates sampling with
+replacement.  Reviewer_3 is correct in that the CLT only applies for large n and N, and we also need
+n << N. Note also that we generally assume n is in the several hundreds, which is often enough for
+the CLT to hold. We will clarify this in our revisions.
 
-Regarding your Lemma 2 comment, yes, you are correct, the CLT only applies for large n and N, and we
-also need n << N. We will clarify this.
 
-To reviewer 7:
+To Reviewers 1 and 2:
 
-Yes increasing the minibatch size is one of the strategies we can use to control variance. The idea
-is to increase it just enough, and then to keep it fixed thereafter. We should emphasize this
-distinction more, and also to emphasize that this is the least desirable tactic to use (and our
-newest results show that we do not need to use it anyway).
+Thank you for mentioning [BDH], "MCMC Methods for Tall Data." We added this reference as part of our
+ongoing revision of the paper and will substantially address issues raised in [BDH]. We are also
+addressing Reviewer 2's other references.  In addition, we are addressing Reviewer 2's concern
+regarding the difference between ours and [BDH] Section 6.3. Yes, it's close to what we are doing,
+but they don't attempt to correct for the difference between normal and logistic distributions with
+an additive variable, so they are stuck with a fixed error.
+
+
+To Reviewer 7:
+
+We should have clarified, that we have the option of increasing minibatch sizes, and the idea is
+that we can start by increasing it just enough for the variance condition to apply. Once we have
+identified a suitable minibatch size, we keep it fixed thereafter. In our latest revisions, we rerun
+our test cases and experiment with reducing the proposal variance or increasing the temperature. By
+doing so, we can run our algorithm using arbitrarily small minibatch sizes.
