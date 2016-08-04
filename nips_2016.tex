@@ -783,28 +783,6 @@ which shows that the distribution of $\hat{X}$ approaches the normal distributio
 whose variance is $\sigma^2(\hat{X})$, measured from the sample.
 
 
-In fact we can do better than this approximation by using a more
-precise limit distribution, under an additional assumption. Let $\mu_i$ denote the $i^{th}$ moment, and $b_i$
-denote the $i^{th}$ absolute moment of $X$. Bentkus et al.'s work on Edgeworth
-expansions \cite{Bentkus97} equation 2.2 gives:
-
-\begin{lemma} Let $X_1,\ldots,X_n$ be
-a set of zero-mean, independent, identically-distributed random variables with sample mean $\hat{X}$ and with $t$ defined as in Lemma 3. Then
-\begin{equation}\label{eq:clt-bounds}
- \sup_x\left|{\rm Pr}(t<x) - G\left(x, \frac{\mu_3}{b_2^{3/2}}\right)\right| \leq \frac{c(\epsilon,b_2,b_3,b_4,b_{4+\epsilon})}{n}
-\end{equation}
-where
-\begin{equation}
-G_N(x,y) = \Phi(x) + \frac{y(2x^2+1)}{6\sqrt{n}}\Phi'(x)
-\end{equation}
-\end{lemma}
-Here the limit $G_N(x,y)$ is a normal CDF plus a correction term that
-decays as $n^{1/2}$. Importantly, since $x^2\phi(x) = \phi^{''}(x) + \phi(x)$ where $\phi(x)=\Phi'(x)$, the correction term can be rewritten giving:
-\begin{equation}
-G_N(x,y) = \Phi(x) + \frac{y}{6\sqrt{n}}(2\phi^{''}(x)+3\phi(x))
-\end{equation}
-From which we see that $G_N(x,y)$ is a linear combination of $\Phi(x)$, $\phi(x)$ and $\phi^{''}(x)$. 
-
 
 
 \begin{lemma} Let $P(x)$ and $Q(x)$ be two cumulative distributions satisfying $\sup_x|P(x)-Q(x)|\leq \epsilon$ with
@@ -861,6 +839,73 @@ From which we see that $G_N(x,y)$ is a linear combination of $\Phi(x)$, $\phi(x)
     log} > 0)$ by at most $\epsilon$.
   
 \end{proof}
+
+
+In fact we can do better than this approximation (showing the error decreases as $O(n^{-1})$) by using a more
+precise limit distribution under an additional assumption. Let $\mu_i$ denote the $i^{th}$ moment, and $b_i$
+denote the $i^{th}$ absolute moment of $X$. If Cramer's condition holds, i.e. if
+\begin{equation}
+  \lim_{t \to \infty} \sup |E(\exp(i t X))| < 1
+\end{equation}
+
+
+Bentkus et al.'s work on Edgeworth
+expansions \cite{Bentkus97} equation 2.2 gives:
+
+\begin{lemma} Let $X_1,\ldots,X_n$ be
+  a set of zero-mean, independent, identically-distributed random variables with sample mean $\hat{X}$ and with $t$ defined as in Lemma 3. If $X$ satisfies Cramer's condition, 
+then
+\begin{equation}\label{eq:clt-bounds}
+ \sup_x\left|{\rm Pr}(t<x) - G\left(x, \frac{\mu_3}{b_2^{3/2}}\right)\right| \leq \frac{c(\epsilon,b_2,b_3,b_4,b_{4+\epsilon})}{n}
+\end{equation}
+where
+\begin{equation}
+G_n(x,y) = \Phi(x) + \frac{y(2x^2+1)}{6\sqrt{n}}\Phi'(x)
+\end{equation}
+\end{lemma}
+This lemma shows that the average of the $X_i$ has a more precise, skewed CDF limit $G_n(x,y)$
+where the skew term has weight proportional to a certain measure of skew derived
+from the moments: $\frac{\mu_3}{b_2^{3/2}}$. Note that if the $X_i$ are symmetric,
+the weight of the correction term is zero, and the CDF of the average of the $X_i$ converges
+to $\Phi(x)$ at a rate of $O(n^{-1})$.
+
+Here the limit $G_n(x,y)$ is a normal CDF plus a correction term that
+decays as $n^{1/2}$. Importantly, since $x^2\phi(x) = \phi^{''}(x) + \phi(x)$ where $\phi(x)=\Phi'(x)$, the correction term can be rewritten giving:
+\begin{equation}
+  \label{eq:GNderivatives}
+G_n(x,y) = \Phi(x) + \frac{y}{6\sqrt{n}}(2\phi^{''}(x)+3\phi(x))
+\end{equation}
+From which we see that $G_n(x,y)$ is a linear combination of
+$\Phi(x)$, $\phi(x)$ and $\phi^{''}(x)$. This is quite fortuitous. In
+Algorithm 1, we correct for the difference in $\sigma$ between
+$\Delta^*$ and the variance needed by $X_{\rm corr}$ using $X_{\rm
+  norm}$. This same method works when we wish to estimate the error in $\Delta^*$ vs
+$G_n(x,y)$. Since all of the component functions of $G_n(x,y)$ are
+derivatives of a (unit variance) $\Phi(x)$, adding a normal variable
+with variance $\sigma'$ increases the variance of all three functions
+to $1+\sigma'$. Thus we add $X_{\rm norm}$ as per Algorithm 1
+preserving the limit in equation (\ref{eq:GNderivatives}).
+
+The deconvolution approach can be used to constuct a correction
+variable $X_{\rm corr}$ between $G_n(x,y)$ and $S(x)$ the standard
+logistic function. An additional complexity is that $G_n(x,y)$ has
+additional parameters $y$ and $n$. Since these act as a single
+multiplier $\frac{y}{6\sqrt{n}}$ in equation
+(\label{eq:GNderivatives}), its enough to consider a function
+$g(x,y')$ parametrized by $y'= \frac{y}{6\sqrt{n}}$. This function can
+be computed and saved offline. As we have shown above, errors in the
+``limit'' function propagate directly through as errors in the
+acceptance test.  To achieve a test error of say $1e-6$ (close to single
+floating point precision), we need a $y'$ spacing of $1e-6$. It
+should not be necessary to tabulate values all the way to $y'=1$,
+since $y'$ is scaled inversely by the square root of monibatch size.
+Assuming a max $y'$ of 0.1 requires us to tabulate about 100,000.
+Since our $x$ resolution is 10,000, this leads to a table with about
+1 billion values, which can comfortably be stored in memory. However,
+if $g(x,y)$ is moderately smooth in $y$, it should be possible to
+achieve similar accuracy with a much smaller table. We leave further
+analysis and experiments with $g(x,y)$ as future work. 
+
 
 %% \textbf{The Convolution}. Figure~\ref{fig:deconvolution} demonstrates
 %% Equation~\ref{eq:deconvolution} and provides three (color-coded) examples of densities for $X_{\rm
