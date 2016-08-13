@@ -237,7 +237,7 @@ class GaussianMixture(ndim:Int, n:Int, sigma:Double, pscale:Double) extends MHmo
 	};
 
 	def proposalfn(theta:Mat):Mat ={
-		theta +  dnormrnd(0, sigmap * math.sqrt(temp), ndim, 1);
+		theta +  dnormrnd(0, sigma_proposer, ndim, 1);
 	};
 
 	def evalfn(batch:Mat, theta:Mat) : Mat = {
