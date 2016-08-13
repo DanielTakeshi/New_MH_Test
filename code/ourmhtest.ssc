@@ -243,7 +243,7 @@ class GaussianMixture(ndim:Int, n:Int, sigma:Double, pscale:Double) extends MHmo
 	def evalfn(batch:Mat, theta:Mat) : Mat = {
 		val dd1 = batch - theta(0);
 		val dd2 = batch - theta(0) - theta(1);
-		val scale_and_temp = -1.0 * (n/temp);
+		val scale_and_temp = 1.0 * (n/temp);
 		val log_term = ln( exp( -0.5 / (sigma * sigma) * ( dd1 dot dd1) ) + exp( -0.5 / (sigma * sigma) * (dd2 dot dd2) ) );
 		scale_and_temp * log_term;
 	};
