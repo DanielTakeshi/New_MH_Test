@@ -1,0 +1,210 @@
+:silent
+def normcdf(a:DMat):DMat = {
+    0.5 + 0.5 * erf(a / math.sqrt(2));
+};
+
+def normcdfinv(a:DMat):DMat = {
+    math.sqrt(2) * erfinv(2*a - 1);
+};
+
+abstract class MHmodel(val ndim:Int, val n:Int, val sigma:Double, val pscale:Double) {
+    val data:Mat;
+    def initfn():Mat;
+    def proposalfn(theta:Mat):Mat;
+    def evalfn(batch:Mat,theta:Mat):Mat;
+};
+
+class GaussianMixture(n:Int, sigma:Double, pscale:Double) extends MHmodel(2, n, sigma, pscale) {
+	val sigma1_sq = 10.0;	
+	val sigma2_sq = 1.0;
+	var sigma_proposer = 0.5;
+	val theta1 = 0.0;
+	val theta2 = 1.0;
+	val u = rand(1,n);
+	val data = dzeros(1,n);
+	var temp = 1.0;
+	def initfn():Mat = {
+		for(i <- 0 until n){
+			if (u(i) < 0.5){
+				data(i) = dnormrnd(theta1, sigma.toFloat,1,1)(0)
+			}
+			else{
+				data(i) = dnormrnd(theta1+theta2, sigma.toFloat,1,1)(0)
+			}
+		};
+		
+		// Initialize parameters
+		val res = dones(2,1);
+		res(0) = 0.5;
+		res(1) = 0.0;
+		res;
+	};
+
+	def proposalfn(theta:Mat):Mat ={
+		theta +  dnormrnd(0, sigma_proposer, 2, 1);
+	};
+
+	def evalfn(batch:Mat, theta:Mat) : Mat = {
+		val dd1 = batch - theta(0);
+		val dd2 = batch - theta(0) - theta(1);
+		val scale_and_temp = 1.0 / temp;
+		val log_term = ln( exp( -0.5 / (sigma * sigma) * ( dd1 dot dd1) ) + exp( -0.5 / (sigma * sigma) * (dd2 dot dd2) ) );
+		scale_and_temp * log_term;
+	};
+
+};
+
+
+class cutMHTest{
+	var N = 100000;  // number of data points
+	var eps = 0.05;
+	def testfn(diff:Mat, nsig:Double):(Boolean, Boolean) = {
+		val diff_sq = diff dot diff;
+		val lsq_bar = mean(diff_sq).dv
+		val l_bar = mean(diff).dv
+		val l_bar_sq = l_bar * l_bar
+
+		val u = 1.0/N * ln(rand(1,1)).v;
+		val n = diff.size     		
+		val sl = math.sqrt((lsq_bar - l_bar_sq) * n/(n-1));
+		val s = sl/math.sqrt(n) * math.sqrt(1 - (n-1)/(N-1));
+		val t = abs(  (l_bar  - u)/s );
+		val delta = (1 - normcdf(drow(t.dv))).dv
+
+		if (delta < nsig || diff.size >= N){
+			if( l_bar > u){
+				return (true, true)
+			}
+			else{
+				return (true, false)
+			}
+		}else{
+			return (false, false);
+		}
+	};
+	var explin = true;
+};
+
+
+def getbatch(data:Mat, here:Int, size:Int):Mat = {
+    val there = here + size;
+    val nthere = math.min(there, data.ncols);
+    val iwrap = math.max(0, there - data.ncols);
+    val batch0 = data.colslice(here, nthere, null);
+    val batch = if (iwrap > 0) {
+		batch0 \ data.colslice(0, iwrap, null);
+    } else {
+		batch0;
+    }
+    batch;
+};    
+
+
+def dostep(mod:MHmodel, test:cutMHTest, data:Mat, size:Int, here:Int, theta:Mat, ttheta:Mat, acc:Double):(Int, Mat, Double) = {
+    var step = size;
+    var done = false;
+    var ntheta:Mat = null;
+    var there = 0;
+    var istep = 0;
+    var ll:Mat = null;
+    var diff_list:DMat = null;
+    var ll_list:DMat = null;
+
+    // first time test
+    val batch = getbatch(mod.data, here, step);
+    ll = mod.evalfn(batch, theta);
+    val diff = mod.evalfn(batch, ttheta) - ll;
+    val nsig = test.eps;
+    val (moved, takestep) = test.testfn(diff, nsig);
+    done = moved;
+    if (done){
+    	there = (here + step) % data.ncols;
+    	ntheta = if (takestep) ttheta else theta;
+    } else {
+    	step = math.min( if(test.explin) (step*2) else (step + size), data.ncols);
+    }
+    istep += 1;
+
+    diff_list = DMat(diff);
+    ll_list = DMat(ll);
+
+    while(!done) {
+    	val batch = getbatch(mod.data, here, step);
+    	ll = mod.evalfn(batch, theta);
+    	ll_list = ll_list \ DMat(ll);
+    	val diff = mod.evalfn(batch, ttheta) - DMat(ll);
+    	val nsig = test.eps;
+    	diff_list = diff_list \ DMat(diff);
+    	val (moved, takestep) = test.testfn(diff_list, nsig);
+    	done = moved;
+    	if (done) {
+    		there = (here + step)% data.ncols;
+    		ntheta = if (takestep) ttheta else theta;
+    	} else {
+    		step = math.min(if (test.explin) (step * 2) else (step + size), data.ncols)
+    	}
+    	istep += 1;
+     }
+
+     (there, ntheta, mean(ll).dv);
+};
+
+
+def dosimm(mod:MHmodel, test:cutMHTest, size:Int, nsamps:Int, acc:Double):(DMat,LMat,DMat) = {
+    var theta = mod.initfn();
+    val samples = dzeros(theta.length, nsamps);
+    val sizes = lzeros(1, nsamps);
+    val lls = dzeros(1, nsamps);
+    var here = 0;
+    var i = 0;
+    while (i < nsamps) {
+    	if (i % (nsamps/5) == 0){
+    		println("iteration = %d" format(i));
+    	}
+
+    	val epsi = 0.01 * pow((0.01 + i), -0.55).dv;
+    	test.eps = epsi;
+		val ttheta = mod.proposalfn(theta);
+		val (there, nth, ll) = dostep(mod, test, mod.data, size, here, theta, ttheta, acc);
+		sizes(i) = if (there > here) (there - here) else (there - here + mod.data.ncols);
+		lls(i) = ll;
+		here = there;
+		theta = nth;
+		samples(?, i) = DMat(theta);
+		i += 1;
+    }
+    (samples, sizes, lls);
+};
+
+
+def acceptrate(theta:Mat):Double = {
+	val diff = abs(theta(?,1->(theta.ncols)) - theta(?,0->(theta.ncols-1)));
+	return mean(sum(diff)>0.0).dv;
+};	
+
+
+val nsamps = 10000
+val n = 100000
+val sigma = math.sqrt(2)
+val pscale = 1
+val batchsize = 50
+val sigma_proposer = 0.05;
+val nn = new GaussianMixture(n = n, sigma = sigma, pscale=pscale);
+
+
+nn.temp = 1000.0;
+nn.sigma_proposer = sigma_proposer;   // 0.4 is optimal for nsamps = 2000, minibatch size = 200	
+val newtest2 = new cutMHTest;
+newtest2.N = n;
+
+tic; 
+val (samples, sizes, lls) = dosimm(mod= nn, test=newtest2, size=batchsize, nsamps = nsamps, acc = 0.05);
+toc;
+
+val t1 = toc;
+
+scatter(samples(0,?), samples(1,?));
+val size1 = FMat(sizes)
+hist(size1, 50);
+
+val accept = acceptrate(samples)
