@@ -1,0 +1,71 @@
+:load mhtest/simulator.ssc
+
+class LogisticRegression(ndim:Int, n:Int, sigma:Double, pscale: Double) extends MHmodel (ndim, n, sigma, pscale) {
+	
+		var sigma_proposer = 0.05;
+		val data:DMat= load("code/minist7vs1.mat","Train");
+		var temp = 1.0;
+
+		def initfn():Mat = {
+			val parameter_dim = data.dims(0) - 1;
+			val theta = drand(parameter_dim,1);
+			theta;
+		};
+		
+
+		def proposalfn(theta:Mat):Mat = {
+			theta + dnormrnd(0, sigma_proposer, theta.dims(0), 1);
+		};
+
+		def evalfn(batch:Mat, theta:Mat):Mat = {
+			val X = batch(0 until batch.dims(0)-1, ?)
+			val Y = batch(batch.dims(0)-1,?)
+			val z = Y dot (theta.t * X);
+			val sigma = 1/(1 + exp(-1.0 * z));
+			val log_sigma = ln(sigma);
+			val scale_and_temp = 1.0 * (n/temp);
+			scale_and_temp * log_sigma;
+		};
+}
+	
+def eval_cost(X:DMat, Y:DMat, theta:DMat):DMat = {
+	val z = Y *@ (theta.t * X);
+	val sigma = 1.0/ (1.0 + exp(-1.0 * z));
+	var res = dzeros(sigma.dims(0),1);
+	for(i<- 0 until sigma.dims(0)){
+		val temp = sigma(i, ?);
+		res(i) = find(temp>0.5).dims(0) * 1.0 / temp.dims(1) * 1.0;
+	}
+	return res;
+};
+
+
+
+val nn = new LogisticRegression(ndim=1, n=12007, sigma=1, pscale=1);
+nn.temp = 1000.0;
+val newtest = new NewTest;
+val oldtest = new OldTest;
+
+tic;
+val (samples, sizes, lls) = dosimm(mod=nn, test=newtest, size=1000, nsamps=2000, acc=0.05);
+val t1 = toc;
+val (samples2, sizes2, lls2) = dosimm(mod=nn, test=oldtest, size=1000, nsamps=2000, acc=0.05);
+val t2 = toc - t1;
+
+// get accuracy with test
+
+val testdata:DMat = load("code/minist7vs1.mat","Test");
+val X = testdata(0 until testdata.dims(0)-1, ?)
+val Y = testdata(testdata.dims(0)-1, ?)
+val accuracy_old = eval_cost(X, Y, samples2);
+val accuracy_new = eval_cost(X, Y, samples);
+val size_old = cumsum(DMat(sizes2));
+val size_new = cumsum(DMat(sizes));
+plot(size_old, accuracy_old, size_new, accuracy_new);
+
+
+
+
+
+
+    
