@@ -1,9 +1,9 @@
-:load mhtest/simulator.ssc
+:load simulator.ssc
 
 class LogisticRegression(ndim:Int, n:Int, sigma:Double, pscale: Double) extends MHmodel (ndim, n, sigma, pscale) {
 	
 		var sigma_proposer = 0.05;
-		val data:DMat= load("code/minist7vs1.mat","Train");
+		val data:DMat= load("minist7vs1.mat","Train");
 		var temp = 1.0;
 
 		def initfn():Mat = {
@@ -28,40 +28,53 @@ class LogisticRegression(ndim:Int, n:Int, sigma:Double, pscale: Double) extends 
 		};
 }
 	
-def eval_cost(X:DMat, Y:DMat, theta:DMat):DMat = {
+def eval_cost(X:DMat, Y:DMat, theta:DMat): (DMat, DMat) = {
 	val z = Y *@ (theta.t * X);
 	val sigma = 1.0/ (1.0 + exp(-1.0 * z));
-	var res = dzeros(sigma.dims(0),1);
+	var accuracy = dzeros(sigma.dims(0),1);
+	var ll = dzeros(sigma.dims(0),1);
 	for(i<- 0 until sigma.dims(0)){
 		val temp = sigma(i, ?);
-		res(i) = find(temp>0.5).dims(0) * 1.0 / temp.dims(1) * 1.0;
+		accuracy(i) = find(temp>0.5).dims(0) * 1.0 / temp.dims(1) * 1.0;
+		ll(i) = sum(ln(temp)).dv * 1.0 / temp.dims(1) * 1.0;
 	}
-	return res;
+	return (accuracy, ll);
 };
 
 
 
 val nn = new LogisticRegression(ndim=1, n=12007, sigma=1, pscale=1);
-nn.temp = 1000.0;
+nn.temp = 500.0;
 val newtest = new NewTest;
 val oldtest = new OldTest;
 
 tic;
-val (samples, sizes, lls) = dosimm(mod=nn, test=newtest, size=1000, nsamps=2000, acc=0.05);
+val (samples, sizes, lls) = dosimm(mod=nn, test=newtest, size=100, nsamps=2000, acc=0.05);
 val t1 = toc;
-val (samples2, sizes2, lls2) = dosimm(mod=nn, test=oldtest, size=1000, nsamps=2000, acc=0.05);
+val (samples2, sizes2, lls2) = dosimm(mod=nn, test=oldtest, size=100, nsamps=2000, acc=0.05);
 val t2 = toc - t1;
 
 // get accuracy with test
 
-val testdata:DMat = load("code/minist7vs1.mat","Test");
+val sizeold = DMat(sizes2);
+val sizenew = DMat(sizes);
+
+val testdata:DMat = load("minist7vs1.mat","Test");
 val X = testdata(0 until testdata.dims(0)-1, ?)
 val Y = testdata(testdata.dims(0)-1, ?)
-val accuracy_old = eval_cost(X, Y, samples2);
-val accuracy_new = eval_cost(X, Y, samples);
-val size_old = cumsum(DMat(sizes2));
-val size_new = cumsum(DMat(sizes));
+val (accuracy_old, ll_old) = eval_cost(X, Y, samples2);
+val (accuracy_new, ll_new) = eval_cost(X, Y, samples);
+val size_old = cumsum(DMat(sizeold));
+val size_new = cumsum(DMat(sizenew));
 plot(size_old, accuracy_old, size_new, accuracy_new);
+
+plot(size_old, ll_old, size_new, ll_new);
+
+hist(sizeold,20);
+hist(sizenew,20); 
+
+val accelerate_ratio = (sum(sizeold).dv * 1.0 / sum(sizenew).dv * 1.0);
+println("The acceleration ratio is %f" format(accelerate_ratio));
 
 
 
