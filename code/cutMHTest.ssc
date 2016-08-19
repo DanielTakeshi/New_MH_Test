@@ -57,7 +57,7 @@ class GaussianMixture(n:Int, sigma:Double, pscale:Double) extends MHmodel(2, n, 
 
 class cutMHTest{
 	var N = 100000;  // number of data points
-	var eps = 0.05;
+	var eps = 0.00005;
 	def testfn(diff:Mat, nsig:Double):(Boolean, Boolean) = {
 		val diff_sq = diff dot diff;
 		val lsq_bar = mean(diff_sq).dv
@@ -146,7 +146,7 @@ def dostep(mod:MHmodel, test:cutMHTest, data:Mat, size:Int, here:Int, theta:Mat,
     	istep += 1;
      }
 
-     (there, ntheta, mean(ll).dv);
+     (there, ntheta, mean(ll_list).dv);
 };
 
 
@@ -162,7 +162,7 @@ def dosimm(mod:MHmodel, test:cutMHTest, size:Int, nsamps:Int, acc:Double):(DMat,
     		println("iteration = %d" format(i));
     	}
 
-    	val epsi = 0.01 * pow((0.01 + i), -0.55).dv;
+    	val epsi = 0.00001 * pow((0.01 + i), -0.55).dv;
     	test.eps = epsi;
 		val ttheta = mod.proposalfn(theta);
 		val (there, nth, ll) = dostep(mod, test, mod.data, size, here, theta, ttheta, acc);
@@ -188,11 +188,11 @@ val n = 100000
 val sigma = math.sqrt(2)
 val pscale = 1
 val batchsize = 50
-val sigma_proposer = 0.05;
+val sigma_proposer = 0.5;
 val nn = new GaussianMixture(n = n, sigma = sigma, pscale=pscale);
 
 
-nn.temp = 1000.0;
+nn.temp = 100.0;
 nn.sigma_proposer = sigma_proposer;   // 0.4 is optimal for nsamps = 2000, minibatch size = 200	
 val newtest2 = new cutMHTest;
 newtest2.N = n;
@@ -208,3 +208,4 @@ val size1 = FMat(sizes)
 hist(size1, 50);
 
 val accept = acceptrate(samples)
+println("accept rate is %f" format(accept));
