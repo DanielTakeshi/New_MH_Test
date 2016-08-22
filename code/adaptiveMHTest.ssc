@@ -1,93 +1,7 @@
 // This script implements the Bardenet's 2014 ICML Paper
-:silent
-def normcdf(a:DMat):DMat = {
-    0.5 + 0.5 * erf(a / math.sqrt(2));
-};
-
-def normcdfinv(a:DMat):DMat = {
-    math.sqrt(2) * erfinv(2*a - 1);
-};
 
 def std(A:DMat):Double = {
     (mean(A *@ A) - mean(A) * mean(A)).dv
-}
-
-abstract class MHmodel(val ndim:Int, val n:Int, val sigma:Double, val pscale:Double) {
-    val data:Mat;
-    def initfn():Mat;
-    def proposalfn(theta:Mat):Mat;
-    def evalfn(batch:Mat,theta:Mat):Mat;
-};
-
-class GaussianMixture(n:Int, sigma:Double, pscale:Double) extends MHmodel(2, n, sigma, pscale) {
-
-	val sigma1_sq = 10.0;	
-	val sigma2_sq = 1.0;
-	var sigma_proposer = 0.5;
-	val theta1 = 0.0;
-	val theta2 = 1.0;
-	val u = rand(1,n);
-	val data = dzeros(1,n);
-	var temp = 1.0;
-
-	def initfn():Mat = {
-		// Data Generation
-		for(i <- 0 until n){
-			if (u(i) < 0.5){
-				data(i) = dnormrnd(theta1, sigma.toFloat,1,1)(0)
-			}
-			else{
-				data(i) = dnormrnd(theta1+theta2, sigma.toFloat,1,1)(0)
-			}
-		};
-		
-		// Initialize parameters
-		val res = dones(2,1);
-		res(0) = 0.5;
-		res(1) = 0.0;
-		res;
-	};
-
-	def proposalfn(theta:Mat):Mat ={
-		theta +  dnormrnd(0, sigma_proposer, 2, 1);
-	};
-
-	def evalfn(batch:Mat, theta:Mat) : Mat = {
-		val dd1 = batch - theta(0);
-		val dd2 = batch - theta(0) - theta(1);
-		val scale_and_temp = 1.0 * (n/temp);
-		val log_term = ln( exp( -0.5 / (sigma * sigma) * ( dd1 dot dd1) ) + exp( -0.5 / (sigma * sigma) * (dd2 dot dd2) ) );
-		scale_and_temp * log_term;
-	};
-
-};
-
-class LogisticRegression(ndim:Int, n:Int, sigma:Double, pscale: Double) extends MHmodel (ndim, n, sigma, pscale) {
-	
-		var sigma_proposer = 0.05;
-		val data:DMat= load("minist7vs1.mat","Train");
-		var temp = 1.0;
-
-		def initfn():Mat = {
-			val parameter_dim = data.dims(0) - 1;
-			val theta = drand(parameter_dim,1);
-			theta;
-		};
-		
-
-		def proposalfn(theta:Mat):Mat = {
-			theta + dnormrnd(0, sigma_proposer, theta.dims(0), 1);
-		};
-
-		def evalfn(batch:Mat, theta:Mat):Mat = {
-			val X = batch(0 until batch.dims(0)-1, ?)
-			val Y = batch(batch.dims(0)-1,?)
-			val z = Y dot (theta.t * X);
-			val sigma = 1/(1 + exp(-1.0 * z));
-			val log_sigma = ln(sigma);
-			val scale_and_temp = 1.0 * (n/temp);
-			scale_and_temp * log_sigma;
-		};
 }
 
 class adaptiveMHTest {
@@ -95,10 +9,9 @@ class adaptiveMHTest {
 	var p = 2.0;
 	var delta = 0.01;
 	var gamma = 1.5;
-	def testfn(diff2:Mat, b: Double, c :Double) : (Boolean, Boolean) = {
+	def testfn(diff_in:Mat, b: Double, c :Double) : (Boolean, Boolean) = {
 		// diff is the overall Lambda value without average
-		var diff = diff2;
-		diff = diff / (N * 1.0);
+		var diff = diff_in / (N * 1.0);
 		val diff_mean = mean(diff).dv;
 		val psi = 1.0/N * ln(rand(1,1)).dv;
 		val test_stats = abs(diff_mean - psi).dv;
@@ -128,15 +41,16 @@ def getbatch(data:Mat, here:Int, size:Int):Mat = {
 };    
 
 
-def dostep(mod:MHmodel, test:adaptiveMHTest, data:Mat, size:Int, here:Int, theta:Mat, ttheta:Mat, acc:Double):(Int, Mat, Double) = {
+def adaptiveMH_dostep(mod:MHmodel, test:adaptiveMHTest, data:Mat, size:Int, here:Int, theta:Mat, ttheta:Mat, acc:Double):(Int, Mat, Double, Mat) = {
     var step = size;
     var done = false;
     var ntheta:Mat = null;
     var there = 0;
     var istep = 0;
     var ll:Mat = null;
+    var bc1c2:Mat = 0.0 on 0.0 on 0.0;
 
-    var b = size * 1.0;
+    var b = size;
     var t = 0.0 ;
     var t_look = 1.0;
     test.N = data.ncols;
@@ -148,26 +62,22 @@ def dostep(mod:MHmodel, test:adaptiveMHTest, data:Mat, size:Int, here:Int, theta
     	ll = mod.evalfn(batch, theta);
     	val diff = mod.evalfn(batch, ttheta) - ll;
     	t = b.toDouble;
+    	t_look = t_look + 1.0;
+
     	val ctt_pre2 = (mod.evalfn(data, ttheta) - mod.evalfn(data, theta))*1.0/test.N;
     	val ctt_pre = abs(ctt_pre2);
     	val sigma_t = std(DMat(ctt_pre2));
-
     	val ctt = maxi(ctt_pre).dv;
     	val ft = (t - 1.0)/test.N * 1.0;
-
     	val delta_tlook = (test.p - 1.0)/(test.p * pow(t_look, test.p).dv) * test.delta * 1.0;
+        val c1 = sigma_t * math.sqrt( 2 * ln(3.0/delta_tlook).dv / t);
+        val c2 = 6.0 * ctt * ln(3.0/delta_tlook).dv / t;
+    	val c = c1 + c2;
 
-    	val delta_t = (test.p - 1.0)/(test.p * pow(t, test.p).dv) * test.delta * 1.0;
-
-    	// val c = 2.0 * ctt * math.sqrt((1.0 - ft) * ln(2.0/delta_tlook).dv/2.0/t*1.0);
-
-    	val c = sigma_t * math.sqrt( 2 * ln(3.0/delta_t).dv / t) + 6.0 * ctt * ln(3.0/delta_t).dv / t;
-
+        bc1c2 = bc1c2 \ (b on c1 on c2);
 
 
-
-    	t_look = t_look + 1.0;
-    	b = (mini(test.N*1.0, ceil(test.gamma*t*1.0).dv).dv);
+    	b = min(test.N, ceil(test.gamma*t*1.0).v.toInt).v;
 
     	val (moved, takestep) = test.testfn(diff, b, c);
     	done = moved;
@@ -178,24 +88,26 @@ def dostep(mod:MHmodel, test:adaptiveMHTest, data:Mat, size:Int, here:Int, theta
 		}
 		istep += 1;
    	}
-    (there, ntheta, mean(ll).dv);
-
+    (there, ntheta, mean(ll).dv/(test.N * 1.0), bc1c2);
 };
 
 
-def dosimm(mod:MHmodel, test:adaptiveMHTest, size:Int, nsamps:Int, acc:Double):(DMat,LMat,DMat) = {
+def adaptiveMH_dosimm(mod:MHmodel, test:adaptiveMHTest, size:Int, nsamps:Int, acc:Double):(DMat,LMat,DMat,DMat) = {
     var theta = mod.initfn();
     val samples = dzeros(theta.length, nsamps);
     val sizes = lzeros(1, nsamps);
     val lls = dzeros(1, nsamps);
     var here = 0;
     var i = 0;
+    var bc1c2_list:Mat = 0.0 on 0.0 on 0.0;
+
     while (i < nsamps) {
     	if (i % (nsamps/5) == 0){
-    		println("iteration = %d" format(i));
+    		println("adaptive mh test iteration = %d" format(i));
     	}
 		val ttheta = mod.proposalfn(theta);
-		val (there, nth, ll) = dostep(mod, test, mod.data, size, here, theta, ttheta, acc);
+		val (there, nth, ll, bc1c2) = adaptiveMH_dostep(mod, test, mod.data, size, here, theta, ttheta, acc);
+        bc1c2_list = bc1c2_list \ bc1c2;
 		sizes(i) = if (there > here) (there - here) else (there - here + mod.data.ncols);
 		lls(i) = ll;
 		here = there;
@@ -203,32 +115,27 @@ def dosimm(mod:MHmodel, test:adaptiveMHTest, size:Int, nsamps:Int, acc:Double):(
 		samples(?, i) = DMat(theta);
 		i += 1;
     }
-    (samples, sizes, lls);
+    (samples, sizes, lls, DMat(bc1c2_list));
 };
 
 
-def acceptrate(theta:Mat):Double = {
-	val diff = abs(theta(?,1->(theta.ncols)) - theta(?,0->(theta.ncols-1)));
-	return mean(sum(diff)>0.0).dv;
-};	
-
-
-val nsamps = 1000
+/*
+val nsamps = 2000
 val n = 100000
 val sigma = math.sqrt(2)
 val pscale = 1
-val batchsize = 50
-val sigma_proposer = 0.05;
+val batchsize = 100
+val sigma_proposer = 0.9;
 val nn = new GaussianMixture(n = n, sigma = sigma, pscale=pscale);
 
 
-nn.temp = 100.0;
+nn.temp = 1000.0;
 nn.sigma_proposer = sigma_proposer;   
 val newtest2 = new adaptiveMHTest;
 newtest2.N = n;
 
 tic; 
-val (samples, sizes, lls) = dosimm(mod= nn, test=newtest2, size=batchsize, nsamps = nsamps, acc = 0.05);
+val (samples, sizes, lls) = adaptiveMH_dosimm(mod= nn, test=newtest2, size=batchsize, nsamps = nsamps, acc = 0.05);
 toc;
 
 val t1 = toc;
@@ -236,6 +143,7 @@ val t1 = toc;
 scatter(samples(0,?), samples(1,?));
 val size1 = FMat(sizes)
 hist(size1);
+*/
 
-val accept = acceptrate(samples)
-println("accept rate is %f" format(accept));
+//val accept = acceptrate(samples)
+//println("accept rate is %f" format(accept));

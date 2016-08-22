@@ -1,4 +1,8 @@
+// This script runs our MH test and standard MH test on Gaussian Mixture Model
+:silent
 :load simulator.ssc
+:load cutMHTest.ssc
+:load adaptiveMHTest.ssc
 
 class GaussianMixture(n:Int, sigma:Double, pscale:Double) extends MHmodel(2, n, sigma, pscale) {
 
@@ -49,47 +53,81 @@ def acceptrate(theta:Mat):Double = {
 	return mean(sum(diff)>0.0).dv;
 };		
 
+
+
 val nsamps = 2000
 val n = 100000
 val sigma = math.sqrt(2)
-val pscale = 1
-val batchsize = 200
+val pscale = 1.0
+val batchsize = 100
 val sigma_proposer = 0.5;
 val nn = new GaussianMixture(n = n, sigma = sigma, pscale=pscale);
 
 nn.temp = nn.n/100.0;
-nn.sigma_proposer = sigma_proposer;   // 0.4 is optimal for nsamps = 2000, minibatch size = 200	
+nn.sigma_proposer = sigma_proposer;   
 val newtest = new NewTest;
 val oldtest = new OldTest;
+val cutMHtest = new cutMHTest;
+val adaptiveMHtest = new adaptiveMHTest;
+adaptiveMHtest.N = n;
+cutMHtest.N = n;
+
 
 tic; 
 val (samples, sizes, lls) = dosimm(mod=nn, test=newtest, size=batchsize, nsamps=nsamps, acc = 0.05);
 val t1 = toc;
 
+
 val (samples2, sizes2, lls2) = dosimm(mod=nn, test=oldtest, size=batchsize, nsamps=nsamps, acc = 0.05);
 val t2 = toc - t1;
+
+val (samples3, sizes3, lls3) = cutMHTest_dosimm(mod=nn, test=cutMHtest, size=batchsize, nsamps=nsamps, acc=0.05);
+
+val t3 = toc - t1 - t2;
+
+val (samples4, sizes4, lls4, bc1c2_list) = adaptiveMH_dosimm(mod=nn, test=adaptiveMHtest, size=batchsize, nsamps = nsamps, acc=0.05);
+
+
 
 // plot result of new test
 val a = samples(?,(nsamps/2)->nsamps);
 scatter(a(0,?),a(1,?));
 val size1 = FMat(sizes)	
 hist(size1,50);
-val theta = samples
-val accept = acceptrate(theta);
-val progress = accept * sigma_proposer * sigma_proposer;
-print(accept); 
-print("  ");
-print(sigma_proposer); 
-print("  ");
-println(progress);
-
-
 
 // plot result of old test
 val b = samples2(?,(nsamps/2)->nsamps);
 scatter(b(0,?),b(1,?));
 val size2 = FMat(sizes2)
 hist(size2,50);
+
+
+
+// plot the result of cut mh test
+val c = samples3(?, (nsamps/2)->nsamps);
+scatter(c(0,?), c(1,?));
+val size3 = FMat(sizes3);
+hist(size3, 50);
+
+// plot the result of adaptive mh test
+val d = samples4(?, 0->nsamps);
+scatter(d(0,?), d(1,?))
+val size4 = FMat(sizes4);
+hist(size4, 50);
+
+// calculate acceleration ratio
+val accelerate = sum(size2).dv/sum(size1).dv;		
+println("accelerate ratio over old test is %f" format(accelerate));
+val accelerate2 = sum(size3).dv/sum(size1).dv;
+println("accelerate ratio over cutmh test is %f" format(accelerate2));
+val accelerate3 = sum(size4).dv/sum(size1).dv;
+println("accelerate ratio over adaptive mh test is %f" format(accelerate3));
+
+// save files
+saveAs("gaussiandata.mat", samples, "newtestsamples", samples2, "oldtestsamples",  samples3, "cutmhsamples", samples4, "adaptivemhsamples", size1, "newtestsize", size2, "oldtestsize", size3, "cutmhsize", size4, "adaptivemhsize",lls, "newtestll", lls2, "oldtestll", lls3, "cutmhll", lls4, "adaptivemhll", bc1c2_list, "adaptivemhbc1c2");
+
+
+/*
 val theta2 = samples2
 val accept2 = acceptrate(theta2);
 val progress2 = accept2 * sigma_proposer * sigma_proposer;
@@ -98,6 +136,4 @@ print("  ");
 print(sigma_proposer); 
 print("  ");
 println(progress2);
-	
-val accelerate = sum(size2)/sum(size1);		
-println("accelerate ratio is %f" format(accelerate.dv));
+*/

@@ -163,6 +163,9 @@ def dosimm(mod:MHmodel, test:MHtestType, size:Int, nsamps:Int, acc:Double):(DMat
     var here = 0;
     var i = 0;
     while (i < nsamps) {
+    	if (i % (nsamps/100) == 0){
+    		println("test iteration = %d" format(i));
+    	}
 	val ttheta = mod.proposalfn(theta);
 	val (there, nth, ll) = dostep(mod, test, mod.data, size, here, theta, ttheta, acc);
 	sizes(i) = if (there > here) (there - here) else (there - here + mod.data.ncols);
@@ -195,6 +198,7 @@ class NormModel(ndim:Int, n:Int, sigma:Double, pscale:Double) extends MHmodel(nd
     };
 };
 
+/*
 val nn = new NormModel(ndim=1, n=100000, sigma=1, pscale=1);
 nn.temp = 1;
 val newtest = new NewTest;
@@ -205,6 +209,7 @@ tic;
 val t1 = toc;
 //val (samples2, sizes2, lls2) = dosimm(mod=nn, test=oldtest, size=1000, nsamps=10000, acc=0.05);
 val t2 = toc - t1;
+*/
 
 
 

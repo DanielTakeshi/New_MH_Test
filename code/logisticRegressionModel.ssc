@@ -1,6 +1,8 @@
 :load simulator.ssc
+:load cutMHTest.ssc
+:load adaptiveMHTest.ssc
 
-class LogisticRegression(ndim:Int, n:Int, sigma:Double, pscale: Double) extends MHmodel (ndim, n, sigma, pscale) {
+class LogisticRegression(n:Int, sigma:Double, pscale: Double) extends MHmodel (1, n, sigma, pscale) {
 	
 		var sigma_proposer = 0.05;
 		val data:DMat= load("minist7vs1.mat","Train");
@@ -21,20 +23,20 @@ class LogisticRegression(ndim:Int, n:Int, sigma:Double, pscale: Double) extends 
 			val X = batch(0 until batch.dims(0)-1, ?)
 			val Y = batch(batch.dims(0)-1,?)
 			val z = Y dot (theta.t * X);
-			val sigma = 1/(1 + exp(-1.0 * z));
-			val log_sigma = ln(sigma);
+			val sig = 1/(1 + exp(-1.0 * z));
+			val log_sig = ln(sig);
 			val scale_and_temp = 1.0 * (n/temp);
-			scale_and_temp * log_sigma;
+			scale_and_temp * log_sig;
 		};
 }
 	
 def eval_cost(X:DMat, Y:DMat, theta:DMat): (DMat, DMat) = {
 	val z = Y *@ (theta.t * X);
-	val sigma = 1.0/ (1.0 + exp(-1.0 * z));
-	var accuracy = dzeros(sigma.dims(0),1);
-	var ll = dzeros(sigma.dims(0),1);
-	for(i<- 0 until sigma.dims(0)){
-		val temp = sigma(i, ?);
+	val sig = 1.0/ (1.0 + exp(-1.0 * z));
+	var accuracy = dzeros(sig.dims(0),1);
+	var ll = dzeros(sig.dims(0),1);
+	for(i<- 0 until sig.dims(0)){
+		val temp = sig(i, ?);
 		accuracy(i) = find(temp>0.5).dims(0) * 1.0 / temp.dims(1) * 1.0;
 		ll(i) = sum(ln(temp)).dv * 1.0 / temp.dims(1) * 1.0;
 	}
@@ -42,39 +44,76 @@ def eval_cost(X:DMat, Y:DMat, theta:DMat): (DMat, DMat) = {
 };
 
 
+// define model parameters
+val nsamps = 2000
+val n = 12007
+val sigma = 1.0
+val pscale = 1.0
+val batchsize = 100
+val sigma_proposer = 0.05;
+val nn = new LogisticRegression(n=n, sigma=sigma, pscale=pscale);
+nn.temp = nn.n/100.0;
+nn.sigma_proposer = sigma_proposer;
 
-val nn = new LogisticRegression(ndim=1, n=12007, sigma=1, pscale=1);
-nn.temp = 500.0;
+// define test parameters
+
 val newtest = new NewTest;
 val oldtest = new OldTest;
+val cutMHtest = new cutMHTest;
+val adaptiveMHtest = new adaptiveMHTest;
+cutMHtest.N = n;
+adaptiveMHtest.N = n;
 
+
+// do MH Test
 tic;
-val (samples, sizes, lls) = dosimm(mod=nn, test=newtest, size=100, nsamps=2000, acc=0.05);
+val (samples, sizes, lls) = dosimm(mod=nn, test=newtest, size=batchsize, nsamps=nsamps, acc=0.05);
 val t1 = toc;
-val (samples2, sizes2, lls2) = dosimm(mod=nn, test=oldtest, size=100, nsamps=2000, acc=0.05);
+val (samples2, sizes2, lls2) = dosimm(mod=nn, test=oldtest, size=batchsize, nsamps=nsamps, acc=0.05);
 val t2 = toc - t1;
+val (samples3, sizes3, lls3) = cutMHTest_dosimm(mod=nn, test=cutMHtest, size=batchsize,nsamps = nsamps, acc = 0.05);
+val (samples4, sizes4, lls4, bc1c2_list) = adaptiveMH_dosimm(mod=nn, test=adaptiveMHtest, size=batchsize, nsamps = nsamps, acc = 0.05);
+
 
 // get accuracy with test
 
-val sizeold = DMat(sizes2);
-val sizenew = DMat(sizes);
+val size2 = DMat(sizes2);
+val size1 = DMat(sizes);
+val size3 = DMat(sizes3);
+val size4 = DMat(sizes4);
+
 
 val testdata:DMat = load("minist7vs1.mat","Test");
 val X = testdata(0 until testdata.dims(0)-1, ?)
 val Y = testdata(testdata.dims(0)-1, ?)
-val (accuracy_old, ll_old) = eval_cost(X, Y, samples2);
-val (accuracy_new, ll_new) = eval_cost(X, Y, samples);
-val size_old = cumsum(DMat(sizeold));
-val size_new = cumsum(DMat(sizenew));
-plot(size_old, accuracy_old, size_new, accuracy_new);
+val (accuracy2, ll2) = eval_cost(X, Y, samples2);
+val (accuracy1, ll1) = eval_cost(X, Y, samples);
+val (accuracy3, ll3) = eval_cost(X, Y, samples3);
+val (accuracy4, ll4) = eval_cost(X,Y, samples4);
 
-plot(size_old, ll_old, size_new, ll_new);
+val size_2 = cumsum(DMat(size2));
+val size_1 = cumsum(DMat(size1));
+val size_3 = cumsum(DMat(size3));
+val size_4 = cumsum(DMat(size4));
 
-hist(sizeold,20);
-hist(sizenew,20); 
+plot(size_2, accuracy2, size_1, accuracy1, size_3, accuracy3, size_4, accuracy4);
 
-val accelerate_ratio = (sum(sizeold).dv * 1.0 / sum(sizenew).dv * 1.0);
-println("The acceleration ratio is %f" format(accelerate_ratio));
+plot(size_2, ll2, size_1, ll1, size_3, ll3,size_4, ll4);
+
+hist(size2,50);
+hist(size1,50);
+hist(size3,50); 
+hist(size4,50);
+
+val accelerate = (sum(size2).dv * 1.0 / sum(size1).dv * 1.0);
+println("The acceleration ratio over old test is %f" format(accelerate));
+val accelerate2 = (sum(size3).dv * 1.0 / sum(size1).dv * 1.0);
+println("The acceleration ratio over cutmh test is %f" format(accelerate2));
+val accelerate3 = (sum(size4).dv * 1.0 / sum(size1).dv * 1.0);
+println("The acceleration ratio over adaptive mh test is %f" format(accelerate3));
+
+// save files
+saveAs("logisticdata.mat", samples, "newtestsamples", samples2, "oldtestsamples",  samples3, "cutmhsamples", samples4, "adaptivemhsamples", size1, "newtestsize", size2, "oldtestsize", size3, "cutmhsize", size4, "adaptivemhsize", lls, "newtestlls", lls2, "oldtestlls", lls3, "cutmhlls", lls4, "adaptivemhlls",ll1, "newtestll", ll2, "oldtestll", ll3, "cutmhll", ll4, "adaptivemhll", bc1c2_list, "adaptivemhbc1c2");
 
 
 
