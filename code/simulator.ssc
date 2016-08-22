@@ -12,7 +12,7 @@ abstract class MHmodel(val ndim:Int, val n:Int, val sigma:Double, val pscale:Dou
 
 abstract class MHtestType {
     def testfn(diff:Mat, logu:Double, nsig:Double):(Boolean, Boolean);
-    val explin:Boolean;
+    var explin:Boolean;
     def discount(P:Double, n:Int):Double;    
     var keepon = true;
 };
@@ -91,7 +91,7 @@ class NewTest extends MHtestType {
 	    }
 	}
     };
-    val explin = true;
+    var explin = true;
     def discount(p:Double, n:Int):Double = p;
 };
 
@@ -109,7 +109,7 @@ class OldTest extends MHtestType {
 	    }
 	}
     };
-    val explin = true;
+    var explin = true;
     def discount(p:Double, n:Int):Double = {
 	val r = 0.5;
 	p * (1 - r) * math.pow(r, n);
@@ -163,9 +163,9 @@ def dosimm(mod:MHmodel, test:MHtestType, size:Int, nsamps:Int, acc:Double):(DMat
     var here = 0;
     var i = 0;
     while (i < nsamps) {
-    	if (i % (nsamps/100) == 0){
-    		println("test iteration = %d" format(i));
-    	}
+    	// if (i % (nsamps/100) == 0){
+    	//	println("test iteration = %d" format(i));
+    	// }
 	val ttheta = mod.proposalfn(theta);
 	val (there, nth, ll) = dostep(mod, test, mod.data, size, here, theta, ttheta, acc);
 	sizes(i) = if (there > here) (there - here) else (there - here + mod.data.ncols);

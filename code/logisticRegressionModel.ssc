@@ -45,24 +45,27 @@ def eval_cost(X:DMat, Y:DMat, theta:DMat): (DMat, DMat) = {
 
 
 // define model parameters
-val nsamps = 2000
+val nsamps = 5000
 val n = 12007
 val sigma = 1.0
 val pscale = 1.0
 val batchsize = 100
 val sigma_proposer = 0.05;
 val nn = new LogisticRegression(n=n, sigma=sigma, pscale=pscale);
-nn.temp = nn.n/100.0;
+nn.temp = 1000.0;
 nn.sigma_proposer = sigma_proposer;
 
 // define test parameters
 
 val newtest = new NewTest;
+newtest.explin = false;
 val oldtest = new OldTest;
+oldtest.explin = false;
 val cutMHtest = new cutMHTest;
 val adaptiveMHtest = new adaptiveMHTest;
 cutMHtest.N = n;
 adaptiveMHtest.N = n;
+cutMHtest.eps = 0.0005;
 
 
 // do MH Test
@@ -71,9 +74,18 @@ val (samples, sizes, lls) = dosimm(mod=nn, test=newtest, size=batchsize, nsamps=
 val t1 = toc;
 val (samples2, sizes2, lls2) = dosimm(mod=nn, test=oldtest, size=batchsize, nsamps=nsamps, acc=0.05);
 val t2 = toc - t1;
+
 val (samples3, sizes3, lls3) = cutMHTest_dosimm(mod=nn, test=cutMHtest, size=batchsize,nsamps = nsamps, acc = 0.05);
+val t3 = toc - t1 - t2;
+
 val (samples4, sizes4, lls4, bc1c2_list) = adaptiveMH_dosimm(mod=nn, test=adaptiveMHtest, size=batchsize, nsamps = nsamps, acc = 0.05);
 
+val t4 = toc - t1 - t2 - t3;
+
+cutMHtest.error_bound = false; // test with decreasing error bound
+val (samples5, sizes5, lls5) = cutMHTest_dosimm(mod=nn, test = cutMHtest, size=batchsize, nsamps = nsamps, acc = 0.05);
+
+val t5 = toc - t1 - t2 - t3 - t4;
 
 // get accuracy with test
 
@@ -81,6 +93,7 @@ val size2 = DMat(sizes2);
 val size1 = DMat(sizes);
 val size3 = DMat(sizes3);
 val size4 = DMat(sizes4);
+val size5 = DMat(sizes5);
 
 
 val testdata:DMat = load("minist7vs1.mat","Test");
@@ -89,21 +102,23 @@ val Y = testdata(testdata.dims(0)-1, ?)
 val (accuracy2, ll2) = eval_cost(X, Y, samples2);
 val (accuracy1, ll1) = eval_cost(X, Y, samples);
 val (accuracy3, ll3) = eval_cost(X, Y, samples3);
-val (accuracy4, ll4) = eval_cost(X,Y, samples4);
+val (accuracy4, ll4) = eval_cost(X, Y, samples4);
+val (accuracy5, ll5) = eval_cost(X, Y, samples5);
 
 val size_2 = cumsum(DMat(size2));
 val size_1 = cumsum(DMat(size1));
 val size_3 = cumsum(DMat(size3));
 val size_4 = cumsum(DMat(size4));
+val size_5 = cumsum(DMat(size5));
 
-plot(size_2, accuracy2, size_1, accuracy1, size_3, accuracy3, size_4, accuracy4);
+// plot(size_2, accuracy2, size_1, accuracy1, size_3, accuracy3, size_4, accuracy4);
 
-plot(size_2, ll2, size_1, ll1, size_3, ll3,size_4, ll4);
+// plot(size_2, ll2, size_1, ll1, size_3, ll3,size_4, ll4);
 
-hist(size2,50);
-hist(size1,50);
-hist(size3,50); 
-hist(size4,50);
+// hist(size2,50);
+// hist(size1,50);
+// hist(size3,50); 
+// hist(size4,50);
 
 val accelerate = (sum(size2).dv * 1.0 / sum(size1).dv * 1.0);
 println("The acceleration ratio over old test is %f" format(accelerate));
@@ -112,10 +127,12 @@ println("The acceleration ratio over cutmh test is %f" format(accelerate2));
 val accelerate3 = (sum(size4).dv * 1.0 / sum(size1).dv * 1.0);
 println("The acceleration ratio over adaptive mh test is %f" format(accelerate3));
 
+val accelerate4 = sum(size5).dv/sum(size1).dv;
+println("accelerate ratio over cut mh test with decreasing error bound is %f" format(accelerate4));
+
 // save files
-saveAs("logisticdata.mat", samples, "newtestsamples", samples2, "oldtestsamples",  samples3, "cutmhsamples", samples4, "adaptivemhsamples", size1, "newtestsize", size2, "oldtestsize", size3, "cutmhsize", size4, "adaptivemhsize", lls, "newtestlls", lls2, "oldtestlls", lls3, "cutmhlls", lls4, "adaptivemhlls",ll1, "newtestll", ll2, "oldtestll", ll3, "cutmhll", ll4, "adaptivemhll", bc1c2_list, "adaptivemhbc1c2");
-
-
+val time_list = t1 \ t2 \ t3 \ t4 \ t5;
+saveAs("logisticdata.mat", samples, "newtestsamples", samples2, "oldtestsamples",  samples3, "cutmhsamples", samples4, "adaptivemhsamples", samples5, "cutmhwithsamples", size1, "newtestsize", size2, "oldtestsize", size3, "cutmhsize", size4, "adaptivemhsize", size5, "cutmhwithsize", lls, "newtestll", lls2, "oldtestll", lls3, "cutmhll", lls4, "adaptivemhll", lls5, "cutmhwithll", bc1c2_list, "adaptivemhbc1c2", time_list, "time_list", ll1, "newtestll", ll2, "oldtestll", ll3, "cutmhll", ll4, "adaptivemhll", ll5, "cutmhwithll", accuracy1, "newtestacc", accuracy2, "oldtestacc", accuracy3, "cutmhacc", accuracy4, "adaptivemhacc", accuracy5, "cutmhwithacc");
 
 
 

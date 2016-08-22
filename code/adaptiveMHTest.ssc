@@ -102,9 +102,9 @@ def adaptiveMH_dosimm(mod:MHmodel, test:adaptiveMHTest, size:Int, nsamps:Int, ac
     var bc1c2_list:Mat = 0.0 on 0.0 on 0.0;
 
     while (i < nsamps) {
-    	if (i % (nsamps/5) == 0){
-    		println("adaptive mh test iteration = %d" format(i));
-    	}
+    	// if (i % (nsamps/5) == 0){
+    	//	println("adaptive mh test iteration = %d" format(i));
+    	// }
 		val ttheta = mod.proposalfn(theta);
 		val (there, nth, ll, bc1c2) = adaptiveMH_dostep(mod, test, mod.data, size, here, theta, ttheta, acc);
         bc1c2_list = bc1c2_list \ bc1c2;

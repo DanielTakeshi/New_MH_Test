@@ -3,6 +3,7 @@
 class cutMHTest{
 	var N = 100000;  // number of data points
 	var eps = 0.005; // error bound
+	var error_bound = true; // true means use fixed error bound
 	def testfn(diff_in:Mat, nsig:Double):(Boolean, Boolean) = {
 		// diff: N / temp * \sum_{i=1}^m (log(p(x,ttheta)) - log(p(x,theta)))
 		val diff = diff_in / (N * 1.0);
@@ -68,12 +69,13 @@ def cutMHTest_dosimm(mod:MHmodel, test:cutMHTest, size:Int, nsamps:Int, acc:Doub
     var here = 0;
     var i = 0;
     while (i < nsamps) {
-    	if (i % (nsamps/5) == 0){
-    		println("cut mh test iteration = %d" format(i));
+    	// if (i % (nsamps/5) == 0){
+    	//	println("cut mh test iteration = %d" format(i));
+    	// }
+    	if (! test.error_bound){
+    		val epsi = 0.005 * pow((0.01 + i), -0.55).dv;
+    		test.eps = epsi;
     	}
-
-    	val epsi = 0.00001 * pow((0.01 + i), -0.55).dv;
-    	test.eps = epsi;
 		val ttheta = mod.proposalfn(theta);
 		val (there, nth, ll) = cutMHTest_dostep(mod, test, mod.data, size, here, theta, ttheta, acc);
 		sizes(i) = if (there > here) (there - here) else (there - here + mod.data.ncols);
