@@ -4,7 +4,7 @@ class cutMHTest{
 	var N = 100000;  // number of data points
 	var eps = 0.005; // error bound
 	var error_bound = true; // true means use fixed error bound
-	def testfn(diff_in:Mat, nsig:Double):(Boolean, Boolean) = {
+	def testfn(diff_in:Mat, u: Double, nsig:Double):(Boolean, Boolean) = {
 		// diff: N / temp * \sum_{i=1}^m (log(p(x,ttheta)) - log(p(x,theta)))
 		val diff = diff_in / (N * 1.0);
 		val diff_sq = diff dot diff;
@@ -12,7 +12,6 @@ class cutMHTest{
 		val l_bar = mean(diff).dv
 		val l_bar_sq = l_bar * l_bar
 
-		val u = 1.0/N * ln(rand(1,1)).dv;
 		val n = diff.size     		
 		val sl = math.sqrt((lsq_bar - l_bar_sq) * n * 1.0 /(n-1.0));
 		val s = sl/math.sqrt(n*1.0) * math.sqrt(1.0 - (n-1.0)/(N-1.0));
@@ -41,12 +40,14 @@ def cutMHTest_dostep(mod:MHmodel, test:cutMHTest, data:Mat, size:Int, here:Int, 
 	var ll:Mat = null;
 	var batchsize = size;
 
+	val u = 1.0/test.N * ln(rand(1,1)).dv;
+
 	while(!done) {
 		val batch = getbatch(mod.data, here, batchsize);
 		ll = mod.evalfn(batch, theta);
 		val diff = mod.evalfn(batch, ttheta) - ll;
 		val nsig = test.eps;
-		val (moved, takestep) = test.testfn(diff, nsig);
+		val (moved, takestep) = test.testfn(diff, u, nsig);
 		done = moved;
 		if (done) {
 			there = (here + batchsize) % data.ncols;
@@ -73,7 +74,7 @@ def cutMHTest_dosimm(mod:MHmodel, test:cutMHTest, size:Int, nsamps:Int, acc:Doub
     	//	println("cut mh test iteration = %d" format(i));
     	// }
     	if (! test.error_bound){
-    		val epsi = 0.005 * pow((0.01 + i), -0.55).dv;
+    		val epsi = 0.01 * pow((0.01 + i), -0.55).dv;
     		test.eps = epsi;
     	}
 		val ttheta = mod.proposalfn(theta);

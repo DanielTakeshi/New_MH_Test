@@ -9,11 +9,10 @@ class adaptiveMHTest {
 	var p = 2.0;
 	var delta = 0.01;
 	var gamma = 1.5;
-	def testfn(diff_in:Mat, b: Double, c :Double) : (Boolean, Boolean) = {
+	def testfn(diff_in:Mat, psi: Double, b: Double, c :Double) : (Boolean, Boolean) = {
 		// diff is the overall Lambda value without average
 		var diff = diff_in / (N * 1.0);
 		val diff_mean = mean(diff).dv;
-		val psi = 1.0/N * ln(rand(1,1)).dv;
 		val test_stats = abs(diff_mean - psi).dv;
 		if ((test_stats >= c) ||(b >= N)){
 			if( diff_mean > psi ) {
@@ -54,6 +53,7 @@ def adaptiveMH_dostep(mod:MHmodel, test:adaptiveMHTest, data:Mat, size:Int, here
     var t = 0.0 ;
     var t_look = 1.0;
     test.N = data.ncols;
+    val psi = 1.0/test.N * ln(rand(1,1)).dv;
 
     while(!done) {
     	val temp_step = b.toInt;
@@ -79,7 +79,7 @@ def adaptiveMH_dostep(mod:MHmodel, test:adaptiveMHTest, data:Mat, size:Int, here
 
     	b = min(test.N, ceil(test.gamma*t*1.0).v.toInt).v;
 
-    	val (moved, takestep) = test.testfn(diff, b, c);
+    	val (moved, takestep) = test.testfn(diff, psi, b, c);
     	done = moved;
 
     	if (done) {

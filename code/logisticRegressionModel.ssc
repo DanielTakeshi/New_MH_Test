@@ -65,7 +65,7 @@ val cutMHtest = new cutMHTest;
 val adaptiveMHtest = new adaptiveMHTest;
 cutMHtest.N = n;
 adaptiveMHtest.N = n;
-cutMHtest.eps = 0.0005;
+cutMHtest.eps = 0.005;
 
 
 // do MH Test
