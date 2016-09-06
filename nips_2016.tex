@@ -1516,27 +1516,27 @@ where $\theta$ is the 784-length parameter vector.
 For our experiment, we impose a uniform prior to represent our lack of knowledge about $\theta$.  We
 use a random walk proposer, which can be modeled as $\theta' = \theta_i + \mathcal{N}(0,
 \sigma^2I)$, where $\theta_i$ is the current sample, $\theta'$ is the proposed sample, and we choose
-the variance to be a constant $\sigma^2 = 0.01$ for all components. We initialize $\theta_0$ to be a
-vector of all ones, and set our minibatch size as $m=50$.
+the variance to be a constant $\sigma^2 = 0.05$ for all components. We initialize $\theta_0$ to be a
+vector of all ones, and set our minibatch size as $m=100$.
 
 For our minibatch MH test, in order to enforce the ${\rm std}(\Delta') < 1.2$ condition, we use a
-constant temperature $T = 3000$. If our estimated ${\rm std}(\Delta') \ge 1.2$, we ignore the
-current iteration.  Figure~\ref{fig:appendixExp2} plots our estimated ${\rm std}(\Delta')$ values
-versus iteration count. 
+constant temperature $T = 1000$. If our estimated ${\rm std}(\Delta') \ge 1.2$, we ignore the
+current iteration.  %Figure~\ref{fig:appendixExp2} plots our estimated ${\rm std}(\Delta')$ values
+%versus iteration count. 
 
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=1\linewidth]{./figures/appendixExp2}
-  \caption{Additional results for the logistic regression experiment.}
-  \label{fig:appendixExp2}
-\end{figure}
+%\begin{figure}[t]
+  %\centering
+  %\includegraphics[width=1\linewidth]{./figures/appendixExp2}
+ % \caption{Additional results for the logistic regression experiment.}
+  %\label{fig:appendixExp2}
+%\end{figure}
 
-For adaptive MH testing, our experimental settings are the same as with our MH test, except we do
-not impose a temperature. The minibatch size of adaptive MH testing is also initialized as 50, but
-it may increase by that amount each iteration. Figure~\ref{fig:appendixExp2} shows the histogram of
-the actual minibatch size at the end of each iteration in adaptive MH testing.
+%For adaptive MH testing, our experimental settings are the same as with our MH test, except we do
+%not impose a temperature. The minibatch size of adaptive MH testing is also initialized as 50, but
+%it may increase by that amount each iteration. Figure~\ref{fig:appendixExp2} shows the histogram of
+%the actual minibatch size at the end of each iteration in adaptive MH testing.
 
-
+\iffalse
 \section{Neural Network Experiment Details}\label{app:nnet}
 
 For our neural network experiment, we use the architecture discussed in Section~\ref{ssec:nets}. We
@@ -1556,6 +1556,7 @@ $\hat{\beta}$, so that $\hat{\beta}=\frac{1}{2}\eta V(\theta)$. In order to cont
 std}(\Delta')$, we initialize the temperature at 1000, and adjust it at iteration $i$ according to
 $T_i = \max\{1, 1000/(i+1)^{0.5}\}$.
 
+\fi
 % Daniel: here are example LaTeX codes for figures and tables if we want to use them.
 %\begin{figure}[h]
 %  \centering
