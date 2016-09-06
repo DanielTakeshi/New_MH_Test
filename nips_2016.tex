@@ -1053,19 +1053,19 @@ results in rather sharp posterior modes and high ${\rm std}(\Delta')$ estimates,
 temperature $T=10,000$ to reduce ${\rm std}(\Delta')$. Taking logs, we get the target as shown in the
 far left of Figure~\ref{fig:gauss_mix_1}.
 
-We run MCMC with our MH test using minibatch size $m=100$. We also run this using standard
-full-batch MCMC (``standard MCMC'') with the standard test from Equation~\ref{eq:traditional}, the method
-from~\cite{cutting_mh_2014} (``Cut MH'')  and the method from ~\cite{icml2014c1_bardenet14}. For the method in \cite{cutting_mh_2014}, we also use $m=100$ and
-increment minibatches by that amount within an iteration if necessary. As for the method in ~\cite{icml2014c1_bardenet14}, we use $m=100$ and increase the minibatch size geometrically with a ratio of $\gamma = 1.5$. The tolerance for making a
-decision in \cite{cutting_mh_2014} is $\epsilon=0.005$, and the error bound control parameter in ~\cite{icml2014c1_bardenet14} is $p = 2, \delta = 0.01$. To make comparisons easier, all three use the same random walk proposer
-with covariance $\Sigma={\rm diag}(0.3, 0.3)$. This is a poor proposer, but it is sufficient for
+We run MCMC with our MH test using minibatch size $m=100$. %We also run this using standard
+%full-batch MCMC (``standard MCMC'') with the standard test from Equation~\ref{eq:traditional}, 
+We also run this using the method from~\cite{cutting_mh_2014} (``Cut MH'')  and the method from 
+~\cite{icml2014c1_bardenet14}. For the method in \cite{cutting_mh_2014}, we use $m=100$ and
+increment minibatches by that amount within a test if necessary. As for the method in ~\cite{icml2014c1_bardenet14}, we use $m=100$ and increase the minibatch size geometrically with a ratio of $\gamma = 1.5$. The tolerance for making a
+decision in \cite{cutting_mh_2014} is $\epsilon=0.005$, and the error bound control parameter in ~\cite{icml2014c1_bardenet14} is $p = 2, \delta = 0.01$. To make comparisons easier, all three use the same random walk proposer with covariance $\Sigma={\rm diag}(0.3, 0.3)$. This is a poor proposer, but it is sufficient for
 our purposes as the quality of the samples will be primarily due to the MH test. All methods are run
 5000 times to collect 5000 samples.
 
 \begin{figure}[t]
     \centering
     % \includegraphics[width=1\linewidth]{cloud_v01.png}
-    \includegraphics[width=1\linewidth]{posterior_of_gaussian.png}
+    \includegraphics[width=1\linewidth]{GaussianMixtureResult/posterior_of_gaussian.png}
     \caption{
     The log posterior contours and scatter plots of sampled $\theta$ values using different methods. 
     }
@@ -1076,7 +1076,7 @@ our purposes as the quality of the samples will be primarily due to the MH test.
 \begin{figure}[t]
     \centering
    % \includegraphics[width=1\linewidth]{adaptive_and_ours_information_v01.png}
-   \includegraphics[width=1\linewidth]{minibatch_size_gaussian.png}
+   \includegraphics[width=1\linewidth]{GaussianMixtureResult/minibatch_size_gaussian.png}
     \caption{
     Histograms of minibatch sizes %and ${\rm std}(\Delta')$ values, along with ``${\rm std}(\Delta')$
    % violations'' (right).
@@ -1103,13 +1103,13 @@ our purposes as the quality of the samples will be primarily due to the MH test.
 %\end{figure}
 
 Figure~\ref{fig:gauss_mix_1} shows scatter plots of the resulting $\theta$ samples for the four
-methods, with darker regions indicating a greater density of points. The first three methods obtain the
+methods, with darker regions indicating a greater density of points. The three methods obtain the
 same rough form of the posterior, so our MH test can indeed result in the same posterior as the
 other two methods. %However, the fourth method (i.e. just treat the $\Delta'$ which comes from minibatch as $\Delta$ which comes from the complete data) reveals wider spread distribution than the posterior. From Figure~\ref{fig:gauss_mix_1} we illustrate our proposed method can obtain the samples which have almost the same distribution as the standard MH test from the complete data, adaptive minibatch test, and the true posterior. Meanwhile, we show the benefits of our minibatch method compared with the naive minibatch method.  
-Actually, based on a measure of divergence from the ground-truth distribution, our method is better than the other three methods in terms of this measurement. The measurement is to calculate the poisson likelihood of the MCMC-generated parameters over a parameter range, with $\theta_1 \in (-1.5, 2.5)$ and $\theta_2 \in (-2.5, 2.5)$. The log likelihood value for our method, standard MCMC, cut MH method and adaptive MH method are -2144.6, -2783.5, -4007.4, -2598.4, respectively. 
+Actually, based on a measure of divergence from the ground-truth distribution, our method is better than the other three methods in terms of this measurement. The measurement is to calculate the poisson likelihood of the MCMC-generated parameters over a parameter range, with $\theta_1 \in (-1.5, 2.5)$ and $\theta_2 \in (-2.5, 2.5)$. The log likelihood value for our method, cut MH method and adaptive MH method are -2144.6, -4007.4, -2598.4, respectively. 
 
 Figure~\ref{fig:gauss_mix_2} shows a histogram of the final minibatch sizes used by
-the four methods in each iteration. It is obvious that our methods consumes significantly less data, with most of minibatch sizes smaller than 1000, with a average minibatch size of 420. The other three methods occasionally consumes a large proportion of the entire data set, and the average minibatch sizes are 37785, 16378, 16755 for standard MCMC, cut MH method, adaptive MH method, respectively. In terms of average minibatch size, our method is nearly 90 times faster than standard MCMC method, and nearly 39 times faster the cut MH method, and nearly 40 times faster than the adaptive MH method. 
+the three methods in each iteration. It is obvious that our methods consumes significantly less data, and most minibatch sizes are smaller than 1000, with an average minibatch size of 420. The other two methods occasionally consumes a large proportion of the entire data set, and the average minibatch sizes are 16378, 16755 for cut MH method, adaptive MH method, respectively. In terms of average minibatch size, our method is nearly 39 times faster the cut MH method, and nearly 40 times faster than the adaptive MH method. 
 
 It is useful to notice that, in ~\cite{icml2014c1_bardenet14}, they need to evaluate the likelihood term $C_{\theta,\theta'}$ over the entire the data set at every iteration in order to calculate the error bound in equation (9) in ~\cite{icml2014c1_bardenet14}. In Figure ~\ref{fig:gauss_bardenet}, the value of the first part and second part of equation (9) in ~\cite{icml2014c1_bardenet14} is shown with respect to the size of actual minibatch data used. The second part which contains  the $C_{\theta,\theta'}$ term is larger than the first part, which means that the second part is non-negligible and has to be calculated at every iteration. This is one of the very time-consuming parts in this method. 
 
@@ -1148,19 +1148,19 @@ tolerance 0.005 and with ~\cite{icml2014c1_bardenet14} with error bound control 
 
 Figure~\ref{fig:logistic_fig} shows the prediction accuracy and log likelihood on the test set as a
 function of the cumulative training data points processed. Our test increments the cumulative data
-by a fixed amount per iteration, but the adaptive method may require more data per iteration.  We
+by a fixed amount per iteration, but the other two methods may require more data per iteration.  We
 see that our minibatch MH test is more efficient; it has similar or better performance while
 consuming fewer data points.
 
 \begin{figure}[t]
     \centering
-    \begin{subfigure}{.5\textwidth}
+    \begin{subfigure}{.4\textwidth}
      \centering
      \includegraphics[width=1\linewidth]{LogisticRegressionResult/acc_logistic}
-\end{subfigure}%
-\begin{subfigure}{.5\textwidth}
-  \centering
-  \includegraphics[width=1\linewidth]{LogisticRegressionResult/ll_logistic}
+    \end{subfigure}
+    \begin{subfigure}{.4\textwidth}
+     \centering
+    \includegraphics[width=1\linewidth]{LogisticRegressionResult/ll_logistic}
 \end{subfigure}
 \caption{Logistic regression performance (accuracy/log likelihood) and minibatch size analysis}
 \label{fig:logistic_fig}
@@ -1185,7 +1185,7 @@ consuming fewer data points.
 %\end{figure}
 
 The plot of Figure ~\ref{fig:logistic_minibatch} shows the histogram of minibatch sizes. Choosing an initial minibatch size of 100, 
-the standard MCMC, cut MH method, adaptive MH method achieves of final average minibatch size of 910, 585, and 2731 respectively, while our method achieves 
+the cut MH method, adaptive MH method achieves final average minibatch size of 585 and 2731 respectively, while our method achieves 
 that of 100, showing significant better performance than the benchmark test methods.  
 
 %The third plot of Figure~\ref{fig:logistic_minibatch} shows performance based on minibatch size. The
@@ -1238,8 +1238,8 @@ step size quickly, the acceptance rate of SGHMC is already high, so there is lit
 
 In this paper, we have derived a new MH test for minibatch MCMC methods. We demonstrated how a
 simple deconvolution process allows us to use a minibatch approximation to the full data tests. We
-experimentally show the benefits of our test on Gaussian mixtures, logistic regression, and deep
-learning.  Straightforward directions for future work include running more experiments with a
+experimentally show the benefits of our test on Gaussian mixtures and logistic regression.
+Straightforward directions for future work include running more experiments with a
 particular focus on investigation of the variance precondition.  More elaborate extensions include
 combining our results with Hamiltonian Monte Carlo methods, providing a recipe for how to use our
 algorithm (following the framework of~\cite{sgmcmc_2015}), or integrating parallel
