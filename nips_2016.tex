@@ -5,9 +5,9 @@
 % to avoid loading the natbib package, add option nonatbib: \usepackage[nonatbib]{nips_2016}
 
 \PassOptionsToPackage{numbers, compress}{natbib}
-\usepackage{nips_2016}
+%\usepackage{nips_2016}
 % to compile a camera-ready version, add the [final] option, e.g.:
-%\usepackage[final]{nips_2016}
+\usepackage[final]{nips_2016}
 
 \usepackage[utf8]{inputenc} % allow utf-8 input
 \usepackage[T1]{fontenc}    % use 8-bit T1 fonts
@@ -34,6 +34,7 @@ frame = single,
 language=matlab, 
 framexleftmargin=20pt}
 
+\newcommand{\simiid}{\overset{\textrm{i.i.d.}}{\sim}}
 \newtheorem{lemma}{Lemma}
 \newtheorem{theorem}{Theorem}
 \newtheorem{corollary}{Corollary}
@@ -54,32 +55,10 @@ framexleftmargin=20pt}
 %%  Pittsburgh, PA 15213 \\
 %%  \texttt{hippo@cs.cranberry-lemon.edu} \\
 
-
 \author{
-  John Canny \\
-  Department of Computer Science \\
+  John Canny, Haoyu Chen, Daniel Seita, Xinlei Pan \\
   University of California, Berkeley \\
-  \texttt{canny@berkeley.edu}
-  \And
-  Haoyu Chen \\
-  Department of Computer Science \\
-  University of California, Berkeley \\
-  \texttt{haoyuchen@berkeley.edu}
-  \And
-  Daniel Seita \\
-  Department of Computer Science \\
-  University of California, Berkeley \\
-  \texttt{seita@berkeley.edu}
-  \And
-  Xinlei Pan \\
-  Department of Bioengineering \\
-  University of California, Berkeley \\
-  \texttt{xinleipan@berkeley.edu}
-  \And 
-  Biye Jiang \\
-  Department of Computer Science \\
-  University of California, Berkeley \\
-  \texttt{bjiang@berkeley.edu}
+  \texttt{\{canny,haoyuchen,seita,xinleipan\}@berkeley.edu}
  }
 
 \begin{document}
@@ -91,11 +70,11 @@ machine learning. We are particularly interested in their application
 to modeling very large datasets, where it is impractical to perform
 Metropolis-Hastings tests on the full data. Previous work on reducing
 the cost of Metropolis-Hastings tests yield variable data consumed per
-sample, with only constant factor reductions vs. using the full
+sample, with only constant factor reductions versus using the full
 dataset for each sample.  Here we present a method that can be tuned
 to provide arbitrarily small batch sizes, by adjusting either proposal
 step size or temperature. Our approach uses the natural noise present
-in minibatch likelihood esimates to furnish the randomness in a
+in minibatch likelihood estimates to furnish the randomness in a
 Metropolis-Hastings test. Our test uses the noise-tolerant Barker
 acceptance test with a novel additive correction variable.  The
 resulting test can be combined with minibatch proposals to yield
@@ -113,7 +92,7 @@ computation on intractable distributions. We are interested primarily
 in large dataset applications, where the goal is to sample a posterior
 distribution $p(\theta \mid x_1, \ldots, x_N)$ of parameter $\theta$,
 and where the number of data instances $N$ is large.  The
-Metroplis-Hastings method (M-H) generates sample candidates from a
+Metropolis-Hastings method (M-H) generates sample candidates from a
 proposal distribution $q$ which is in general different from the
 target distribution $p$, and decides whether to accept or reject them
 based on an acceptance test. The acceptance test is usually a
@@ -121,31 +100,29 @@ Metropolis test~\cite{Metropolis1953,hastings70}. Conventional
 Metropolis-Hastings requires all $N$ data instances to generate one
 posterior sample.
 
-Many state-of-the-art machine learning methods, and deep learning in
-particular, are based on minibatch updates (such as SGD) to a model.
-Minibatch updates produce many improvements to the model for each pass
-over the dataset, and have high sample efficiency. They also
-map very well onto hardware such as GPUs. In contrast, M-H requires
-calculations over the full dataset to produce a new sample.  Recent
-results from~\cite{cutting_mh_2014,icml2014c1_bardenet14} perform
-approximate (bounded error) acceptance tests using subsets
-(minibatches) of the full dataset. The tests depend on minibatch
-statistics, and on the value of an additional random variable $u$. The
-amount of data consumed for each test varies significantly from one
-minibatch to the next, and depends on the current sample, the proposed
-sample, and on the random variable $u$. By contrast,
-\cite{conf/uai/MaclaurinA14} performs exact tests but requires a lower
-bound on parameter distribution across its domain. The amount of data
-reduction depends on the accuracy of this bound, and such bounds are
-only available for relatively simple distributions.
+Many state-of-the-art machine learning methods, and deep learning in particular,
+are based on minibatch updates (such as SGD) to a model.  Minibatch updates
+produce many improvements to the model for each pass over the dataset, and have
+high sample efficiency. They also map very well onto hardware such as GPUs. In
+contrast, M-H requires calculations over the full dataset to produce a new
+sample.  Recent results from~\cite{cutting_mh_2014,icml2014c1_bardenet14}
+perform approximate (bounded error) acceptance tests using subsets (minibatches)
+of the full dataset. The tests depend on minibatch statistics, and on the value
+of an additional uniform random variable $u$. The amount of data consumed for
+each test varies significantly from one minibatch to the next, and depends on
+the current sample, the proposed sample, and on the random variable $u$. By
+contrast,~\cite{conf/uai/MaclaurinA14} performs exact tests but requires a lower
+bound on parameter distribution across its domain.  The amount of data reduction
+depends on the accuracy of this bound, and such bounds are only available for
+relatively simple distributions.
 
 Here we derive a new test which incorporates the variability in
 minibatch statistics as {\em a natural part of the test}. Because of
 this, the amount of data required for each test is fixed with high
 probability and in expected value. We use a Barker test function
-\cite{Barker65} rather than a Metropolis test, which makes the test
+\cite{Barker65} rather than a Metropolis test, which makes our test
 naturally error tolerant. The idea of using a noise-tolerant test
-using Barker's test function were suggested but not explored
+using Barker's test function was suggested but not explored
 empirically in \cite{Bardenet15} section 6.3. But the asymptotic test
 statistic CDF and the Barker function are different, which leads to
 fixed errors for the approach in \cite{Bardenet15}. Here we show that
@@ -175,15 +152,17 @@ it in one of several ways. Either:
   proposal. The variance of the log acceptance probability scales as the
   square of proposal step size. 
 
-\item Increase the minibatch size. log acceptance variance scales as $1/k$ vs the
+\item Increase the minibatch size. Log acceptance variance scales as $1/k$ vs the
   minibatch size $k$. Increased minibatch size also reduces the error rate for
-  the test. 
+  the test. {\color{blue} Daniel: I'm not sure if I'd mention this here, because
+  before this list, we talk about reducing the data, and then suddenly we're
+  talking about increasing it.}
 
 \end{itemize}
 
-Its worth discussing at this point what are the goals (typically) of
+Its worth discussing at this point the typical goals of
 M-H sampling on very large datasets.  By the Bernstein-von Mises
-theorem, the posterior distribution of the parameter $\theta$ for a
+Theorem, the posterior distribution of the parameter $\theta$ for a
 Bayesian inference task is asymptotically normal, and has variance
 that scales inversely with the number of data samples $N$. This mode
 is extremely sharp for large datasets, which may contain millions or
@@ -194,9 +173,9 @@ distribution and will diffuse to it extremely slowly from an
 initialization value which is (likely to be) many standard deviations
 away. If there are any other strong modes, it is very likely for the
 sampler to find one of them and become trapped in it when run at the
-normal distribution temperature (T=1). A common solution is to anneal
+normal distribution temperature ($T=1$). A common solution is to anneal
 the sampler, running first at high temperature (scaling log
-likelihoods by 1/T) which flattens the likelihood landscape.  This is
+likelihoods by $1/T$) which flattens the likelihood landscape.  This is
 turn reduces the variance of the log acceptance probability and allows
 our acceptance test to be applied.
 
@@ -217,8 +196,8 @@ substantial part of the computational work of MCMC on massive datasets
 will be similarly in reaching a stationary distribution, which really
 means finding a deep posterior mode. Taking noisy small steps will
 nevertheless make steady progress to a posterior mode since their bias
-is in that direction. We demonstrate this behavior with our experiments. 
-
+is in that direction. We demonstrate this behavior in our logistic regression
+experiments.
 
 The contributions of this paper are as follows:
 
@@ -228,7 +207,7 @@ The contributions of this paper are as follows:
 \item We analyze the test for accuracy and speed.
 \item We compared performance of our new test and prior approaches on several datasets. We demonstrate the test is several orders
   of magnitude more efficient than prior work measured as data consumed per test, and that it does not suffer
-  from long-tailed batch sizes (up to the dataset size). 
+  from long-tailed minibatch sizes (up to the dataset size). 
 \end{itemize}
 
 
@@ -236,236 +215,234 @@ The contributions of this paper are as follows:
 
 \section{Preliminaries and Related Work}\label{sec:related_work}
 
-In the Metropolis-Hastings method~\cite{gilks1996markov,brooks2011handbook}, a difficult-to-compute
-probability distribution $p(\theta)$ is sampled using a Markov chain $\theta_1,\ldots,\theta_n$. The 
-sample $\theta_{t+1}$ at time $t+1$ is generated using a candidate $\theta'$ from a (simpler) proposal
-distribution $q(\theta'\mid \theta_t)$, filtered by an acceptance test. The acceptance test is usually
-a Metropolis test. The Metropolis test has acceptance probability:
+In the Metropolis-Hastings method~\cite{gilks1996markov,brooks2011handbook}, a
+difficult-to-compute probability distribution $p(\theta)$ is sampled using a
+Markov chain $\theta_1,\ldots,\theta_n$. The sample $\theta_{t+1}$ at time $t+1$
+is generated using a candidate $\theta'$ from a (simpler) proposal distribution
+$q(\theta'\mid \theta_t)$, filtered by an acceptance test. The acceptance test
+is usually a Metropolis test. The Metropolis test has acceptance probability:
 \begin{equation}\label{eq:traditional}
-\alpha(\theta_t,\theta') = \frac{p(\theta')q(\theta_t \mid \theta')}{p(\theta_t)q(\theta' \mid \theta_t)} \wedge 1
+    \alpha(\theta_t,\theta') = \frac{p(\theta')q(\theta_t \mid \theta')}{p(\theta_t)q(\theta' \mid \theta_t)} \wedge 1
 \end{equation}
-where $a \wedge b$ denotes $\min(a,b)$.  With probability $\alpha(\theta_t,\theta')$, we accept $\theta'$
-and set $\theta_{t+1} = \theta'$, otherwise set
-$\theta_{t+1}=\theta_t$.  The test is often implemented with an
-auxiliary random variable $u \sim \mathcal{U}(0,1)$ with a comparison $u < \alpha(\theta_t,\theta')$. $\mathcal{U}(a,b)$ denotes the uniform distribution on the interval $[a,b]$. 
-For notational simplicity, from now on we will drop the subscript $t$ for the current sample $\theta_t$ and
-denote is simply as $\theta$. 
-
+where $a \wedge b$ denotes $\min(a,b)$.  With probability
+$\alpha(\theta_t,\theta')$, we accept $\theta'$ and set $\theta_{t+1} =
+\theta'$, otherwise set $\theta_{t+1}=\theta_t$.  The test is often implemented
+with an auxiliary random variable $u \sim \mathcal{U}(0,1)$ with a comparison
+$u<\alpha(\theta_t,\theta')$; here, $\mathcal{U}(a,b)$ denotes the uniform
+distribution on the interval $[a,b]$.  For notational simplicity, we drop the
+subscript $t$ for the current sample $\theta_t$ and denote it as $\theta$. 
 
 The acceptance test guarantees detailed balance, which means
-\begin{equation}\label{detailed_balance1}
-  p(\theta)p(\theta'\mid\theta) = p(\theta')p(\theta \mid\theta')
+$p(\theta)p(\theta'\mid\theta) = p(\theta')p(\theta \mid\theta')$,
+where $p(\theta'\mid\theta)$ is the probability of a transition from state
+$\theta$ to $\theta'$. Here $p(\theta'\mid\theta) =
+q(\theta'\mid\theta)\alpha(\theta,\theta')$ so the detailed balance equation
+becomes
+\begin{equation}\label{eq:detailed_balance2}
+    p(\theta)q(\theta'\mid\theta)\alpha(\theta,\theta') = p(\theta')q(\theta\mid\theta')\alpha(\theta',\theta)
 \end{equation}
-where $p(\theta'\mid\theta)$ is the probability of a transition from state $\theta$ to $\theta'$. Here
-$p(\theta'\mid\theta) = q(\theta'\mid\theta)\alpha(\theta,\theta')$ so the detailed balance equation becomes
-\begin{equation}\label{detailed_balance2}
-  p(\theta)q(\theta'\mid\theta)\alpha(\theta,\theta') = p(\theta')q(\theta\mid\theta')\alpha(\theta',\theta)
-\end{equation}
-The detailed balance condition, together with ergodicity, guarantee that the
-Markov chain has a unique stationary distribution $\pi(\theta) = p(\theta)$.
+This condition, together with ergodicity, guarantees that the Markov chain has a
+unique stationary distribution $\pi(\theta) = p(\theta)$.
 
-For Bayesian inference, we would like to sample from a parameter distribution for $\theta$ based on some
-observed data $x_1,\ldots,x_N$. i.e. we want to sample from 
+For Bayesian inference, we would like to sample from a parameter distribution
+for $\theta$ based on some observed data, so the target distribution is
 $p(\theta \mid x_1, \ldots, x_N)$. The acceptance probability is now:
-\begin{equation}
-\alpha(\theta,\theta') = 
- \frac{p_0(\theta')\prod_{i=1}^N p(x_i \mid \theta')q(\theta \mid
-\theta')}{p_0(\theta)\prod_{i=1}^N p(x_i \mid \theta)q(\theta' \mid\theta)} \wedge 1
+\begin{equation}\label{eq:acceptance_probability}
+    \alpha(\theta,\theta') = 
+    \frac{p_0(\theta')\prod_{i=1}^N p(x_i \mid \theta')q(\theta \mid
+    \theta')}{p_0(\theta)\prod_{i=1}^N p(x_i \mid \theta)q(\theta' \mid\theta)}
+    \wedge 1
 \end{equation}
-where $p_0(\theta)$ is a prior, and $p(x_i \mid \theta)$ are the
-probabilities of the observations. Computing samples this way requires
-the use of all $N$ training data points, but this is very expensive
-for large datasets. To address this challenge,~\cite{cutting_mh_2014,icml2014c1_bardenet14} perform
-approximate Metropolis-Hasting tests using sequential hypothesis
-testing. During each iteration, they start with a small minibatch of
-data and test the hypothesis that the sample $\theta'$ based on an
-approximate version of the test $u < \alpha(\theta,\theta')$. If the
-approximate test cannot make a decision with sufficient confidence,
-then the minibatch size is increased and the test repeats. This
-process continues until a decision. The bounds depend on either a
-asymptotic central limit theorem \cite{cutting_mh_2014} or a
-concentration bound \cite{icml2014c1_bardenet14}, the latter requiring
-direct bounds on the log likelihood ratio.  The problem with both
-methods is the expense of resolving small differences.  In the worst
-case, all $N$ data points may be needed, and as we show next this
-worst case can occur about $\Omega(N)$ times during the performance of
-$N$ tests.
+where $p_0(\theta)$ is a prior, and $p(x_i \mid \theta)$ are the probabilities
+of the observations. Computing samples this way requires the use of all $N$
+training data points, but this is very expensive for large datasets. To address
+this challenge,~\cite{cutting_mh_2014,icml2014c1_bardenet14} perform approximate
+Metropolis-Hasting tests using sequential hypothesis testing. During each
+iteration, they start with a small minibatch of data and test the hypothesis
+that the sample $\theta'$ should be accepted based on an approximate version of
+the test $u < \alpha(\theta,\theta')$. If the approximate test cannot make a
+decision with sufficient confidence, then the minibatch size is increased and
+the test repeats. This process continues until a decision. The bounds depend on
+either a asymptotic central limit theorem \cite{cutting_mh_2014} or a
+concentration bound \cite{icml2014c1_bardenet14}. The latter requires direct
+bounds on the log likelihood ratio, which for general distributions requires
+knowing $p(x_i \mid \theta)$ and $p(x_i \mid \theta')$ for all $N$ samples. In
+addition, both methods suffer the drawback of resolving small log likelihood
+ratio differences between the minibatch and full batch versions.  In the worst
+case, all $N$ data points may be needed, and we soon show that this worst case
+can occur about $\Omega(N)$ times during the performance of $N$ tests.
 
-Following ~\cite{icml2014c1_bardenet14}, we write the test $u < \alpha(\theta,\theta')$ in
-the equivalent form $\Lambda(\theta,\theta') > \psi(u,\theta,\theta')$. Our definitions differ
-from those in \cite{icml2014c1_bardenet14} by a factor of $N$ to simplify our analysis later on. 
+Following~\cite{icml2014c1_bardenet14}, we write the test $u <
+\alpha(\theta,\theta')$ in the equivalent form $\Lambda(\theta,\theta') >
+\psi(u,\theta,\theta')$, where\footnote{Our definitions differ from those in
+\cite{icml2014c1_bardenet14} by a factor of $N$ to simplify our analysis later.}
 \begin{equation}
 \Lambda(\theta,\theta') = \sum_{i=1}^N \log\left(\frac{p(x_i|\theta')}{p(x_i|\theta)}\right)  
 \hspace{0.2in} {\rm and} \hspace{0.2in}
 \psi(u,\theta,\theta') = \log\left(u\frac{q(\theta'|\theta)p_0(\theta)}{q(\theta|\theta')p_0(\theta')}\right)
 \end{equation}
-
 To reduce computational effort, an unbiased estimate of $\Lambda(\theta,\theta')$
 based on a minibatch can be used:
-
 \begin{equation}
 \Lambda^*(\theta,\theta') = \frac{N}{b}\sum_{i=1}^b \log\left(\frac{p(x_i|\theta')}{p(x_i|\theta)}\right)  
 \end{equation}
-
-Finally, it will be convenient in what follows to define the individual components that
-contribute to the sums above:
-
+Finally, it will be convenient for our analysis to define the individual
+components that contribute to the sums above:
 \begin{equation}\label{eq:individual_terms}
 \Lambda_i(\theta,\theta') = N \log\left(\frac{p(x_i|\theta')}{p(x_i|\theta)}\right)  
 \end{equation}
+Thus, $\Lambda(\theta,\theta')$ is the mean of $\Lambda_i(\theta,\theta')$ over
+the entire dataset, and $\Lambda^*(\theta,\theta')$ is the mean of
+$\Lambda_i(\theta,\theta')$ over its minibatch. 
 
-So $\Lambda(\theta,\theta')$ is the mean of $\Lambda_i(\theta,\theta')$ over the
-entire dataset, and $\Lambda^*(\theta,\theta')$ is the mean over the minibatch
-of $\Lambda_i(\theta,\theta')$. 
-
-Since the minibatch contains randomly selected samples $x_i$, the
-values $\Lambda_i$ are independent, IID random variables.  By the central
-limit theorem, we expect $\Lambda^*(\theta,\theta')$ to be
-approximately Normal.  The acceptance test then becomes a statistical
-test of the hypothesis that $\Lambda(\theta,\theta') >
-\psi(u,\theta,\theta')$ by establishing that
+Since minibatches contains randomly selected samples $x_i$, the values
+$\Lambda_i$ are independent, identically distributed (iid) random variables.
+{\color{blue} Daniel: should we say sampling with or without replacement? Right
+now I think the code does it without replacement (but \emph{with} replacement
+means it's closer to the CLT, right?} By the Central Limit Theorem, we expect
+$\Lambda^*(\theta,\theta')$ to be approximately Gaussian. The acceptance test
+then becomes a statistical test of the hypothesis that
+$\Lambda(\theta,\theta')>\psi(u,\theta,\theta')$ by establishing that
 $\Lambda^*(\theta,\theta')$ is substantially larger than
-$\psi(u,\theta,\theta')$.  In ~\cite{cutting_mh_2014} an asymptotic
-central limit argument was used to derive this gap, while in
-\cite{icml2014c1_bardenet14} a concentration bound was used. In both
-cases, the resulting tests were shown to give useful reductions in
-number of samples required over using the full dataset. But no
-worst-case bounds were given on average number of samples needed.
+$\psi(u,\theta,\theta')$.  In~\cite{cutting_mh_2014} an asymptotic central limit
+argument was used to derive this gap, while in~\cite{icml2014c1_bardenet14} a
+concentration bound was used. In both cases, the resulting tests were shown to
+give useful reductions in number of samples required over using the full
+dataset, but there were no worst-case bounds given on the average number of
+samples needed per iteration.
 
-We next show that for some simple distributions, the lower
-bound of average number of data instances consumed for one iteration of
-~\cite{cutting_mh_2014} and ~\cite{icml2014c1_bardenet14} is
-$\Omega(N)$, where $N$ is the number of data points.
+We next show that for a simple distribution, the lower bound of average
+number of data instances consumed for one iteration of~\cite{cutting_mh_2014}
+and~\cite{icml2014c1_bardenet14} is $\Omega(N)$, where $N$ is the number of data
+points.
 
-\subsection{An Example}
-Consider a simple model where samples $x_i$ for $i=1,\ldots,N$ are
-drawn from a Normal distribution $\mathcal{N}(\theta,1)$ where
-$\theta=0.5$, and with a uniform prior on $\theta$. The log likelihood ratio is
+\subsection{A Worst-Case Gaussian Example}\label{ssec:gaussian_example}
+Consider a Gaussian model where $x_1,\ldots,x_N \simiid \mathcal{N}(\theta,1)$
+with a known variance $\sigma^2=1$, true mean $\theta=0.5$, and a uniform prior
+on $\theta$. The log likelihood ratio is
 \begin{equation}
 \Lambda^*(\theta,\theta') =  \frac{N}{b}\sum_{i=1}^b \log\frac{p(x_i|\theta')}{p(x_i|\theta)}=
   %%\frac{1}{2}\left( (x_i-\theta')^2 - (x_i - \theta)^2\right) =
   N(\theta'-\theta)\left(\frac{1}{b}\sum_{i=1}^b x_i-\theta-\frac{\theta'-\theta}{2}\right)
 \end{equation}
-which is normally distributed over selection of the Normal samples $x_i$.
-Since the $x_i$ have unit variance, their mean has variance $1/b$, and the variance $\sigma^2(\Lambda^*)$
-of $\Lambda^*(\theta,\theta')$ is $(\theta'-\theta)^2N/b$. In order to pass
-a hypothesis test that $\Lambda > \psi$, we will need to establish a
-large enough gap (several $\sigma(\Lambda^*)$) between $\Lambda^*(\theta',\theta)$
-and $\psi(u,\theta',\theta)$.
+which is normally distributed over selection of the Normal samples $x_i$.  Since
+the $x_i$ have unit variance, their mean has variance $1/b$, and the variance of
+$\Lambda^*(\theta,\theta')$ is $\sigma^2(\Lambda^*) = (\theta'-\theta)^2N^2/b$.
+In order to pass a hypothesis test that $\Lambda > \psi$, there needs to be a
+large enough gap (several $\sigma(\Lambda^*)$) between
+$\Lambda^*(\theta',\theta)$ and $\psi(u,\theta',\theta)$. {\color{blue}
+Daniel: I changed the variance to be $(\theta'-\theta)^2N^2/b$; before it had
+$N$ instead of $N^2$.}
 
-We would like to sample from the posterior distribution of $\theta$
-which is a normal distribution centered on the sample mean, and with
-variance $1/N$.  The target distribution is therefore
-$\mathcal{N}(\mu,1/N)$ where $\mu$ is the sample mean, and $\mathcal{N}(\mu,\sigma^2)$ is a
-normal distribution with mean $\mu$ and variance $\sigma^2$.  An efficient
-proposal distribution has the same variance as the target distribution in one dimension
-\cite{OptimalScaling01}, so take the proposal
-$\mathcal{N}(\theta'-\theta,1/N)$, which is implemented as $q(\theta'\mid\theta) =
-\phi((\theta'-\theta)N)$, where $\phi(x)$ is the Normal density
-function with zero mean and unit variance. This proposal is symmetric
-$q(\theta'\mid\theta)=q(\theta\mid\theta')$, and we assumed uniform
-prior for $\theta$, so $\psi(u,\theta',\theta)$ reduces to $\log
-u$.
+Our goal is to sample from the posterior $p(\theta \mid x_1,\ldots,x_N)$, which
+is a normal distribution $\mathcal{N}(\mu, 1/N)$ centered on the sample mean
+$\mu$, and with variance $1/N$. In one dimension, an efficient proposal
+distribution has the same variance as the target
+distribution~\cite{OptimalScaling01}, so we use the proposal
+$\mathcal{N}(\theta'-\theta,1/N)$, which is implemented as
+$q(\theta'\mid\theta)=\phi((\theta'-\theta)N)$, where $\phi(x)$ is the Normal
+density function with zero mean and unit variance. This proposal is symmetric
+$q(\theta'\mid\theta)=q(\theta\mid\theta')$, and since we assumed a uniform
+prior on $\theta$, we see that $\psi(u,\theta',\theta)$ reduces to $\log u$. Our
+worst-case scenario is specified in Lemma~\ref{lem:worst_case}.
+{\color{blue} Daniel: this might be a silly question, but why do we assume the
+proposal has mean $\theta'-\theta$? I thought it would have a mean of $\theta$
+because that is the current sample and the Gaussian is centered at that point?}
 
-\begin{lemma}\label{lem:efficienty_cutting}
-  For the model above, there
-  exists a fixed (independent of $N$) constant $c$ such that with probability $ \geq c$ over the joint
-  distribution of $(\theta, \theta', u)$, the
-  tests from \cite{icml2014c1_bardenet14} and \cite{cutting_mh_2014} consume all $N$ samples. 
+\begin{lemma}\label{lem:worst_case}
+    For the model in Section~\ref{ssec:gaussian_example}, there exists a fixed
+    (independent of $N$) constant $c$ such that with probability $\geq c$ over
+    the joint distribution of $(\theta, \theta', u)$, the tests
+    from~\cite{cutting_mh_2014,icml2014c1_bardenet14} consume all $N$ samples. 
 \end{lemma}
-Proof is given in the appendix.
 
-Similar results can be proved for other distributions and proposals, by identifying
-regions in product space $(\theta,\theta'-\theta,u)$ such that the hypothesis test
-needs to separate nearly-equal values. 
+\begin{proof}
+See Appendix~\ref{app:worst_case_proof}.
+\end{proof}
 
-It follows that the accelerated M-H tests in \cite{icml2014c1_bardenet14} and
-\cite{cutting_mh_2014} require at least a constant fraction $\geq c$
-in the amount of data consumed per test, compared to full-dataset tests.
-i.e. their speed-up is at most $1/c$.
+Similar results can be shown for other distributions and proposals by
+identifying regions in product space $(\theta,\theta'-\theta,u)$ such that the
+hypothesis test needs to separate nearly-equal values.  It follows that the
+accelerated M-H tests in~\cite{cutting_mh_2014,icml2014c1_bardenet14} require at
+least a constant fraction $\geq c$ in the amount of data consumed per test
+compared to full-dataset tests, so their speed-up is at most $1/c$.
 
 \subsection{MCMC Posterior Inference}
-There is a separate line of MCMC work drawing principles from
-statistical physics. By viewing random variables as particles in a
-system, one can apply Hamiltonian Monte Carlo
-(HMC)~\cite{mcmc_hamiltonian_2010} methods which generate high
-acceptance \emph{and} distant proposals when run on full batches of
-data. Recently Langevin
-Dynamics~\cite{langevin_2011,conf/icml/AhnBW12} has been applied to
-Bayesian estimation on minibatches of data. This simplified dynamics
-uses local proposals and avoids MH tests by using small proposal steps
-whose acceptance approaches 1 in the limit. However, the constraint on
-proposal step size is severe, and the state space exploration reduces
-to a random walk. Full minibatch HMC for minibatches was recently
-described in ~\cite{sghmc_2014} which allows momentum-augmented
-proposals with larger step sizes. However, step sizes are still
-limited by the need to run accurately without MH tests.
-% \cite{stochastic_thermostats_2014}
-Our work opens the door to applying those methods with much
-more aggressive step sizes without loss of accuracy. We demonstrate
-this in Section~\ref{ssec:nets}.
-
-%% Daniel: for a further discussion on the 'Firefly' paper, see this blog post:
-%% https://xianblog.wordpress.com/2014/04/02/firefly-monte-carlo/
-%% Note: this guy also blogged about our earlier ICLR 2015 paper. He's the third author of the SAME
-%% paper, which explains why he knows this stuff.
+There is a separate line of MCMC work drawing principles from statistical
+physics. By viewing random variables as particles in a system, one can apply
+Hamiltonian Monte Carlo (HMC)~\cite{mcmc_hamiltonian_2010} methods which
+generate high acceptance \emph{and} distant proposals when run on full batches
+of data. Recently Langevin Dynamics~\cite{langevin_2011,conf/icml/AhnBW12} has
+been applied to Bayesian estimation on minibatches of data. This simplified
+dynamics uses local proposals and avoids MH tests by using small proposal steps
+whose acceptance approaches 1 in the limit. However, the constraint on proposal
+step size is severe, and the state space exploration reduces to a random walk.
+Full minibatch HMC for minibatches was recently described in~\cite{sghmc_2014}
+which allows momentum-augmented proposals with larger step sizes. However, step
+sizes are still limited by the need to run accurately without MH tests.  Our
+work opens the door to applying those methods with much more aggressive step
+sizes without loss of accuracy. We demonstrate this in Section ... {\color{blue}
+Daniel: do we ever demonstrate this? I guess another issue is that this implies
+we can use larger step sizes, but earlier we \emph{also} argue that we need
+\emph{small} step sizes (to reduce variance).}
 
 
 
 
 \section{A New Metropolis-Hastings Acceptance Test}\label{sec:our_algorithm}
 
-For our new M-H test, we denote the exact and approximate log likelihood ratios as $\Delta$ and $\Delta^*$.
-First, $\Delta$ is defined as:
-\begin{equation}\label{eq:delta0}
-  \Delta(\theta,\theta') = \log\frac{p(\theta')q(\theta\mid\theta')}{p(\theta)q(\theta'\mid\theta)}
-\end{equation}
-and in the Bayesian case
+{\color{blue} Daniel: cleaned up this section, deleted redundant delta equation,
+deleted a duplicate equation in Lemma~\ref{lem:detailed_balance}.}
+
+\subsection{Log-Likelihood Ratios}\label{ssec:log_likelihood_ratios}
+
+For our new M-H test, we denote the exact and approximate log likelihood ratios
+as $\Delta$ and $\Delta^*$.  First, $\Delta$ is defined as
 \begin{equation}\label{eq:delta1}
-\Delta(\theta,\theta')  =
-\log \frac{p_0(\theta')\prod_{i=1}^N p(x_i \mid \theta')q(\theta \mid
-  \theta')}{p_0(\theta)\prod_{i=1}^N p(x_i \mid \theta)q(\theta' \mid\theta)}
-  \end{equation}
-and we can separate out terms dependent and independent of the data $x$ as:
-\begin{equation}\label{eq:delta2}
-  \Delta(\theta,\theta') = \sum_{i=1}^N\log\frac{p(x_i\mid\theta')}{p(x_i\mid\theta)} - \psi(1,\theta,\theta') =
-  \Lambda(\theta,\theta') -  \psi(1,\theta,\theta')
+    \Delta(\theta,\theta')  =
+    \log \frac{p_0(\theta')\prod_{i=1}^N p(x_i \mid \theta')q(\theta \mid
+    \theta')}{p_0(\theta)\prod_{i=1}^N p(x_i \mid \theta)q(\theta' \mid\theta)},
 \end{equation}
-A minibatch estimator of $\Delta$ can be defined as:
+where $p_0, p$, and $q$ match the corresponding functions within
+Equation~\ref{eq:acceptance_probability}. We separate out terms dependent and
+independent of the data $x$ as:
+\begin{equation}\label{eq:delta2}
+    \Delta(\theta,\theta') = \sum_{i=1}^N\log\frac{p(x_i\mid\theta')}{p(x_i\mid\theta)} - \psi(1,\theta,\theta') =
+    \Lambda(\theta,\theta') - \psi(1,\theta,\theta').
+\end{equation}
+A minibatch estimator of $\Delta$, denoted as $\Delta^*$, is
 \begin{equation}\label{eq:delta3}
     \Delta^*(\theta,\theta') =
 \frac{N}{b}\sum_{i=1}^b\log\frac{p(x_i\mid\theta')}{p(x_i\mid\theta)} - \psi(1,\theta,\theta') =
-\Lambda^*(\theta,\theta') -     \psi(1,\theta,\theta')
+\Lambda^*(\theta,\theta') - \psi(1,\theta,\theta')
 \end{equation}
-Note that $\Delta$ and $\Delta^*$ are evaluated on the full dataset and a minibatch of size $b$
-respectively. The scaling term $\frac{N}{b}$ ensures that $\Delta^*(\theta,\theta')$ is an
-unbiased estimator of $\Delta(\theta,\theta')$.
+Note that $\Delta$ and $\Delta^*$ are evaluated on the full dataset and a
+minibatch of size $b$ respectively. The scaling term $N/b$ ensures that
+$\Delta^*(\theta,\theta')$ is an unbiased estimator of $\Delta(\theta,\theta')$.
+{\color{blue} Daniel: a brief question repeated from earlier, should we mention
+sampling with and/or without replacement here?}
 
-\subsection{A Full Dataset Acceptance Test}\label{ssec:deltas_full}
-
-The key to our test is a smooth acceptance function.  We consider tests other than the Metropolis
-test that satisfy the conditions needed for accurate posterior estimation. This condition is
-the detailed balance condition defined earlier. Expressed in terms of $\Delta$, the
-classical Metropolis test is $f(\Delta) = {\rm min}(\exp(\Delta),1)$. More generally we have:
+The key to our test is a smooth acceptance function.  We consider functions
+other than the classical Metropolis test that satisfy the detailed balance (see
+Equation~\ref{eq:detailed_balance2}) condition needed for accurate posterior
+estimation. A class of functions leading to detailed balance is specified as
+follows:
 
 \begin{lemma}\label{lem:detailed_balance}
-  If $g(s)$ is any function such that $g(s) = \exp(s) g(-s)$, then the acceptance function $\alpha(\theta,\theta') \triangleq  g(\Delta(\theta,\theta'))$ satisfies detailed balance. That is,
-  \begin{equation}\label{detbal}
-    p(\theta)q(\theta'\mid\theta)\alpha(\theta,\theta') = p(\theta')q(\theta\mid\theta')\alpha(\theta',\theta)
-    \end{equation}
-
+    If $g(s)$ is any function such that $g(s) = \exp(s) g(-s)$, then the
+    acceptance function $\alpha(\theta,\theta') \triangleq
+    g(\Delta(\theta,\theta'))$ satisfies detailed balance.
 \end{lemma}
 
-This result is used in \cite{Barker65} to define the Barker acceptance test. 
-As a sanity check, choosing $g(s) = \exp(s) \wedge 1$ produces the
-standard Metropolis acceptance test $\alpha(\theta,\theta') = g(\Delta(\theta,\theta')) = 
-\frac{p(\theta')q(\theta \mid
-  \theta')}{p(\theta)q(\theta' \mid \theta)}\wedge 1$. $g(s)$ satisfies
-the condition $g(s) = \exp(s)g(-s)$, and therefore detailed
-balance. In fact it is the optimal acceptance function in terms of
-acceptance rate, since it accepts with probability 1 for $\Delta > 0$.
+This result is used in~\cite{Barker65} to define the Barker acceptance test.  As
+a sanity check, choosing $g(s) = \exp(s) \wedge 1$ --- a function satisfying the
+requirement of Lemma~\ref{lem:detailed_balance} --- produces the classical
+Metropolis acceptance test $\alpha(\theta,\theta') = g(\Delta(\theta,\theta')) =
+\frac{p(\theta')q(\theta \mid \theta')}{p(\theta)q(\theta' \mid \theta)}\wedge
+1$. In fact, $g(s) =\exp(s) \wedge 1$ is the optimal acceptance function in
+terms of acceptance rate, since it accepts with probability 1 for $\Delta > 0$.
 
-\subsection{Barker (Logistic) Acceptance Function}
+\subsection{Barker (Logistic) Acceptance Function}\label{ssec:barker_function}
 For our new MH test we use the Barker logistic function:
 $g(s)=(1+\exp(-s))^{-1}$ \cite{Barker65}. Straightforward arithmetic shows that it
 satisfies the condition in Lemma~\ref{lem:detailed_balance}.  While it
@@ -474,50 +451,54 @@ full dataset, we will see soon that its smoothness allows it to
 naturally tolerate substantial variance in its input argument. This in
 turn will lead to a much more efficient test on subsets of data.
 
-Assume we begin with the current sample $\theta$  and a
-candidate sample $\theta'$. Let $V$ be a uniform random variable $V \sim
-\mathcal{U}(0,1)$. We accept $\theta'$ if $g(\Delta(\theta,\theta')) > V$, and reject otherwise.
-Since $g(s)$ is monotonically increasing, its inverse $g^{-1}(s)$ is well-defined and
-unique. So an equivalent test is to accept $\theta'$ iff
-\begin{equation}
-  \Delta(\theta,\theta') > X = g^{-1}(V)
+Assume we begin with the current sample $\theta$  and a candidate sample
+$\theta'$. Let $V$ be a uniform random variable $V \sim \mathcal{U}(0,1)$. We
+accept $\theta'$ if $g(\Delta(\theta,\theta')) > V$, and reject otherwise.
+Since $g(s)$ is monotonically increasing, its inverse $g^{-1}(s)$ is
+well-defined and unique. So an equivalent test is to accept $\theta'$ iff
+\begin{equation}\label{eq:equivalent_test}
+    \Delta(\theta,\theta') > X = g^{-1}(V)
 \end{equation}
-where $X$ is a random variable with the logistic distribution (its CDF is the logistic function). To
-see this notice that $\frac{dV}{dX} = g'$, that $g'$ is the density corresponding to a logistic
-CDF, and finally that $\frac{dV}{dX}$ is the density of $X$. The density of $X$ is symmetric,
-so we can equivalently test whether
-\begin{equation}
-  \label{theexacttest}
-  \Delta(\theta,\theta') + X > 0
+where $X$ is a random variable with the logistic distribution (its CDF is the
+logistic function). To see this notice that $\frac{dV}{dX} = g'$, that $g'$ is
+the density corresponding to a logistic CDF, and finally that $\frac{dV}{dX}$ is
+the density of $X$. The density of $X$ is symmetric, so we can equivalently test
+whether
+\begin{equation}\label{eq:the_exact_test}
+    \Delta(\theta,\theta') + X > 0
 \end{equation}
-for a logistic random $X$. 
+for a logistic random variable $X$. {\color{blue} Daniel: I think the text
+before Equation~\ref{eq:equivalent_test} should be similar to what we had in
+our NIPS submission because I find it much clearer.}
 
 
 \subsection{A Minibatch Acceptance Test}\label{ssec:deltas_minibatch}
 
 We now move to acceptance testing using the minibatch estimator
 $\Delta^*(\theta,\theta')$. From equation (\ref{eq:delta3}),
-$\Delta^*(\theta,\theta')$ can be represented as a constant term
-plus the mean of $b$ IID terms $\Lambda_i(\theta,\theta')$ of the form
-$N\log\frac{p(x_i|\theta')}{p(x_i|\theta)}$. As $b$ increases, $\Delta^*(\theta,\theta')$
-therefore has a distribution which approaches a normal distribution by the central limit
-theorem. Later we will provide specific bounds between the CDF of $\Delta^*(\theta,\theta')$
-and a Normal CDF, but for now we use an asymptotic argument. 
+$\Delta^*(\theta,\theta')$ can be represented as a constant term plus the mean
+of $b$ IID terms $\Lambda_i(\theta,\theta')$ of the form
+$N\log\frac{p(x_i|\theta')}{p(x_i|\theta)}$. As $b$ increases,
+$\Delta^*(\theta,\theta')$ therefore has a distribution which approaches a
+normal distribution by the central limit theorem. Later we will provide specific
+bounds between the CDF of $\Delta^*(\theta,\theta')$ and a Normal CDF, but for
+now we use an asymptotic argument. 
 
-In the limit, since $\Delta^*$ is normally distributed about its mean $\Delta$, we
-can write
+In the limit, since $\Delta^*$ is normally distributed about its mean $\Delta$,
+we can write
 \begin{equation}\label{eq:relationship}
-\Delta^* = \Delta + X_{\rm norm}, \quad X_{\rm norm} \sim \mathcal{\bar{N}}(0, \sigma^2(\Delta^*)),
+    \Delta^* = \Delta + X_{\rm norm}, \quad X_{\rm norm} \sim \mathcal{\bar{N}}(0, \sigma^2(\Delta^*)),
 \end{equation}
-where $\mathcal{\bar{N}}(0, \sigma^2(\Delta^*))$ denotes a distribution which is approximately
-normal with variance $\sigma^2(\Delta^*)$. 
-But to perform the test in equation (\ref{theexacttest}) we want $\Delta + X$ for
-a logistic random $X$ (call it $X_{\rm log}$ from now on). In \cite{Bardenet15} it was proposed to
-use $\Delta^*$ in a Barker test anyway and tolerate the fixed error caused by this approximation. 
+where $\mathcal{\bar{N}}(0, \sigma^2(\Delta^*))$ denotes a distribution which is
+approximately normal with variance $\sigma^2(\Delta^*)$.  But to perform the
+test in Equation~\ref{eq:the_exact_test} we want $\Delta + X$ for a logistic
+random $X$ (call it $X_{\rm log}$ from now on). In \cite{Bardenet15} it was
+proposed to use $\Delta^*$ in a Barker test anyway and tolerate the fixed error
+caused by this approximation. 
 
 Our approach is to instead decompose $X_{\rm log}$ as
 \begin{equation}\label{eq:deconvolution}
-X_{\rm log} = X_{\rm norm}+X_{\rm corr},
+    X_{\rm log} = X_{\rm norm}+X_{\rm corr},
 \end{equation}
 where we assume $X_{\rm norm}$ has zero-mean, Normal distribution with
 variance $\sigma^2$, and $X_{\rm corr}$ is a zero-mean ``correction''
@@ -532,9 +513,9 @@ Equation (\ref{eq:deconvolution}) implies that $S = N_{\sigma} * C_{\sigma}$ whe
 derive a numerical representation of $C$ by deconvolution, and using this we can generate
 samples of $X_{\rm corr}$. 
 
-  The acceptance test is now:
+The acceptance test is now:
 \begin{equation}\label{eq:criteria}
-\Delta + X_{\rm log} = (\Delta + X_{\rm norm}) + X_{\rm corr} = \Delta^* + X_{\rm corr} >0.
+    \Delta + X_{\rm log} = (\Delta + X_{\rm norm}) + X_{\rm corr} = \Delta^* + X_{\rm corr} >0.
 \end{equation}
 i.e. given an estimate $\Delta^*$ from the current data minibatch (assuming its
 variance is small enough) we test acceptance by adding a random variable $X_{\rm corr}$ and
@@ -581,37 +562,8 @@ then the acceptance test has an error of at most $\epsilon$.
 %%     facilitate the sampling process.
 %% \end{enumerate}
 
-Algorithm~\ref{alg:our_algorithm} describes the M-H iteration using our acceptance test.
-
-\SetKwInOut{Input}{Input}
-\SetKwInOut{Output}{Output}
-
-\begin{algorithm}[t]
-\Input{Number of samples $T$, minibatch size $m$, error bound $\delta$, pre-computed correction $C_1(X)$ distribution, initial sample $\theta_1$.}
-\Output{A chain of $T$ samples $\{\theta_1, \ldots, \theta_T\}$ from $p(\theta)$\;}
-\For{$t=\{1, \ldots, T\}$}{
-    Propose a candidate $\theta'$\ from proposal distribution $q(\theta'\mid\theta_t)$\;
-    Draw a minibatch of $m$ points $x_i$, compute $\Delta^*(\theta_t,\theta')$ and sample variance $\sigma^2(\Delta^*)$\;
-    Estimate moments $E|\Lambda_i-\Lambda|$ and $E|\Lambda_i-\Lambda|^3$ from the sample, and error $\epsilon$ from equation (\ref{eq:clt-bounds3})\;
-    \While {$\sigma^2(\Delta^*) \ge 1$ {\bf or} $\epsilon > \delta$}{
-    	Draw $m$ more samples to augment the minibatch, update $\Delta^*$, $\sigma^2(\Delta^*)$ and $\epsilon$ estimates\;
-    }
-    Draw $X_{\rm norm} \in \mathcal{N}(0,1-\sigma^2(\Delta*))$ and
-    $X_{\rm corr}$ from the correction distribution $C_1(X)$\;
-        
-        \eIf{$\Delta^* + X_{\rm norm} + X_{\rm corr} > 0$}{
-            Accept the candidate, $\theta_{t+1} = \theta'$\;
-        }{
-            Reject and re-use the old sample, $\theta_{t+1} = \theta_t$\;
-        }
-    
-}
-\caption{A description of M-H sampling with our acceptance test.}
-\label{alg:our_algorithm}
-%\vspace{-10pt}
-\end{algorithm}
-
 \section{Computing the Correction Distribution}\label{sec:correction}
+
 Our goal is to compute the distribution of the correction variable $X_{\rm corr}$ such that
 $X_{\rm norm} + X_{\rm corr} = X_{\rm log}$, where $X_{\rm norm} \in \mathcal{N}(0,\sigma)$
 and $X_{\rm log}$ has a standard logistic CDF $(1+\exp(-X))^{-1}$.
@@ -680,7 +632,34 @@ and is in fact the result of convolution with a gaussian whose variance is the d
 Thus as $\sigma$ decreases, $C(X)$ grows and approaches the derivative of a
 logistic function at $\sigma = 0$. It retains some very weak negative values for $\sigma > 0$
 but removal of those values leads to very small error.
-\begin{table}[h]
+
+\SetKwInOut{Input}{Input}
+\SetKwInOut{Output}{Output}
+\begin{algorithm}[t]
+\Input{Number of samples $T$, minibatch size $m$, error bound $\delta$, pre-computed correction $C_1(X)$ distribution, initial sample $\theta_1$.}
+\Output{A chain of $T$ samples $\{\theta_1, \ldots, \theta_T\}$ from $p(\theta)$\;}
+\For{$t=\{1, \ldots, T\}$}{
+    Propose a candidate $\theta'$\ from proposal distribution $q(\theta'\mid\theta_t)$\;
+    Draw a minibatch of $m$ points $x_i$, compute $\Delta^*(\theta_t,\theta')$ and sample variance $\sigma^2(\Delta^*)$\;
+    Estimate moments $E|\Lambda_i-\Lambda|$ and $E|\Lambda_i-\Lambda|^3$ from the sample, and error $\epsilon$ from equation (\ref{eq:clt-bounds3})\;
+    \While {$\sigma^2(\Delta^*) \ge 1$ {\bf or} $\epsilon > \delta$}{
+    	Draw $m$ more samples to augment the minibatch, update $\Delta^*$, $\sigma^2(\Delta^*)$ and $\epsilon$ estimates\;
+    }
+    Draw $X_{\rm norm} \in \mathcal{N}(0,1-\sigma^2(\Delta*))$ and
+    $X_{\rm corr}$ from the correction distribution $C_1(X)$\;
+        
+        \eIf{$\Delta^* + X_{\rm norm} + X_{\rm corr} > 0$}{
+            Accept the candidate, $\theta_{t+1} = \theta'$\;
+        }{
+            Reject and re-use the old sample, $\theta_{t+1} = \theta_t$\;
+        }
+    
+}
+\caption{A description of M-H sampling with our acceptance test.}
+\label{alg:our_algorithm}
+\end{algorithm}
+
+\begin{table}[t]
   \centering
   \begin{tabular}{|l|l|l|l|}
     \hline
@@ -692,15 +671,20 @@ but removal of those values leads to very small error.
     \end{tabular}
 \end{table}
 
+{\color{blue} Daniel: I can help improve the table and describe it. Also, I'm
+not sure right now about where Algorithm~\ref{alg:our_algorithm} should be
+placed in the paper. Still TODO for me: clean up and/or revise the optimization
+problem formulations and solutions.}
+
 
 \section{Analysis}\label{sec:analysis}
 
-In this section we derive error bounds for our M-H test, and for the approximate target
-distribution that it generates. We discuss generation of the correction variable in the
-next section. To cut to the chase, it is possible to generate samples $X_{\rm corr}$ with
-a CDF error of at most single-precision floating point error, and possibly better. We
-therefore treat the $X_{\rm corr}$ variable as a sample from the exact correction distribution
-and we will not analyze its errors.
+We now derive error bounds for our M-H test, and for the approximate target
+distribution that it generates. From Section~\ref{sec:correction}, we know that
+it is possible to generate the correction samples $X_{\rm corr}$ with a CDF
+error of at most single-precision floating point error, and possibly better. We
+therefore treat the $X_{\rm corr}$ variable as a sample from the exact
+correction distribution and we will not analyze its errors.
 
 In the most similar prior works, \cite{cutting_mh_2014} uses asymptotic arguments based
 on the central limit theorem to argue that its approximate acceptance test error tends to
@@ -725,24 +709,23 @@ $X_{\rm norm}$ and $X_{\rm corr}$. From this it follows that the acceptance test
 
 The quantitative central-limit result below comes from \cite{explicit-clt05}:
   
-
 \begin{lemma}\label{lem:quant_clt}
 Let $X_1,\ldots,X_n$ be
 a set of zero-mean, independent, identically-distributed random variables with sample mean $\hat{X}$ and
 variance $\sigma^2(\hat{X})$ where:
 \begin{equation}
-  \hat{X} = \frac{1}{n}\sum_{i=1}^nX_i \qquad   \sigma(\hat{X}) = \frac{1}{n}\left(\sum_{i=1}^n(X_i-\hat{X})^2\right)^{\frac{1}{2}}
+    \hat{X} = \frac{1}{n}\sum_{i=1}^nX_i \qquad {\rm and} \qquad \sigma(\hat{X}) = \frac{1}{n}\left(\sum_{i=1}^n(X_i-\hat{X})^2\right)^{\frac{1}{2}}
 \end{equation}
 then $t=\hat{X}/\sigma(\hat{X})$ has an approximate Student's distribution which approaches a normal
-distribution in the limit. Then from \cite{explicit-clt05}:
+distribution in the limit. Then from~\cite{explicit-clt05}:
 \begin{equation}\label{eq:clt-bounds}
- \sup_x|{\rm Pr}(t<x) - \Phi(x)| \leq \frac{6.4E|X|^3+2E|X|}{\sqrt{n}}
-  \end{equation}
+    \sup_x|{\rm Pr}(t<x) - \Phi(x)| \leq \frac{6.4E|X|^3+2E|X|}{\sqrt{n}}
+\end{equation}
 \end{lemma}
 
 So as long as we know the first and third absolute moments $E|X|$ and $E|X|^3$, we can bound the
 error of the normal approximation, which decays as $O(n^{-\frac{1}{2}})$. Making the change of variables
-$y = x \sigma(\hat{X})$, equation (\ref{eq:clt-bounds}) becomes
+$y = x \sigma(\hat{X})$, Equation~\ref{eq:clt-bounds} becomes
 \begin{equation}\label{eq:clt-bounds2}
    \sup_y\left|{\rm Pr}(\hat{X}< y) - \Phi\left(\frac{y}{\sigma(\hat{X})}\right)\right| \leq \frac{6.4E|X|^3+2E|X|}{\sqrt{n}}
 \end{equation}
@@ -753,158 +736,145 @@ To apply this to our test, let $X_i = \Lambda_i(\theta,\theta') - \Lambda(\theta
 then the $X_i$ are zero-mean, IID variables.
 Take $n=b$ the minibatch size, and then:
 \begin{equation}
-\hat{X} = \Delta^*(\theta,\theta') - \Delta(\theta,\theta') 
+    \hat{X} = \Delta^*(\theta,\theta') - \Delta(\theta,\theta') 
 \end{equation}
 so that $\sigma(\hat{X}) = \sigma(\Delta^*)$.
 \begin{corollary}
-  We can now substitute into equation (\ref{eq:clt-bounds2}) and displace by the mean, giving:
+We can now substitute into Equation~\ref{eq:clt-bounds2} and displace by the mean, giving:
 \begin{equation}\label{eq:clt-bounds3}
-   \sup_y\left|{\rm Pr}(\Delta^*< y) - \Phi\left(\frac{y-\Delta}{\sigma(\Delta^*)}\right)\right| \leq \frac{6.4E|X|^3+2E|X|}{\sqrt{b}} = \epsilon(\theta,\theta',b)
+    \sup_y\left|{\rm Pr}(\Delta^*< y) - \Phi\left(\frac{y-\Delta}{\sigma(\Delta^*)}\right)\right| \leq \frac{6.4E|X|^3+2E|X|}{\sqrt{b}} = \epsilon(\theta,\theta',b)
 \end{equation}
 \end{corollary}
 
-We have shown that the distribution of $\Delta^*$ approximates a
-Normal distribution with mean $\Delta$ and variance
-$\sigma^2(\Delta^*)$, and bounded its error with estimable
-quantities. Both $E|X|$ and $E|X|^3$ can be estimated as means of
-$|\Lambda_i - \Lambda|$ and $|\Lambda_i - \Lambda|^3$ respectively on each minibatch. We expect this
-will often be accurate enough on minibatches with hundreds or
-thousands of points, but otherwise bootstrap CIs can be computed from
-those sequences. Since the bounds are monotone in $E|X|$ and $E|X|^3$,
-using upper bootstrap CI limits will provide high-confidence error bounds.
+We have shown that the distribution of $\Delta^*$ approximates a Normal
+distribution with mean $\Delta$ and variance $\sigma^2(\Delta^*)$, and bounded
+its error with estimable quantities. Both $E|X|$ and $E|X|^3$ can be estimated
+as means of $|\Lambda_i - \Lambda|$ and $|\Lambda_i - \Lambda|^3$ respectively
+on each minibatch. We expect this will often be accurate enough on minibatches
+with hundreds or thousands of points, but otherwise bootstrap CIs can be
+computed from those sequences. Since the bounds are monotone in $E|X|$ and
+$E|X|^3$, using upper bootstrap CI limits will provide high-confidence error
+bounds.
 
-So as long as we know the first and third absolute moments $E|X|$ and $E|X|^3$, we can bound the
-error of the normal approximation, which decays as $O(n^{-\frac{1}{2}})$. Making the change of variables
-$y = x \sigma(\hat{X})$, equation (\ref{eq:clt-bounds}) becomes
-\begin{equation}\label{eq:clt-bounds2}
-   \sup_y\left|{\rm Pr}(\hat{X}< y) - \Phi\left(\frac{y}{\sigma(\hat{X})}\right)\right| \leq \frac{6.4E|X|^3+2E|X|}{\sqrt{n}}
-\end{equation}
-which shows that the distribution of $\hat{X}$ approaches the normal distribution $\mathcal{N}(0,\sigma^2(\hat{X}))$
-whose variance is $\sigma^2(\hat{X})$, measured from the sample.
+{\color{blue} Daniel: TODO provide a better transition for this paragraph.}
 
-
-
-
-\begin{lemma} Let $P(x)$ and $Q(x)$ be two cumulative distributions satisfying $\sup_x|P(x)-Q(x)|\leq \epsilon$ with
-  $x$ in some real range. Let $R(y)$ be the {\em density} of another
-  random variable $y$. Let $P'$ be the convolution $P*R$ and $Q'$ be
-  the convolution $Q*R$. Then $P'(z)$ (resp. $Q'(z)$) is the CDF of sum
-  $z=x+y$ of independent random variables $x$ with CDF $P(x)$ (resp. $Q(x)$) and y
-  with density $R(y)$.  Then
-  \begin{equation}
+\begin{lemma}\label{lem:cdf_bounds}
+Let $P(x)$ and $Q(x)$ be two cumulative distributions satisfying
+$\sup_x|P(x)-Q(x)|\leq \epsilon$ with $x$ in some real range. Let $R(y)$ be the
+{\em density} of another random variable $y$. Let $P'$ be the convolution $P*R$
+and $Q'$ be the convolution $Q*R$. Then $P'(z)$ (resp. $Q'(z)$) is the CDF of
+sum $z=x+y$ of independent random variables $x$ with CDF $P(x)$ (resp. $Q(x)$)
+and y with density $R(y)$.  Then
+\begin{equation}
     \sup_x|P'(x)-Q'(x)|\leq \epsilon
-  \end{equation}
-  \end{lemma}
+\end{equation}
+\end{lemma}
+
 \begin{proof}
-  \begin{equation}
-    \begin{split}
-      P'(z) - Q'(z) = \int_{-\infty}^{+\infty}(P(z-x)-Q(z-x))R(x) dx
-    \end{split}
-  \end{equation}
-  and since $\sup_x|P(x)-Q(x)|\leq \epsilon$ it follows that for all $z$:
-  \begin{equation}
-- \epsilon = \int_{-\infty}^{+\infty} -\epsilon R(x) dx \leq \int_{-\infty}^{+\infty}(P(z-x)-Q(z-x))R(x) dx \leq \int_{-\infty}^{+\infty}\epsilon R(x) dx = \epsilon
-  \end{equation}
+We first observe that
+\begin{equation}\label{eq:pdf_difference}
+    P'(z) - Q'(z) = \int_{-\infty}^{+\infty}(P(z-x)-Q(z-x))R(x) dx,
+\end{equation}
+and since $\sup_x|P(x)-Q(x)|\leq \epsilon$ it follows that for all $z$:
+\begin{equation}
+-\epsilon = \int_{-\infty}^{+\infty} -\epsilon R(x) dx \leq \int_{-\infty}^{+\infty}(P(z-x)-Q(z-x))R(x) dx \leq \int_{-\infty}^{+\infty}\epsilon R(x) dx = \epsilon
+\end{equation}
 \end{proof}
 
 \begin{corollary}
-  If $\sup_y|{\rm Pr}(\Delta^* < y) - \Phi(\frac{y-\Delta}{\sigma(\Delta^*)})| \leq \epsilon(\theta,\theta',b)$,
-  then
-  \begin{equation}
+If $\sup_y|{\rm Pr}(\Delta^* < y) - \Phi(\frac{y-\Delta}{\sigma(\Delta^*)})|
+\leq \epsilon(\theta,\theta',b)$, then
+\begin{equation}
     \sup_y|{\rm Pr}(\Delta^*+X_{\rm norm}+X_{\rm corr} < y) - S(y-\Delta)| \leq \epsilon(\theta,\theta',b)
-  \end{equation}
-  where $S(x)$ is the standard logistic function, and $X_{\rm norm}$ and $X_{\rm corr}$ are generated as per Algorithm 1. 
-  \end{corollary}
-%% \subsection{Discussions and Practical Considerations of the New MH Test}\label{ssec:discussion}
-\begin{proof}
-  Apply the previous lemma twice. First take:
-  \begin{equation}
-    P(y) = Pr(\Delta^* < y) \qquad {\rm and}\qquad Q(y) = \Phi\left(\frac{y-\Delta}{\sigma(\Delta^*)}\right)
-  \end{equation}
-  and convolve with the distribution of $X_n$ which has density $\phi(X/\sigma_n)$ where $\sigma_n^2
-  = 1 - \sigma^2(\Delta^*)$. This yields the next iteration of $P$ and $Q$
-  \begin{equation}
-    P'(y) = Pr(\Delta^*+X_{\rm norm} < y) \qquad {\rm and}\qquad Q'(y) = \Phi\left({y-\Delta}\right)
-  \end{equation}
-  Now we convolve with the distribution of $X_{\rm corr}$ which gives:
-  \begin{equation}
-    P''(y) = Pr(\Delta^*+X_{\rm norm}+X_{\rm corr} < y) \qquad {\rm and}\qquad Q''(y) = S\left({y-\Delta}\right)
-  \end{equation}
-  Both steps preserve the error bound
-  $\epsilon(\theta,\theta',b)$. Finally $S(y-\Delta)$ is a logistic
-  CDF centered at $\Delta$, and so $S(y-\Delta) = {\rm Pr}(\Delta +
-  X_{\rm log} < y)$ for a logistic random $X_{\rm log}$. We
-  conclude that the probability of acceptance for the actual test ${\rm Pr}(\Delta^*+X_{\rm norm}+X_{\rm
-    corr} > 0)$ differs from the exact test ${\rm Pr}(\Delta+X_{\rm
-    log} > 0)$ by at most $\epsilon$.
-  
-\end{proof}
+\end{equation}
+where $S(x)$ is the standard logistic function, and $X_{\rm norm}$ and $X_{\rm corr}$ are generated as per Algorithm 1. 
+\end{corollary}
 
+\begin{proof}
+We apply Lemma~\ref{lem:cdf_bounds} twice. First take:
+\begin{equation}
+    P(y) = Pr(\Delta^* < y) \qquad {\rm and}\qquad Q(y) = \Phi\left(\frac{y-\Delta}{\sigma(\Delta^*)}\right)
+\end{equation}
+and convolve with the distribution of $X_n$ which has density $\phi(X/\sigma_n)$
+where $\sigma_n^2 = 1 - \sigma^2(\Delta^*)$. This yields the next iteration of
+$P$ and $Q$
+\begin{equation}
+    P'(y) = Pr(\Delta^*+X_{\rm norm} < y) \qquad {\rm and}\qquad Q'(y) = \Phi\left({y-\Delta}\right)
+\end{equation}
+Now we convolve with the distribution of $X_{\rm corr}$ which gives:
+\begin{equation}
+    P''(y) = Pr(\Delta^*+X_{\rm norm}+X_{\rm corr} < y) \qquad {\rm and}\qquad Q''(y) = S\left({y-\Delta}\right)
+\end{equation}
+Both steps preserve the error bound $\epsilon(\theta,\theta',b)$. Finally
+$S(y-\Delta)$ is a logistic CDF centered at $\Delta$, and so $S(y-\Delta) = {\rm
+Pr}(\Delta + X_{\rm log} < y)$ for a logistic random $X_{\rm log}$. We conclude
+that the probability of acceptance for the actual test ${\rm Pr}(\Delta^*+X_{\rm
+norm}+X_{\rm corr} > 0)$ differs from the exact test ${\rm Pr}(\Delta+X_{\rm
+log} > 0)$ by at most $\epsilon$.
+\end{proof}
 
 In fact we can do better than this approximation (showing the error decreases as $O(n^{-1})$) by using a more
 precise limit distribution under an additional assumption. Let $\mu_i$ denote the $i^{th}$ moment, and $b_i$
 denote the $i^{th}$ absolute moment of $X$. If Cramer's condition holds, i.e. if
 \begin{equation}
-  \lim_{t \to \infty} \sup |E(\exp(i t X))| < 1
+  \lim_{t \to \infty} \sup |E(\exp(i t X))| < 1.
 \end{equation}
 
+Equation 2.2 in Bentkus et al.'s work on Edgeworth expansions~\cite{Bentkus97}
+provides the following:
 
-Bentkus et al.'s work on Edgeworth
-expansions \cite{Bentkus97} equation 2.2 gives:
-
-\begin{lemma} Let $X_1,\ldots,X_n$ be
-  a set of zero-mean, independent, identically-distributed random variables with sample mean $\hat{X}$ and with $t$ defined as in Lemma 3. If $X$ satisfies Cramer's condition, 
-then
-\begin{equation}\label{eq:clt-bounds}
- \sup_x\left|{\rm Pr}(t<x) - G\left(x, \frac{\mu_3}{b_2^{3/2}}\right)\right| \leq \frac{c(\epsilon,b_2,b_3,b_4,b_{4+\epsilon})}{n}
+\begin{lemma}\label{lem:clt_edgeworth}
+Let $X_1,\ldots,X_n$ be a set of zero-mean, independent, identically-distributed
+random variables with sample mean $\hat{X}$ and with $t$ defined as in Lemma 3.
+If $X$ satisfies Cramer's condition, then
+\begin{equation}\label{eq:clt-bounds_edgeworth}
+    \sup_x\left|{\rm Pr}(t<x) - G\left(x, \frac{\mu_3}{b_2^{3/2}}\right)\right| \leq \frac{c(\epsilon,b_2,b_3,b_4,b_{4+\epsilon})}{n}
 \end{equation}
 where
 \begin{equation}
-G_n(x,y) = \Phi(x) + \frac{y(2x^2+1)}{6\sqrt{n}}\Phi'(x)
+    G_n(x,y) = \Phi(x) + \frac{y(2x^2+1)}{6\sqrt{n}}\Phi'(x).
 \end{equation}
 \end{lemma}
-This lemma shows that the average of the $X_i$ has a more precise, skewed CDF limit $G_n(x,y)$
-where the skew term has weight proportional to a certain measure of skew derived
-from the moments: $\frac{\mu_3}{b_2^{3/2}}$. Note that if the $X_i$ are symmetric,
-the weight of the correction term is zero, and the CDF of the average of the $X_i$ converges
+
+Lemma~\ref{lem:clt_edgeworth} shows that the average of the $X_i$ has a more
+precise, skewed CDF limit $G_n(x,y)$ where the skew term has weight proportional
+to a certain measure of skew derived from the moments:
+$\frac{\mu_3}{b_2^{3/2}}$. Note that if the $X_i$ are symmetric, the weight of
+the correction term is zero, and the CDF of the average of the $X_i$ converges
 to $\Phi(x)$ at a rate of $O(n^{-1})$.
 
-Here the limit $G_n(x,y)$ is a normal CDF plus a correction term that
-decays as $n^{1/2}$. Importantly, since $x^2\phi(x) = \phi^{''}(x) + \phi(x)$ where $\phi(x)=\Phi'(x)$, the correction term can be rewritten giving:
-\begin{equation}
-  \label{eq:GNderivatives}
-G_n(x,y) = \Phi(x) + \frac{y}{6\sqrt{n}}(2\phi^{''}(x)+3\phi(x))
+Here the limit $G_n(x,y)$ is a normal CDF plus a correction term that decays as
+$n^{1/2}$. Importantly, since $x^2\phi(x) = \phi^{''}(x) + \phi(x)$ where
+$\phi(x)=\Phi'(x)$, the correction term can be rewritten giving:
+\begin{equation}\label{eq:GNderivatives}
+    G_n(x,y) = \Phi(x) + \frac{y}{6\sqrt{n}}(2\phi^{''}(x)+3\phi(x))
 \end{equation}
-From which we see that $G_n(x,y)$ is a linear combination of
-$\Phi(x)$, $\phi(x)$ and $\phi^{''}(x)$. This is quite fortuitous. In
-Algorithm 1, we correct for the difference in $\sigma$ between
-$\Delta^*$ and the variance needed by $X_{\rm corr}$ using $X_{\rm
-  norm}$. This same method works when we wish to estimate the error in $\Delta^*$ vs
-$G_n(x,y)$. Since all of the component functions of $G_n(x,y)$ are
-derivatives of a (unit variance) $\Phi(x)$, adding a normal variable
-with variance $\sigma'$ increases the variance of all three functions
-to $1+\sigma'$. Thus we add $X_{\rm norm}$ as per Algorithm 1
-preserving the limit in equation (\ref{eq:GNderivatives}).
+From which we see that $G_n(x,y)$ is a linear combination of $\Phi(x)$,
+$\phi(x)$ and $\phi^{''}(x)$. This is quite fortuitous. In Algorithm 1, we
+correct for the difference in $\sigma$ between $\Delta^*$ and the variance
+needed by $X_{\rm corr}$ using $X_{\rm norm}$. This same method works when we
+wish to estimate the error in $\Delta^*$ vs $G_n(x,y)$. Since all of the
+component functions of $G_n(x,y)$ are derivatives of a (unit variance)
+$\Phi(x)$, adding a normal variable with variance $\sigma'$ increases the
+variance of all three functions to $1+\sigma'$. Thus we add $X_{\rm norm}$ as
+per Algorithm 1 preserving the limit in Equation~\ref{eq:GNderivatives}.
 
-The deconvolution approach can be used to constuct a correction
-variable $X_{\rm corr}$ between $G_n(x,y)$ and $S(x)$ the standard
-logistic function. An additional complexity is that $G_n(x,y)$ has
-additional parameters $y$ and $n$. Since these act as a single
-multiplier $\frac{y}{6\sqrt{n}}$ in equation
-(\label{eq:GNderivatives}), its enough to consider a function
-$g(x,y')$ parametrized by $y'= \frac{y}{6\sqrt{n}}$. This function can
-be computed and saved offline. As we have shown above, errors in the
-``limit'' function propagate directly through as errors in the
-acceptance test.  To achieve a test error of say $1e-6$ (close to single
-floating point precision), we need a $y'$ spacing of $1e-6$. It
-should not be necessary to tabulate values all the way to $y'=1$,
-since $y'$ is scaled inversely by the square root of monibatch size.
-Assuming a max $y'$ of 0.1 requires us to tabulate about 100,000.
-Since our $x$ resolution is 10,000, this leads to a table with about
-1 billion values, which can comfortably be stored in memory. However,
-if $g(x,y)$ is moderately smooth in $y$, it should be possible to
-achieve similar accuracy with a much smaller table. We leave further
-analysis and experiments with $g(x,y)$ as future work. 
+The deconvolution approach can be used to construct a correction variable
+$X_{\rm corr}$ between $G_n(x,y)$ and $S(x)$ the standard logistic function. An
+additional complexity is that $G_n(x,y)$ has additional parameters $y$ and $n$.
+Since these act as a single multiplier $\frac{y}{6\sqrt{n}}$ in
+Equation~\ref{eq:GNderivatives}, its enough to consider a function $g(x,y')$
+parametrized by $y'= \frac{y}{6\sqrt{n}}$. This function can be computed and
+saved offline. As we have shown above, errors in the ``limit'' function
+propagate directly through as errors in the acceptance test.  To achieve a test
+error of say $1e-6$ (close to single floating point precision), we need a $y'$
+spacing of $1e-6$. It should not be necessary to tabulate values all the way to
+$y'=1$, since $y'$ is scaled inversely by the square root of minibatch size.
+Assuming a max $y'$ of 0.1 requires us to tabulate about 100,000.  Since our $x$
+resolution is 10,000, this leads to a table with about 1 billion values, which
+can comfortably be stored in memory.  However, if $g(x,y)$ is moderately smooth
+in $y$, it should be possible to achieve similar accuracy with a much smaller
+table. We leave further analysis and experiments with $g(x,y)$ as future work. 
 
 
 %% \textbf{The Convolution}. Figure~\ref{fig:deconvolution} demonstrates
@@ -938,94 +908,6 @@ analysis and experiments with $g(x,y)$ as future work.
 %% smaller in absolute value, thus reducing variance. The flatter posterior results in easier mixing.
 
 
-
-
-%% \section{Analysis}\label{sec:theory}
-
-%% In this section, we first perform an error analysis for our new
-%% acceptance test. Second, we follow the implications of this analysis for accuracy of
-%% the estimated target distribution. Third, we compare the speed and accuracy of
-%% our test with prior work. Due to space constraints, all our proofs
-%% are in Appendix~\ref{app:proofs}.
-
-%% We first introduce some notation. Let our true (full dataset) and
-%% approximate (minibatch) acceptance probabilities be $P_a = g(\Delta) =
-%% \Pr(\Delta + X > 0)$ and $P_a' = \Pr(\Delta' + X_{\rm corr} > 0)$.
-%% Define $X_{\xi} = \varepsilon - X_{\rm norm}$ which means, invoking
-%% Equations~\ref{eq:relationship} and~\ref{eq:deconvolution}, that
-%% $X_\xi$ is the random variable characterizing the accuracy of our
-%% $X_{\rm norm}$.  Thus, $\Delta' = \Delta + X_{\rm norm} + X_\xi$. We
-%% assume the standard deviation of $X_{\rm norm}$ is less than
-%% $\pi/\sqrt{3}$, so that we can use Equation~\ref{eq:deconvolution}.
-%% We denote $F_X(x)$ as the CDF of $X$.
-
-%% We use some terms from standard Markov chain theory~\cite{Meyn2009}. Let the \emph{transition
-%% kernels} of MCMC on complete and minibatch data at step $i$ be $P_i$ and $P_i'$, respectively. When
-%% these kernels (e.g., $P_i$) are applied on a probability distribution $D_1$, they generate a new
-%% distribution $D_2$, which we write as $P_i \circ D_1 = D_2$. Define $\pi$ to be the stationary
-%% distribution obtained by $P_i$, and $\pi_i'$ to be the stationary distribution obtained by $P_i'$
-%% ($\pi'$ needs a subscript in this case).  Finally, we indicate the \emph{total variation distance}
-%% between two kernels using $\| \cdot \|$.
-
-%% Our first result shows that the distance $\|P_i\circ D - P_i'\circ D\| \le 4\zeta \ell$ for all
-%% distributions $D$.
-
-%% % Our first result shows that the distance between $P_i$ and $P_i'$ is proportional to our estimation
-%% % error $X_{\xi}$.
-
-%% \begin{lemma}\label{lem:theory1}
-%% If $|X_\xi| < \zeta$ and $|\nabla F_X(x)| < \ell$ for all $x$, then $\|P_i\circ D-P_i'\circ D\| \le
-%% 4\zeta \ell \;\;\forall D$.
-%% \end{lemma}
-
-%% %% \begin{proof}
-%% %% See Appendix~\ref{app:theory1}.
-%% %% \end{proof}
-
-%% Thus, the accuracy of our transition kernel $P_i'$ is related to the quality of our estimated
-%% $X_{\rm norm}$. We next show that ${\rm Var}(\Delta')$ is roughly proportional to the step size of
-%% our proposer.
-
-%% \begin{lemma}\label{lem:theory2}
-%% For one step sampling from $\theta$ to $\theta'$, if the jumping step $\|\theta - \theta'\|_2 <
-%% \epsilon$, and the gradient of the log likelihood is bounded by a constant factor, i.e. $\|\nabla
-%% (\log \Pr(x_i\mid \theta))\|_2 < k$, the variance of $\Delta'$ is bounded by $4\epsilon^2 k^2
-%% (m-\frac{m(m-1)}{N-1})$, where $m$ is the minibatch size, and $N$ is the total data size.
-%% \end{lemma}
-
-%% %% \begin{proof}
-%% %% See Appendix~\ref{app:theory2}.
-%% %% \end{proof}
-
-%% Since ${\rm Var}(\Delta') < 4\epsilon^2 k^2 (m - \frac{m(m-1)}{N-1}) $, we can assume the maximum
-%% value of $X_{\xi}$ is proportional to the standard deviation of $\Delta'$, i.e. $\epsilon$. Thus, we
-%% can assume $\zeta=\epsilon C$, where $C$ is a constant factor. We finally introduce
-%% Theorem~\ref{thm:theory3} to characterize the convergence of our samples.
-
-%% \begin{theorem}\label{thm:theory3}
-%% Assume $\pi$ satisfies $\|P_i \circ D_0 - \pi\| \leq \eta \|D_0 - \pi\|$, where $\eta \in [0, 1)$ for
-%% all distributions $D_0$. Also assume there exists $0 < \rho_t < 1$ such that $\|P'_i \circ D -
-%% \pi_i'\| \leq 2\rho_i \;\; \forall D$. We can get $\| P_t' \circ P_{t-1}' \circ \cdots \circ P_1' \circ D_0 - \pi
-%% \| \leq \sum_{s=1}^t \{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\} \rho_s \alpha_s + \alpha_t $, where
-%% $\alpha_i = \frac{\epsilon_i C }{1-\eta}$ and $\epsilon_i$ is the step size at iteration $i$.
-%% \end{theorem}
-
-%% %% \begin{proof}
-%% %% See Appendix~\ref{app:theory3}.
-%% %% \end{proof}
-
-%% Theorem~\ref{thm:theory3} indicates that the difference between the target and sampled distributions
-%% consists of two components: $\rho_i$, which is determined by the efficiency of $P'_i$, and the
-%% $\alpha_i$s, which are determined by the error of our transition kernels. These involve competing
-%% objectives: the larger the step size, the more efficient the $P_i'$ but its error increases.  The
-%% reverse happens with a step size too small.
-
-%% We explore the efficiency of our minibatch MH test. Theorem~\ref{thm:efficiency} indicates that our minibatch MH test only requires a constant number of instances for each step, however, recall the Lemma~\ref{lem:efficienty_cutting}, the adaptive minibatch MH test requires $O(\sqrt{N})$ number of data instance for each step. Thus, We show that our proposed minibatch MH test is much higher efficient than the known minibatch algorithms. 
-
-%% \begin{theorem}\label{thm:efficiency}
-%% We require $\frac{ C^2 \rho^2 }{\sigma^6 \varepsilon^2}$ minibatch size to ensure $|P_a -P_a'| < \varepsilon$, where $C$ is a positive constant which is smaller than 0.4748, $\sigma^2 $ and $\rho$ is the second and third moment of $(\nabla\log \Pr(x_i|\theta) - \nabla\log\Pr(x_i|\theta')) - E\left[ \nabla\log \Pr(x_i|\theta) - \nabla\log\Pr(x_i|\theta')\right]$, $P_a$ is the accept rate from the complete data, $P_a'$ is the accept rate from minibatch data by our algorithm, $\theta$ is the current parameter, and $\theta'$ is the proposed parameter. 
-
-%% \end{theorem}
 
 
 \section{Experiments}\label{sec:experiments}
@@ -1111,7 +993,7 @@ Actually, based on a measure of divergence from the ground-truth distribution, o
 Figure~\ref{fig:gauss_mix_2} shows a histogram of the final minibatch sizes used by
 the three methods in each iteration. It is obvious that our methods consumes significantly less data, and most minibatch sizes are smaller than 1000, with an average minibatch size of 420. The other two methods occasionally consumes a large proportion of the entire data set, and the average minibatch sizes are 16378, 16755 for cut MH method, adaptive MH method, respectively. In terms of average minibatch size, our method is nearly 39 times faster the cut MH method, and nearly 40 times faster than the adaptive MH method. 
 
-It is useful to notice that, in ~\cite{icml2014c1_bardenet14}, they need to evaluate the likelihood term $C_{\theta,\theta'}$ over the entire the data set at every iteration in order to calculate the error bound in equation (9) in ~\cite{icml2014c1_bardenet14}. In Figure ~\ref{fig:gauss_bardenet}, the value of the first part and second part of equation (9) in ~\cite{icml2014c1_bardenet14} is shown with respect to the size of actual minibatch data used. The second part which contains  the $C_{\theta,\theta'}$ term is larger than the first part, which means that the second part is non-negligible and has to be calculated at every iteration. This is one of the very time-consuming parts in this method. 
+It is useful to notice that, in~\cite{icml2014c1_bardenet14}, they need to evaluate the likelihood term $C_{\theta,\theta'}$ over the entire the data set at every iteration in order to calculate the error bound in equation (9) in ~\cite{icml2014c1_bardenet14}. In Figure ~\ref{fig:gauss_bardenet}, the value of the first part and second part of equation (9) in ~\cite{icml2014c1_bardenet14} is shown with respect to the size of actual minibatch data used. The second part which contains  the $C_{\theta,\theta'}$ term is larger than the first part, which means that the second part is non-negligible and has to be calculated at every iteration. This is one of the very time-consuming parts in this method. 
 
 %Usually, the method can make a decision with 200 samples. Occasionally, however, it must use all 10000 points, resulting in lots of wasted computation.  For this particular experiment, that happened eight times.
 %The third plot in Figure~\ref{fig:gauss_mix_2} investigates the number of times ${\rm std}(\Delta')
@@ -1196,42 +1078,41 @@ that of 100, showing significant better performance than the benchmark test meth
 %std}(\Delta')$ decreases. Beyond a certain standard deviation (or minibatch) threshold, the error in
 %our minibatch MH test is negligible.
 
-%Similar as the Subsection~\ref{ssec:gaussians}, we use Figure~\ref{fig:exp_3} to reveal the accuracy of our estimation of ${\rm std}(\Delta')$ and stability of $\rho/\sigma^3$.
+%Similar as the Subsection~\ref{ssec:gaussians}, we use Figure~\ref{fig:exp_3}
+%to reveal the accuracy of our estimation of ${\rm std}(\Delta')$ and stability
+%of $\rho/\sigma^3$.
 
-\iffalse
-\subsection{Neural Network Optimization}\label{ssec:nets}
-
-In this experiment, we apply our minibatch MH test with a Stochastic Gradient Hamiltonian
-Monte Carlo (SGHMC)~\cite{sghmc_2014} proposer to sample the complete parameters for a fully
-connected neural network. We use the Higgs data set from the UCI dataset~\cite{Lichman:2013}, which
-is a binary classification task with one million instances, each of which are 28-dimensional. The
-network we use has four layers: the first is the input, the last is the softmax, and the
-intermediate ones apply the sigmoid activation unit.  We also employ dropout and batch
-normalization~\cite{icml2015_ioffe15}.  In order to control ${\rm std}(\Delta')$, we initialize the
-temperature at 1000, and adjust it at iteration $i$ according to $T_i = \max\{1,
-1000/(i+1)^{0.5}\}$.
-
-For our comparison baseline, we train the same network architecture using the Adaptive Gradient
-Descent method~\cite{adapGrad}. Since the frequencies of the features are quite different, we use
-the same strategy as in Adaptive Gradient to rescale the gradient before applying SGHMC. We
-implement our MH test and SGHMCin the open-source BIDMach project~\cite{canny2013bidmach}.  
-
-Figure~\ref{fig:nnet_fig} illustrates our experiment results and reveals that SGHMC with our
-minibatch MH test achieves higher log likelihood than the baseline. By comparing SGHMC with and
-without our minibatch MH test, we see that our MH test has limited benefit. Because we decrease the
-step size quickly, the acceptance rate of SGHMC is already high, so there is little need to test.
-% Daniel's note: Haoyu said he cannot increase the step size without it violating the variance
-% condition.
-
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=1\linewidth]{exp3}
-    \caption{Log likelihood versus number of passes for optimization of neural network.}
-    \label{fig:nnet_fig}
-    \vspace{-10pt}
-\end{figure}
-
-\fi
+%% \subsection{Neural Network Optimization}\label{ssec:nets}
+%% 
+%% In this experiment, we apply our minibatch MH test with a Stochastic Gradient Hamiltonian
+%% Monte Carlo (SGHMC)~\cite{sghmc_2014} proposer to sample the complete parameters for a fully
+%% connected neural network. We use the Higgs data set from the UCI dataset~\cite{Lichman:2013}, which
+%% is a binary classification task with one million instances, each of which are 28-dimensional. The
+%% network we use has four layers: the first is the input, the last is the softmax, and the
+%% intermediate ones apply the sigmoid activation unit.  We also employ dropout and batch
+%% normalization~\cite{icml2015_ioffe15}.  In order to control ${\rm std}(\Delta')$, we initialize the
+%% temperature at 1000, and adjust it at iteration $i$ according to $T_i = \max\{1,
+%% 1000/(i+1)^{0.5}\}$.
+%% 
+%% For our comparison baseline, we train the same network architecture using the Adaptive Gradient
+%% Descent method~\cite{adapGrad}. Since the frequencies of the features are quite different, we use
+%% the same strategy as in Adaptive Gradient to rescale the gradient before applying SGHMC. We
+%% implement our MH test and SGHMCin the open-source BIDMach project~\cite{canny2013bidmach}.  
+%% 
+%% Figure~\ref{fig:nnet_fig} illustrates our experiment results and reveals that SGHMC with our
+%% minibatch MH test achieves higher log likelihood than the baseline. By comparing SGHMC with and
+%% without our minibatch MH test, we see that our MH test has limited benefit. Because we decrease the
+%% step size quickly, the acceptance rate of SGHMC is already high, so there is little need to test.
+%% % Daniel's note: Haoyu said he cannot increase the step size without it violating the variance
+%% % condition.
+%% 
+%% \begin{figure}[t]
+%%     \centering
+%%     \includegraphics[width=1\linewidth]{exp3}
+%%     \caption{Log likelihood versus number of passes for optimization of neural network.}
+%%     \label{fig:nnet_fig}
+%%     \vspace{-10pt}
+%% \end{figure}
 
 
 \section{Conclusions}\label{sec:conclusion}
@@ -1261,168 +1142,69 @@ MCMC~\cite{conf/uai/AngelinoKWSA14,conf/icml/AhnSW14} concepts.
 In this appendix, we describe the following topics:
 
 \begin{itemize}[noitemsep]
-  \item Proofs ommitted from the main text. 
+    \item The proof of Lemma~\ref{lem:worst_case}.
     \item More information on Section~\ref{ssec:gaussians}.
     \item More information on Section~\ref{ssec:logistic}.
-    \item More information on Section~\ref{ssec:nets}.
+    %\item More information on Section~\ref{ssec:nets}. % Daniel: this is in
+    %progress.
 \end{itemize}
 
-\section{Proofs}\label{app:proofs}
+\section{Proof of Lemma~\ref{lem:worst_case}}\label{app:worst_case_proof}
 
-{\bf lemma 1}
-{\em  For the model of section 2.1, there
-  exists a fixed (independent of $N$) constant $c$ such that with probability $ \geq c$ over the joint
-  distribution of $(\theta, \theta', u)$, the
-  tests from \cite{icml2014c1_bardenet14} and \cite{cutting_mh_2014} consume all $N$ samples. }
-
-
-\begin{proof} Assume $(\theta' - \theta) \in \pm\frac{1}{\sqrt{N}}[0.5,1]$ and
-  $\theta -0.5 \in \pm\frac{1}{\sqrt{N}}[0.5,1]$ with matching sign. These events
-  occur with probability $p_0=2*(\Phi(1)-\Phi(0.5)) = 0.2997$ and $p_1=(\Phi(1)-\Phi(0.5))=0.14988$ respectively,
-  and guarantee that $\Lambda^*(\theta',\theta)$ is negative, which guarantees that we can find
-  a $u$ so that $\psi(u,\theta',\theta)$ equals the expected value of $\Lambda^*(\theta',\theta)$.
-  Specifically, choose $u_0$
-  to satisfy
-  \begin{equation}
+Assume $(\theta' - \theta) \in \pm\frac{1}{\sqrt{N}}[0.5,1]$ and $\theta -0.5
+\in \pm\frac{1}{\sqrt{N}}[0.5,1]$ with matching sign. These events occur with
+probability ({\color{blue} Daniel: sorry for interjecting here but don't we need
+to take into account the $1/\sqrt{N}$ in the probabilities? If $N \to \infty$
+(and it's going to be large with big datasets) the probabilities should be about
+zero.}) $p_0=2*(\Phi(1)-\Phi(0.5)) = 0.2997$ and
+$p_1=(\Phi(1)-\Phi(0.5))=0.14988$ respectively, and guarantee that
+$\Lambda^*(\theta',\theta)$ is negative. This then guarantees that we can find a
+$u \in [0,1]$ so that $\psi(u,\theta',\theta)$ equals
+$\mathbb{E}[\Lambda^*(\theta',\theta)]$.  Specifically, choose $u_0$ to satisfy
+\begin{equation}\label{eq:log_uo}
     \log u_0 = N(\Lambda^*(\theta',\theta)-\psi(1,\theta',\theta))
-  \end{equation}
-  which evaluates to 
-  \begin{equation}
-    \log u_0 = -N(\theta'-\theta)\left(\theta-0.5+\frac{\theta'-\theta}{2}\right) 
-  \end{equation}
-  and rewrite the test now as
-  \begin{equation}
+\end{equation}
+which evaluates ({\color{blue} Daniel: sorry again for interjecting but I really
+think $\log u_0$ does not have that $N$ there. Also, for the subsequent
+equation, I think we need to be using \emph{expected} values of $\Lambda^*$}) to
+\begin{equation}
+    \log u_0 = -N(\theta'-\theta)\left(\theta-0.5+\frac{\theta'-\theta}{2}\right).
+\end{equation}
+This means we can rewrite the acceptance test as
+\begin{equation}
     \frac{1}{b}\sum_{i=1}^b x_i-\left(\theta+\frac{\theta'-\theta}{2} + \frac{\log u_0}{N(\theta'-\theta)}\right)
     \hspace{0.1in} \not\approx \hspace{0.1in} 0
-  \end{equation}
-  where $\not\approx$ means ``significantly different from'' under the distribution over samples of $x_i$. 
-  The above choice of $u_0$ ensures that the terms in parenthesis above sum to 0.5. Since the $x_i$ have mean 0.5, the
-  test will never correctly succeed.
-
-  Furthermore, if we sample values of $u$ near enough to $u_0$, the terms in parenthesis will not be sufficiently different
-  from 0.5 to allow the test to succeed. 
+\end{equation}
+where $\not\approx$ means ``significantly different from'' under the
+distribution over samples of $x_i$.  The above choice of $u_0$ ensures that the
+terms in parenthesis above sum to 0.5. Since the $x_i$ have mean 0.5, the test
+will never correctly succeed.  Furthermore, if we sample values of $u$ near
+enough to $u_0$, the terms in parenthesis will not be sufficiently different
+from 0.5 to allow the test to succeed. 
   
- The choices above for $\theta$ and $\theta'$ guarantee that
-  \begin{equation}
+{\color{blue} Daniel: I would like to ask you about these probabilities because
+I do not know how we got these intervals.} The choices above for $\theta$ and
+$\theta'$ guarantee that
+\begin{equation}
     \log u_0 \in -[0.5,1][0.75,1.5] = -[0.375,1.5]
-        \end{equation}
+\end{equation}
 and consider the range of $u$ values
-  \begin{equation}
+\begin{equation}
     \log u \in \log u_0 + [-0.5,0.375]
-  \end{equation}
-  the size of the range in $u$ is at least $\exp([-2,-1.125]) = [0.13534,0.32465]$ and occurs
-  with probability at least $p_2=0.18932$. With $u$ in this range, we rewrite the test as:
-  \begin{equation}
+\end{equation}
+the size of the range in $u$ is at least $\exp([-2,-1.125]) = [0.13534,0.32465]$ and occurs
+with probability at least $p_2=0.18932$. With $u$ in this range, we rewrite the test as:
+\begin{equation}
     \frac{1}{b}\sum_{i=1}^b x_i-0.5 \hspace{0.1in} \not\approx \hspace{0.1in} \frac{\log u/u_0}{N(\theta'-\theta)}
-  \end{equation}
-  so that the LHS has expected value zero.  Given our choice of intervals for the variables, the RHS is in the range $1/\sqrt{N}[-1,0.75]$.
-  The standard deviation of the LHS given the interval constraints is at least $0.5/\sqrt{b}$. And
-  so the gap between LHS and RHS is at most $2\sqrt{b/N}$ standard deviations. 
+\end{equation}
+so that the LHS has expected value zero.  Given our choice of intervals for the
+variables, the RHS is in the range $1/\sqrt{N}[-1,0.75]$.  The standard
+deviation of the LHS given the interval constraints is at least $0.5/\sqrt{b}$.
+And so the gap between LHS and RHS is at most $2\sqrt{b/N}$ standard deviations. 
 
-
-  The samples $\theta$, $(\theta'-\theta)$
-  and $u$ are drawn independently and so the probability of the conjunction of these events is
-  $c = p_0 p_1 p_2 = 0.0085$.
-\end{proof}
-
-%% \subsection{Proof of Lemma~\ref{lem:efficienty_cutting}}\label{app:lem_efficiency}
-
-%% If the minibatch size is $n$, we first compute the probability that more than $n$ data instances are required for adaptive sampling method for one iteration. We denote this probability $P_{rej}$.
-%% \[P_{rej} = \Pr \left ( 1-\phi_{n-1} \left( \frac{|\bar{l} - \frac{1}{N} \log (u\frac{p(\theta)q(\theta'|\theta)}{p(\theta')q(\theta|\theta')})|}{s} \right )  \geq \varepsilon \right ) \] 
-
-%% where $s = \frac{s_l}{\sqrt{n}}\sqrt{1-\frac{n-1}{N-1}}$. \\
-%% We define random variable $Z = \frac{1}{N}\log (uQ)$, where $Q=\frac{p(\theta)q(\theta'|\theta)}{p(\theta')q(\theta|\theta')}$. Then $Z$ has probability density function $f_Z(z) = N \exp(zN), z \in (-\infty, \frac{1}{N} \log Q]$.
-
-%% \begin{align*} 
-%% P_{rej}&=  \Pr \left( 1-\varepsilon \geq \phi_{n-1} \left( \frac{|\bar{l} - Z|}{s_l \sqrt{\frac{N-n}{N-1}}} \sqrt{n} \right) \right) \\ 
-%% &=  \Pr \left(\phi^{-1}_{n-1} \left (1-\varepsilon \right) \frac{s_l }{\sqrt{n}} \sqrt{\frac{N-n}{N-1}} \geq |\bar{l} -Z| \right) = \Pr \left( |\bar{l} - Z| \leq \frac{\eta s_l}{\sqrt{n}}\sqrt{\frac{N-n}{N-1}} \right) \\
-%% &= \Pr \left(Z - \frac{\eta s_l}{\sqrt{n}}\sqrt{\frac{N-n}{N-1}} \leq \bar{l} \leq Z + \frac{\eta s_l}{\sqrt{n}}\sqrt{\frac{N-n}{N-1}} \right) \\
-%% &= \int_{-\infty} ^{\frac{\log Q}{N}} N \exp (zN)dz \int_{z - \frac{\eta s_l}{\sqrt{n}}\sqrt{\frac{N-n}{N-1}}} ^{z+ \frac{\eta s_l}{\sqrt{n}}\sqrt{\frac{N-n}{N-1}}} \frac{1}{2L} d\bar{l} = \frac{\eta s_l}{L\sqrt{n}}\sqrt{\frac{N-n}{N-1}} \int_{-\infty} ^{\frac{\log Q}{N}} N \exp(zN) dz \\
-%% &= \frac{\eta s_l}{L\sqrt{n}}\sqrt{\frac{N-n}{N-1}} Q
-%% \end{align*}
-%%  If we define the random variable $X$ the number of instance for one minibatch, we have $\Pr (X>n) = P_{rej} = \frac{\eta s_l}{L\sqrt{n}}\sqrt{\frac{N-n}{N-1}} Q, \mbox{ for } n \in [1,N], n \in Z^+$. Since $X$ is nonnegative, we have $E(X) \geq \Pr (X >x)x, \forall x$. If we choose $x=N/2$, we have $E(X) \geq \frac{\eta s_l}{L\sqrt{N/2}}\sqrt{\frac{N-N/2}{N-1}} Q \frac{N}{2} \geq \frac{\eta s_{l}Q}{2L}\sqrt{N}$.
-
-%% \subsection{Proof of Lemma~\ref{lem:theory1}}\label{app:theory1}
-
-%% We first prove that the difference in our acceptance rates is bounded: $|P_a - P_a'| \leq 2\zeta
-%% \ell$ for some small constant $\zeta > 0$. Given $X_\xi = \xi$ the distance $|P_a - P_a'|$ is:
-%% \begin{align*}
-%% |P_a - P_a'| &= |\Pr(\Delta + X >0) - \Pr(\Delta' + X_{\rm corr} > 0)|\\
-%% & = | \Pr (\Delta + X > 0) - \Pr (\Delta + X_{\rm norm} + \xi + X_{\rm corr} >0) |    \\
-%% &= |\Pr (\Delta + X > 0) -\Pr(\Delta + X + \xi >0)| \\
-%% &= |F_X(-\Delta)- F_X(-\Delta - \xi)| \\
-%% &= |\nabla F(-\Delta) \xi + o(\xi^2)|\\
-%% &\leq  |\nabla F(-\Delta) \xi| +| o(\xi^2)| \leq 2|\nabla F(-\Delta)| |\xi| \leq 2\ell \xi,
-%% \end{align*}
-%% where we use Taylor's Theorem ($o(\xi^2)$ represents higher-order terms that have smaller absolute
-%% value) and the Triangle Inequality.  Since $|X_\xi| < \zeta$, $|P_a - P_a'| < 2 \zeta \ell$.
-
-%% Next, we show the distance of new distributions obtained by applying $P_i$ and $P_i'$ on an
-%% arbitrary distribution $D$ once is bounded if we use the same proposer, i.e.  $\|P_i\circ D -
-%% P'_i\circ D\| \leq 4\zeta \ell \;\; \forall D$. We write $P_i(\theta \mid \theta') = P_a(\theta, \theta')
-%% q(\theta'\mid \theta) + (1-P_a(\theta,\theta')) \delta_D(\theta' - \theta)$, where $\delta_D$
-%% is the Dirac delta function. The total variation distance between two generated distributions is
-%% \begin{align*}
-%% \|P_i\circ D - P'_i\circ D\| &= \int_{\theta'} \left| \int_{\theta}((P_a-P_a') q(\theta'|\theta) + (1-P_a - 1+P_a') \delta_D(\theta -\theta')) dD(\theta) \right| d\theta' \\
-%% &= \int_{\theta'} \left| \int_{\theta} (P_a- P_a')(q(\theta'|\theta) - \delta_D(\theta - \theta')) dD(\theta) \right|  d\theta'\\ 
-%% &\leq 2 \zeta \ell \int_{\theta'} \left| \int_{\theta}(q(\theta'|\theta) + \delta_D(\theta - \theta')) dD(\theta) \right| d\theta'\\
-%% &\leq 2 \zeta \ell \int_{\theta'} ( D'(\theta') + D(\theta') ) d\theta'\\
-%% &= 4 \zeta \ell,
-%% \end{align*}
-%% where $D'$ is the distribution generated if we always accept the proposed point. (In the last line,
-%% we integrate two probability density functions, resulting in a value of two.) This matches our
-%% desired bound.
-
-%% \subsection{Proof of Lemma~\ref{lem:theory2}}\label{app:theory2}
-
-%% From Lemma~\ref{lem:gaussian}, only the $\sum_{i=1}^n (\log p(x_i\mid \theta') - \log p(x_i\mid
-%% \theta))$ term brings randomness into $\Delta'$. To simplify the subsequent notation, we define
-%% $g_i(\theta) = \log p(x_i\mid \theta)$, and $q_i = g_i(\theta') - g_i(\theta)$. Then by Taylor's Theorem:
-%% \[
-%% |q| = |g(\theta') - g(\theta)| = |\nabla g(\theta)^T(\theta' - \theta) + o(\theta' - \theta)^2| \leq 2\epsilon k.
-%% \]
-%% Thus, given $\theta$ and $\theta'$, the variance of $\Delta'$ can be written as:
-%% \begin{align*}
-%% {\rm Var}(\Delta') &= {\rm Var}\left[\sum_{i=1}^m g_i(\theta') - g_i(\theta)\right] = {\rm Var}\left(\sum_{i=1}^m q_i\right) \\
-%% &= m {\rm Var} (q_i) + m(m-1) {\rm Cov}_{i \neq j}(q_i,q_j) \\
-%% &= m{\rm Var}(q_i) - \frac{m(m-1)}{N-1} {\rm Var}(q_i) \\
-%% &\leq 4\left(m - \frac{m(m-1)}{N-1}\right)k^2 \epsilon^2,
-%% \end{align*}
-%% as desired.
-
-%% \subsection{Proof of Theorem~\ref{thm:theory3}}\label{app:theory3}
-
-%% First, by Theorem 1 in~\cite{cutting_mh_2014}, $\|P_i \circ D_0 - \pi\| \leq \eta \|D_0
-%% - \pi\|$ and $\|P_i\circ D-P'_i\circ D\| \leq \epsilon_i C$ for all $D$. The norm between the
-%% stationary distributions is $\|\pi - \pi_i'\|\leq \frac{\epsilon_i C}{1-\eta}$.
-
-%% Second, by Theorem 3.6 in~\cite{yang2013sequential}, we have 
-%% \[
-%% \| P_t' \circ \cdots \circ P_1' \circ D_0 - \pi_t \| \leq \sum_{s=1}^t \left\{\prod _{u=s+1}^t
-%% \rho_u (1-\alpha_u)\right\} \rho_s \alpha_s,
-%% \]
-%% where $\alpha = \frac{\epsilon_i C}{1-\eta}$.  Thus, we get:
-%% \begin{align*}
-%%  \| P_t' \circ \cdots \circ P_1' \circ D_0 - \pi_0 \| &\leq \|P_t' \circ \cdots \circ P_1' \circ D_0 - \pi_t\| + \|\pi_t - \pi_0\| \\
-%%  &\leq \sum_{s=1}^t \left\{\prod _{u=s+1}^t \rho_u (1-\alpha_u)\right\} \rho_s \alpha_s + \alpha_t,
-%% \end{align*}
-%% as desired.
-
-%% \subsection{Proof of Theorem~\ref{thm:efficiency}}\label{app:theory4}
-%% Since only the $\frac{N}{nT}\sum_{i=1}^n \left(\log p(x_i|\theta') - \log p(x_i|\theta) \right)$ term brings randomness into $\Delta'$. Define $X_i = \frac{N}{T}\left(\log p(x_i|\theta') - \log p (x_i|theta_t) \right)$, $\tilde{X_i} = X_i - E(X_i)$, and $Y_n = \frac{\sum_{i=1}^n \tilde{X_i}}{n}$ (i.e. $Y_n$ is the $\Delta' - E(\Delta')$). From Berry-Esseen theorem, $|F_n(x) - \Phi(x)| \leq \frac{C\rho}{\sigma^3\sqrt{n}}$, where $\Phi()$ is the CDF of standard normal distribution, $F_n()$ is the CDF of $Y_n$, $C$ is the constant parameter which is below 0.4748, $\rho = E(|\tilde{X_i}|^3)$, and $\sigma^2 = E(\tilde{X_i}^2)$. Since $\Delta'$ is an unbiased estimator of $\Delta$, the CDFs between $\Delta'$ and $\Delta + X_{\rm norm}$ has the same max gap (i.e. $\frac{C\rho}{\sigma^3\sqrt{n}}$).
-
-%% From Equation~\ref{eq:criteria}, we show we want to use $\Delta' + X_{\rm corr}$ to approximate $\Delta + X_{\rm norm} + X_{\rm corr}$. Since $|F_{\Delta'} - F_{\Delta + X_{\rm norm}}| \leq \frac{C\rho}{\sigma^3\sqrt{n}}$, for the worst case, assume $\exists \xi, ~{\rm s.t.} |f_{\Delta'}(\xi) - f_{\Delta + X_{\rm norm}} (\xi)| = \max_x |f_{\Delta'}(x) - f_{\Delta + X_{\rm norm}}(x)| \overset{\Delta}{=} \eta $, where $f()$ represents the PDF function. Because PDF of $X_{\rm corr}$ has the positive value and unit area, we have: 
-%% \begin{align*} 
-%% & |(f_{\Delta'}*f_{X_{\rm corr}})(\xi) - (f_{\Delta+X_{\rm norm}}*f_{X_{\rm corr}})(\xi)| \\
-%% & = |\int_{-\infty}^{\infty}f_{\Delta'}(\xi-\tau)f_{X_{\rm corr}}(\tau)d\tau - \int_{-\infty}^{\infty}f_{\Delta + X_{\rm norm}} (\xi -\tau) f_{X_{\rm corr}} (\tau) d\tau| \\
-%% & = |\int_{-\infty}^{\infty} (f_{\Delta'}(\xi-\tau) - f_{\Delta + X_{\rm norm}} (\xi -\tau)) f_{X_{\rm corr}} (\tau) d\tau| \\
-%% & \leq \int_{-\infty}^{\infty} |f_{\Delta'}(\xi-\tau) - f_{\Delta + X_{\rm norm}} (\xi -\tau) |f_{X_{\rm corr}} (\tau) d\tau  \\
-%% & \leq \int_{-\infty}^{\infty} \eta f_{X_{\rm corr}} (\tau) d\tau \leq \eta
-%% \end{align*}
-
-%% where ``*'' represents the convolution operation.
-
-%% Thus, after convolution with $X_{\rm corr}$, the maximum gap between PDF of the $\Delta'$ and $\Delta + X_{\rm norm}$ decreases. Thus, $|F_{\Delta' + X_{\rm corr}} - F_{\Delta + X_{\rm norm} + X_{\rm corr}}| \leq |F_{\Delta'} - F_{\Delta + X_{\rm norm}}| \leq \frac{C\rho}{\sigma^3\sqrt{n}}$. Thus, $|P_a - P_a'| = |\Pr (\Delta + X_{\rm norm} + X_{\rm corr} > 0) - \Pr (\Delta' + X_{\rm corr} > 0)|=|F_{\Delta + X_{\rm norm} + X_{\rm corr}}(0) - F_{\Delta' + X_{\rm corr}}(0)| \leq \frac{C\rho}{\sigma^3\sqrt{n}}$. We can choose $n$ so that $\frac{C\rho}{\sigma^3\sqrt{n}} < \varepsilon$ to ensure $|P_a - P_a'| < \varepsilon$. Thus, the requirement for $n$ is $n \geq \frac{C^2\rho^2}{\sigma^6 \varepsilon^2}$.   
+The samples $\theta$, $(\theta'-\theta)$ and $u$ are drawn independently and so
+the probability of the conjunction of these events is $c = p_0 p_1 p_2 =
+0.0085$.
 
 
 
@@ -1557,6 +1339,9 @@ std}(\Delta')$, we initialize the temperature at 1000, and adjust it at iteratio
 $T_i = \max\{1, 1000/(i+1)^{0.5}\}$.
 
 \fi
+
+
+
 % Daniel: here are example LaTeX codes for figures and tables if we want to use them.
 %\begin{figure}[h]
 %  \centering
