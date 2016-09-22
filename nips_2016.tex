@@ -35,6 +35,7 @@ language=matlab,
 framexleftmargin=20pt}
 
 \newcommand{\simiid}{\overset{\textrm{i.i.d.}}{\sim}}
+\DeclareMathOperator*{\argmin}{arg\,min}
 \newtheorem{lemma}{Lemma}
 \newtheorem{theorem}{Theorem}
 \newtheorem{corollary}{Corollary}
@@ -116,28 +117,27 @@ bound on parameter distribution across its domain.  The amount of data reduction
 depends on the accuracy of this bound, and such bounds are only available for
 relatively simple distributions.
 
-Here we derive a new test which incorporates the variability in
-minibatch statistics as {\em a natural part of the test}. Because of
-this, the amount of data required for each test is fixed with high
-probability and in expected value. We use a Barker test function
-\cite{Barker65} rather than a Metropolis test, which makes our test
-naturally error tolerant. The idea of using a noise-tolerant test
-using Barker's test function was suggested but not explored
-empirically in \cite{Bardenet15} section 6.3. But the asymptotic test
-statistic CDF and the Barker function are different, which leads to
-fixed errors for the approach in \cite{Bardenet15}. Here we show that
-the difference between the distributions can be corrected with an
-additive random variable. This leads to a test which is fast, and
-whose error can be made arbitrarily small.
+Here we derive a new test which incorporates the variability in minibatch
+statistics as {\em a natural part of the test}. Because of this, the amount of
+data required for each test is fixed with high probability and in expected
+value. {\color{blue} Daniel: we really need to show the amount of data is fixed
+with ``high probability'' (the results suggest ``OK probability'').} We use a
+Barker test function~\cite{Barker65} rather than a Metropolis test, which makes
+our test naturally error tolerant. The idea of using a noise-tolerant test using
+Barker's test function was suggested but not explored empirically
+in~\cite{Bardenet15} section 6.3. But the asymptotic test statistic CDF and the
+Barker function are different, which leads to fixed errors for the approach
+in~\cite{Bardenet15}. Here we show that the difference between the distributions
+can be corrected with an additive random variable. This leads to a test which is
+fast, and whose error can be made arbitrarily small.
 
-Our test is applicable when the variance (over data samples) of the
-log acceptance probability is small enough (less than 1). Its not
-clear at first why this quantity should be so bounded. But we will see
-that it is ``natural'' for well-specified models running
-Metroplis-Hastings sampling with optimal proposals
-\cite{OptimalScaling01} on a full dataset. When we reduce the amount
-of data for the test, the variance goes up, and we have to reduce
-it in one of several ways. Either:
+Our test is applicable when the variance (over data samples) of the log
+acceptance probability is small enough (less than 1). Its not clear at first why
+this quantity should be bounded, but we will show that it is ``natural'' for
+well-specified models running Metropolis-Hastings sampling with optimal
+proposals~\cite{OptimalScaling01} on a full dataset. When we reduce the amount
+of data for the test, the variance goes up, and we have to reduce it in one of
+several ways. Either:
 
 \begin{itemize}
   
@@ -167,8 +167,7 @@ Bayesian inference task is asymptotically normal, and has variance
 that scales inversely with the number of data samples $N$. This mode
 is extremely sharp for large datasets, which may contain millions or
 billions of samples. Simply sampling from this distribution is one
-application, but an efficient proposal distribution
-\cite{OptimalScaling01} has similar variance to the target
+application, but an efficient proposal distribution~\cite{OptimalScaling01} has similar variance to the target
 distribution and will diffuse to it extremely slowly from an
 initialization value which is (likely to be) many standard deviations
 away. If there are any other strong modes, it is very likely for the
@@ -181,11 +180,11 @@ our acceptance test to be applied.
 
 A second question concerns step size. Once we have fixed temperature,
 our variance constraint implies that we have to trade-off proposal
-step size $s$ and batch size $b$ ($b \propto p^2$). i.e. we can make
+step size $s$ and batch size $b$ ($b \propto p^2$), i.e. we can make
 many small steps, or one large step, with a given batch of data. One
 of the primary drivers of this work is our belief in the value of
 small steps. For applications to neural networks or other models where
-the posterior is multimodel, posterior inference is arguably a search
+the posterior is multimodal, posterior inference is arguably a search
 process. Covering the search space densely with small steps is much
 more valuable than few sparse steps toward the nearest optimum. In
 this mode, Metropolis-Hastings can be used in similar fashion to
@@ -347,7 +346,8 @@ prior on $\theta$, we see that $\psi(u,\theta',\theta)$ reduces to $\log u$. Our
 worst-case scenario is specified in Lemma~\ref{lem:worst_case}.
 {\color{blue} Daniel: this might be a silly question, but why do we assume the
 proposal has mean $\theta'-\theta$? I thought it would have a mean of $\theta$
-because that is the current sample and the Gaussian is centered at that point?}
+because that is the current sample and the Gaussian is centered at that point?
+That will also clarify my confusion about the $\psi$ function.}
 
 \begin{lemma}\label{lem:worst_case}
     For the model in Section~\ref{ssec:gaussian_example}, there exists a fixed
@@ -366,6 +366,10 @@ hypothesis test needs to separate nearly-equal values.  It follows that the
 accelerated M-H tests in~\cite{cutting_mh_2014,icml2014c1_bardenet14} require at
 least a constant fraction $\geq c$ in the amount of data consumed per test
 compared to full-dataset tests, so their speed-up is at most $1/c$.
+{\color{blue} Daniel: doesn't our method also have this issue? In general, it
+seems like any test that requires minibatch information to show deviation from
+the full batch version will suffer from this problem. Why not just force us to
+stop if we use too much data?}
 
 \subsection{MCMC Posterior Inference}
 There is a separate line of MCMC work drawing principles from statistical
@@ -390,9 +394,6 @@ we can use larger step sizes, but earlier we \emph{also} argue that we need
 
 
 \section{A New Metropolis-Hastings Acceptance Test}\label{sec:our_algorithm}
-
-{\color{blue} Daniel: cleaned up this section, deleted redundant delta equation,
-deleted a duplicate equation in Lemma~\ref{lem:detailed_balance}.}
 
 \subsection{Log-Likelihood Ratios}\label{ssec:log_likelihood_ratios}
 
@@ -443,16 +444,17 @@ Metropolis acceptance test $\alpha(\theta,\theta') = g(\Delta(\theta,\theta')) =
 terms of acceptance rate, since it accepts with probability 1 for $\Delta > 0$.
 
 \subsection{Barker (Logistic) Acceptance Function}\label{ssec:barker_function}
-For our new MH test we use the Barker logistic function:
-$g(s)=(1+\exp(-s))^{-1}$ \cite{Barker65}. Straightforward arithmetic shows that it
-satisfies the condition in Lemma~\ref{lem:detailed_balance}.  While it
-is slightly less efficient than the Metropolis test when used on the
-full dataset, we will see soon that its smoothness allows it to
-naturally tolerate substantial variance in its input argument. This in
-turn will lead to a much more efficient test on subsets of data.
+For our new MH test we use the Barker logistic~\cite{Barker65} function:
+$g(s)=(1+\exp(-s))^{-1}$. Straightforward arithmetic shows that it satisfies the
+condition in Lemma~\ref{lem:detailed_balance}.  While it is slightly less
+efficient than the Metropolis test when used on the full dataset, we will show
+that its smoothness allows it to naturally tolerate substantial variance in its
+input argument. This in turn will lead to a much more efficient test on subsets
+of data. {\color{blue} Daniel: aside from the experiments, where do we show it
+``naturally tolerates substantial variance'' in the input?} 
 
-Assume we begin with the current sample $\theta$  and a candidate sample
-$\theta'$. Let $V$ be a uniform random variable $V \sim \mathcal{U}(0,1)$. We
+Assume we begin with the current sample $\theta$ and a candidate sample
+$\theta'$, and that $V \sim \mathcal{U}(0,1)$ is a uniform random variable. We
 accept $\theta'$ if $g(\Delta(\theta,\theta')) > V$, and reject otherwise.
 Since $g(s)$ is monotonically increasing, its inverse $g^{-1}(s)$ is
 well-defined and unique. So an equivalent test is to accept $\theta'$ iff
@@ -474,15 +476,15 @@ our NIPS submission because I find it much clearer.}
 
 \subsection{A Minibatch Acceptance Test}\label{ssec:deltas_minibatch}
 
-We now move to acceptance testing using the minibatch estimator
-$\Delta^*(\theta,\theta')$. From equation (\ref{eq:delta3}),
+We now describe acceptance testing using the minibatch estimator
+$\Delta^*(\theta,\theta')$. From Equation~\ref{eq:delta3},
 $\Delta^*(\theta,\theta')$ can be represented as a constant term plus the mean
 of $b$ IID terms $\Lambda_i(\theta,\theta')$ of the form
 $N\log\frac{p(x_i|\theta')}{p(x_i|\theta)}$. As $b$ increases,
 $\Delta^*(\theta,\theta')$ therefore has a distribution which approaches a
-normal distribution by the central limit theorem. Later we will provide specific
-bounds between the CDF of $\Delta^*(\theta,\theta')$ and a Normal CDF, but for
-now we use an asymptotic argument. 
+normal distribution by the Central Limit Theorem. We now describe this using an
+asymptotic argument and defer specific bounds between the CDFs of
+$\Delta^*(\theta,\theta')$ and a Gaussian to Section~\ref{sec:analysis}.
 
 In the limit, since $\Delta^*$ is normally distributed about its mean $\Delta$,
 we can write
@@ -492,146 +494,137 @@ we can write
 where $\mathcal{\bar{N}}(0, \sigma^2(\Delta^*))$ denotes a distribution which is
 approximately normal with variance $\sigma^2(\Delta^*)$.  But to perform the
 test in Equation~\ref{eq:the_exact_test} we want $\Delta + X$ for a logistic
-random $X$ (call it $X_{\rm log}$ from now on). In \cite{Bardenet15} it was
-proposed to use $\Delta^*$ in a Barker test anyway and tolerate the fixed error
-caused by this approximation. 
+random variable $X$ (call it $X_{\rm log}$ from now on). In~\cite{Bardenet15} it
+was proposed to use $\Delta^*$ in a Barker test anyway and tolerate the fixed
+error caused by this approximation. 
 
 Our approach is to instead decompose $X_{\rm log}$ as
 \begin{equation}\label{eq:deconvolution}
     X_{\rm log} = X_{\rm norm}+X_{\rm corr},
 \end{equation}
-where we assume $X_{\rm norm}$ has zero-mean, Normal distribution with
-variance $\sigma^2$, and $X_{\rm corr}$ is a zero-mean ``correction''
-variable with density $C_{\sigma}(X)$.  The two variables are added
-(i.e., their distributions convolve) to form $X_{\rm log}$. It will be
-convenient to express this relationship in terms of the CDFs $N_{\sigma}(X_{\rm
-  norm}) = \Phi(X_{\rm norm}/\sigma)$ and $S(X_{\rm log})$, where
-$\Phi(.)$ is the Normal CDF with zero mean and unit variance and
-$S(.)$ is the standard logistic function.
- 
-Equation (\ref{eq:deconvolution}) implies that $S = N_{\sigma} * C_{\sigma}$ where $*$ denotes convolution. We will later
-derive a numerical representation of $C$ by deconvolution, and using this we can generate
-samples of $X_{\rm corr}$. 
+where we assume $X_{\rm norm} \sim \mathcal{N}(0, \sigma^2)$ and $X_{\rm corr}$
+is a zero-mean ``correction'' variable with density $C_{\sigma}(X)$.  The two
+variables are added (i.e., their distributions convolve) to form $X_{\rm log}$.
+This decomposition requires an appropriate $X_{\rm corr}$ distribution. We show
+in Section~\ref{sec:correction} that it is possible to use deconvolution to
+derive a highly accurate representation of the density $C_\sigma(X)$.
+Figure~\ref{fig:deconvolution} shows three examples of $X_{\rm norm}$ and
+$X_{\rm corr}$ distributions that sum to $X_{\rm log}$.
 
-The acceptance test is now:
+Using $X_{\rm corr}$ samples from $C_\sigma(X)$, the acceptance test is now
 \begin{equation}\label{eq:criteria}
     \Delta + X_{\rm log} = (\Delta + X_{\rm norm}) + X_{\rm corr} = \Delta^* + X_{\rm corr} >0.
 \end{equation}
-i.e. given an estimate $\Delta^*$ from the current data minibatch (assuming its
-variance is small enough) we test acceptance by adding a random variable $X_{\rm corr}$ and
-then accept $\theta'$ if the result is positive.
+Therefore, assuming the variance of $\Delta^*$ is small enough, if we have an
+estimate of $\Delta^*$ from the current data minibatch, we test acceptance by
+adding a random variable $X_{\rm corr}$ and then accept $\theta'$ if the result
+is positive (and reject otherwise).
 
-If $\mathcal{\bar{N}}(0, \sigma^2(\Delta^*))$ is exactly $\mathcal{N}(0, \sigma^2(\Delta^*))$,
-the above test is exact as well. And as we will see later,  if there is a maximum error $\epsilon$ between
-the CDF of $\mathcal{\bar{N}}(0, \sigma^2(\Delta^*))$ and the CDF of $\mathcal{N}(0, \sigma^2(\Delta^*))$,
-then the acceptance test has an error of at most $\epsilon$. 
+If $\mathcal{\bar{N}}(0, \sigma^2(\Delta^*))$ is exactly $\mathcal{N}(0,
+\sigma^2(\Delta^*))$, the above test is exact as well, and as we show in
+Section~\ref{sec:analysis}, if there is a maximum error $\epsilon$ between the
+CDF of $\mathcal{\bar{N}}(0, \sigma^2(\Delta^*))$ and the CDF of $\mathcal{N}(0,
+\sigma^2(\Delta^*))$, then the acceptance test has an error of at most
+$\epsilon$ relative to the full batch version. {\color{blue} Daniel: this
+subsection is improved from earlier. My main concern now is that $X_{\rm norm}$
+is described as being both approximately Gaussian $\bar{\mathcal{N}}$ and
+Gaussian $\mathcal{N}$ here. We may want to clear that up; in our NIPS
+submission we actually used a new variable $\varepsilon$ for that and assigned
+it to be the $\mathcal{N}$ distribution.}
 
 \begin{figure}[t]
     \centering
     \includegraphics[width=1\textwidth]{mh_convolution_diagram_v2}
     \caption{
-    Three examples of $X_{\rm norm}$ and $X_{\rm corr}$ distributions that convolve to form the
-    standard logistic distribution. We use three standard deviation values of $X_{\rm norm}$. The
-    two red curves convolve to form the logistic, etc. The $y$-axis is capped at 0.5 for
-    readability. This figure must be viewed in color.
+    Three examples of $X_{\rm norm}$ and $X_{\rm corr}$ distributions that
+    convolve to form the standard logistic distribution. We use three standard
+    deviation values of $X_{\rm norm}$. The two red curves convolve to form the
+    logistic, etc. The $y$-axis is capped at 0.5 for readability. This figure
+    must be viewed in color. {\color{blue} Daniel: TODO Change figure to use
+    LaTeX for the titles.}
     }
     \label{fig:deconvolution}
     %\vspace{-10pt}
 \end{figure}
 
-%% It is important to understand why we use Equations~\ref{eq:deconvolution} and~\ref{eq:criteria}. The
-%% deconvolution process allows us to use $\Delta' + X_{\rm corr}$ as a proxy for $\Delta + X$. It
-%% works because if we know the distribution\footnote{Computing the distributions of $\varepsilon$ and
-%% $X_{\rm norm}$ reduces to finding their standard deviations.} of $\varepsilon$ (from
-%% Equation~\ref{eq:relationship}), then we can pretend that our $\Delta'$ is in fact $\Delta$. To
-%% ``insert'' $\varepsilon$ into our test, we deconvolve $X$ so that one of its components, $X_{\rm
-%% norm}$, plays the part of $\varepsilon$. In light of our revised MH test, the previous discussion
-%% raises the question: in an iteration of MCMC with current $\theta$ and proposed $\theta'$, how do
-%% we know the distribution of $X_{\rm corr}$? We need the correct distribution to sample the
-%% \emph{values} of $X_{\rm corr}$ appropriately. This procedure consists of three major steps.
 
-%% \begin{enumerate}[noitemsep]
-%%     \item We first need to estimate the standard deviation of $X_{\rm norm}$ (i.e. the standard deviation of $\Delta'$). We use one minibatch data to complete this task. From the proof of Lemma~\ref{lem:gaussian}, we know the randomness comes from $\frac{N}{n}\sum_{i=1}^n \left(\log p(x_i|\theta') - \log p(x_i|\theta) \right)$. Thus, ${\rm var}(\Delta') = \frac{N^2}{n^2}\sum_{i=1}^n{\rm var}\left (  \log p(x_i|\theta') - \log p(x_i|\theta) \right ) = \frac{N^2}{n}{\rm var}\left (  \log p(x_i|\theta') - \log p(x_i|\theta) \right )$. We use data instances in one minibatch to estimate the ${\rm var} \left (  \log p(x_i|\theta') - \log p(x_i|\theta) \right )$. Since there are $n$ data instances in one minibatch, the estimation of ${\rm var} \left (  \log p(x_i|\theta') - \log p(x_i|\theta) \right )$ has high accuracy. In our experiments (see Section~\ref{sec:experiments}) we also use the complete data to obtain the population variance of $\left (  \log p(x_i|\theta') - \log p(x_i|\theta) \right )$, and use the nonparametric Bootstrap to estimate the ${\rm std(std}(\Delta'))$, so that we can construct the confidence interval of ${\rm std}(\Delta')$ to reveal the accuracy of our estimation.
-
-%% 	\item If the ${\rm std}(\Delta') > 1.2$, the decomposition of $X$ (i.e. Equation~\ref{eq:deconvolution}) is unstable. We consume more minibatches to decrease the ${\rm std}(\Delta')$. We update the value of $\Delta'$ by $\Delta' = (k\Delta'_{\rm old} + \Delta'_{\rm new}) / (k+1)$, where $\Delta'_{\rm old}$ is the existing $\Delta'$ which uses $k$ minibatches to computed (usually $k=1$), and $\Delta'_{\rm new}$ is the $\Delta'$ computed from the new minibatch. We also update the value of ${\rm std}(\Delta')$ by ${\rm std}(\Delta') = \sqrt{\left ( k^2 {\rm var}(\Delta'_{\rm old}) + {\rm var}(\Delta'_{\rm new}) \right ) / (k+1)^2}$. Thus, we can decrease the ${\rm std}(\Delta')$ by consuming more data until the ${\rm std}(\Delta') > 1.2$. With help of temperature (see Section~\ref{ssec:discussion}), we will show that usually the mean of minibatch consumed per iteration is below 2 in Section~\ref{sec:experiments}. Later our efficiency analysis in Section~\ref{sec:theory} will reveal that the number of data instance consumed by our algorithm is much fewer than that of existing algorithms.
-
-%%     \item Once we have ${\rm std}(\Delta')$, we can determine the distribution of $X_{\rm corr}$
-%%     from standard deconvolution techniques. These rely on the well-known fact that the Fourier
-%%     transform of a convolution is the product of the individual Fourier transforms. In practice, we
-%%     pre-compute distributions of $X_{\rm corr}$ for different ${\rm std}(\Delta')$ values to
-%%     facilitate the sampling process.
-%% \end{enumerate}
 
 \section{Computing the Correction Distribution}\label{sec:correction}
 
-Our goal is to compute the distribution of the correction variable $X_{\rm corr}$ such that
-$X_{\rm norm} + X_{\rm corr} = X_{\rm log}$, where $X_{\rm norm} \in \mathcal{N}(0,\sigma)$
-and $X_{\rm log}$ has a standard logistic CDF $(1+\exp(-X))^{-1}$.
-In the next section we show that the accuracy of the test depends on the absolute
-error between the CDFs of $X_{\rm norm} + X_{\rm corr}$ and the distribution of $X_{\rm log}$.
-So we minimize this in our construction.
+Our proposed test in Equation~\ref{eq:criteria} requires knowing the
+distribution of the correction variable $X_{\rm corr}$ such that $X_{\rm norm} +
+X_{\rm corr} = X_{\rm log}$, where $X_{\rm norm} \sim \mathcal{N}(0,\sigma^2)$
+and $X_{\rm log}$ has a standard logistic CDF, $(1+\exp(-X))^{-1}$. In
+Section~\ref{sec:analysis}, we show that the accuracy of the test depends on the
+absolute error between the CDFs of $X_{\rm norm} + X_{\rm corr}$ and $X_{\rm
+log}$. Consequently, we need to minimize this in our construction of $X_{\rm
+corr}$. More formally, let $\Phi_\sigma(X) = \Phi(X/\sigma)$ where $\Phi$ is the
+standard normal CDF\footnote{Hence, $\Phi_\sigma$ is the CDF of a zero-mean
+Gaussian with variance $\sigma$.}, $S(X)$ be the logistic function, and
+$C_{\sigma}(X)$ be the \emph{density} of the correction $X_{\rm corr}$
+distribution. Our goal, based on Equation~\ref{eq:deconvolution}, is to solve
+the following optimization problem:
+\begin{equation}\label{eq:overall_corr_problem}
+    C_\sigma^* = \argmin_{C_\sigma} |\Phi_{\sigma} * C_{\sigma} - S|
+\end{equation}
+where $*$ denotes convolution. {\color{blue} Daniel: This is very unusual use of
+convolutions (i.e., CDF * DENSITY = CDF). It's valid but I was very surprised to
+know that.} For computation of $C_\sigma$, we assume that its input $Y$ and
+another variable $X$ lie in the intervals $[-V,V]$ and $[-2V,2V]$, respectively.
+{\color{blue} Daniel: I am a little confused at the different interval sizes.}
+In continuous form, the optimization problem is therefore
+\begin{equation}\label{eq:conv1}
+    C_\sigma^* = \argmin_{C\sigma} \; \sup_{x \in [-2V,2V]}\left|\int_{-V}^{V}\Phi_{\sigma}(x-y) C_{\sigma}(y)dy - S(x)\right|
+\end{equation}
+To get $C_\sigma^*$ in a practical form, we discretize $X$ and $Y$ into $4N+1$
+and $2N+1$ values respectively. Writing $X_i = i*V/N$ and $Y_j = j*V/N$, the
+condition in Equation~\ref{eq:conv1} can be re-expressed as:
+\begin{equation}\label{eq:conv2}
+    C_\sigma^* = \argmin_{C_\sigma} \max_{i \in \{-2N,\ldots,2N\}}\left|\sum_{j = -N}^{N}\Phi_{\sigma}(X_i-Y_j) C_{\sigma}(Y_j) - S(X_i)\right|.
+\end{equation}
+Defining a matrix $M$ and vectors $u$ and $v$ such that $M_{ij} =
+\Phi_{\sigma}(X_i-Y_j)$, $u_j = C_{\sigma}(Y_j)$, and $v_i = S(X_i)$,
+Equation~\ref{eq:conv2} is equivalent to minimizing the $L_1$ norm:
+\begin{equation}\label{eq:optimization_l1}
+    u^* = \argmin_{u} \|Mu-v\|_1.
+\end{equation}
+{\color{blue} Daniel: Equation~\ref{eq:optimization_l1} is finding
+the $C_\sigma$ minimizing the $L_1$ norm, but the previous one,
+Equation~\ref{eq:conv2}, is finding the $C_\sigma$ that is minimizing the
+$L_\infty$ norm, i.e., the maximum value! If we want this to be the $L_1$ norm
+(and I think we do) then Equation~\ref{eq:conv2} needs an outer sum over the $i$
+terms. In addition, Equation~\ref{eq:conv1} also needs to be modified, perhaps
+eliminate the ``sup'' but keep $x \in [-2V,2V]$}
 
-Our goal then is to minimize
-\begin{equation}
-  |\Phi_{\sigma} * C_{\sigma} - S|
+We have the additional constraint that $u_j > 0$ for all $j$, since $u$
+represents a density. We first explored optimizing this problem with linear
+programming to find a $u$ minimizing $|Mu - v|$ subject to $u \ge 0$. This was
+tractable up to a few hundred dimensions for $u$. However, the discretization
+error is bounded by the curvature of the underlying functions which are here
+slightly less than one, i.e.  the errors are of the order of $(V/N)^2$.
+{\color{blue} Daniel: unfortunately, I do not understand what this means (i.e.,
+the curvature and how the $(V/N)^2$ is obtained).} Here we chose $V=20$ to
+provide adequate containment of the distributions (the CDFs are extremely close
+to either zero or one outside this range). So with 200 points, we have a
+discretization error of approximately 0.01, which is relatively large.  To yield
+higher resolution and lower error, we switched to a least squares solution:
+\begin{equation}\label{eq:optimization_l2}
+    u^* = \arg_u \min \; \|Mu-v\|_2^2 + \lambda \|u\|_2^2,
 \end{equation}
-where $\Phi_{\sigma}(X) = \Phi(X/\sigma)$ and $\Phi$ is the standard
-normal CDF, $S(X)$ is the logistic function, $C_{\sigma}(X)$ is the
-{\em density} of the correction distribution, and $*$ denotes
-convolution. In continuous form, this value is
-\begin{equation}
-  \label{eq:conv1}
-  \sup_X\left|\int_{-V}^{V}\Phi_{\sigma}(X-Y) C_{\sigma}(Y) dY - S(X)\right|
-  \end{equation}
-Assuming $X_{\rm corr}$ lies in the interval $[-V,V]$. For computation of $C_{\sigma}(Y)$, we
-discretize $X$ and $Y$ into $4N+1$ and $2N+1$ values respectively, with $X \in [-2V,2V]$ and
-$Y \in [-V,V]$. Writing $X_i = i * V / N$ and $Y_j = j * V / N$, the condition in
-equation (\ref{eq:conv1}) can be written:
-\begin{equation}
-  \max_{i \in \{-2N,\ldots,2N\}}\left|\sum_{j = -N}^{N}\Phi_{\sigma}(X_i-Y_j) C_{\sigma}(Y_j) - S(X_i)\right|
-\end{equation}
-and defining a matrix $M_{ij} = \Phi_{\sigma}(X_i-Y_j)$, vectors $U_j = C_{\sigma}(Y_j)$ and $V_i = S(X_i)$, the
-above is equivalent to minimizing the 1-norm:
-\begin{equation}
-  \label{eq:error_norm}
-  ||MU-V||_1
-\end{equation}
-wrt $U$. We have an additional constraint that $U_j > 0$ for all $j$, since $U$ represents
-a density. We first explored optimizing this system with linear programming to find the $U$ such that:
-\begin{equation}
-  \begin{split}
-    & \min(\epsilon) \qquad \hbox{where} \\
-    & -\epsilon \leq MU - V \leq \epsilon \\
-    & U \geq 0
-  \end{split}
-\end{equation}
-which was tractable up to a few hundred dimensions. However, the discretization error is bounded by
-the curvature of the underlying functions which are here slightly less than one. i.e.
-the errors are of the order of $(V/N)^2$. Here we chose $V=20$ to provide adequate containment of
-the distributions (the CDFs are extremely close to either zero or one outside this range). So
-with 200 points, we have a discretization error of approximately 0.01. This is quite high. To yield
-higher resolution and lower error, we switched to a least squares solution. 
-Thus we seek to find $U$ that minimizes
-\begin{equation}
-  ||MU-V||_2
-\end{equation}
-Its not clear that this will yield a good 1-norm for equation (\ref{eq:error_norm}), but in practice it does.
-Because the solution of this system is not very stable, especially in high dimensions, we actually
-minimize a regularized version
-\begin{equation}
-  ||MU-V||_2 + \lambda||U||_2
-\end{equation}
-the solution is
-\begin{equation}
-  U = (M^T M + \lambda I)^{-1}V
-\end{equation}
-with this approach, there is no guarantee that $U \geq 0$. However, we have some
-flexibility in the choice of $\sigma$ in equation (\ref{eq:conv1}). As we decrease
-the variance of $X_{\rm norm}$, the variance of $X_{\rm corr}$ grows by the same amount
-and is in fact the result of convolution with a gaussian whose variance is the difference.
-Thus as $\sigma$ decreases, $C(X)$ grows and approaches the derivative of a
-logistic function at $\sigma = 0$. It retains some very weak negative values for $\sigma > 0$
-but removal of those values leads to very small error.
+where we add the standard regularization factor $\lambda$ for stability in high
+dimensions. The solution is well-known from the normal equations: $u^* = (M^TM +
+\lambda I)^{-1}M^Tv$, and in practice, it yields an acceptable $L_1$ norm for
+Equation~\ref{eq:optimization_l1}.
+
+With this approach, there is no guarantee that $u^* \geq 0$. However, we have
+some flexibility in the choice of $\sigma$ in Equation~\ref{eq:conv1}.
+{\color{blue} Daniel: is this the correct equation?} As we decrease the variance
+of $X_{\rm norm}$, the variance of $X_{\rm corr}$ grows by the same amount and
+is in fact the result of convolution with a Gaussian whose variance is the
+difference.  Thus as $\sigma$ decreases, $C(X)$ grows and approaches the
+derivative of a logistic function at $\sigma = 0$. It retains some very weak
+negative values for $\sigma > 0$ but removal of those values leads to very small
+error.
 
 \SetKwInOut{Input}{Input}
 \SetKwInOut{Output}{Output}
@@ -645,7 +638,7 @@ but removal of those values leads to very small error.
     \While {$\sigma^2(\Delta^*) \ge 1$ {\bf or} $\epsilon > \delta$}{
     	Draw $m$ more samples to augment the minibatch, update $\Delta^*$, $\sigma^2(\Delta^*)$ and $\epsilon$ estimates\;
     }
-    Draw $X_{\rm norm} \in \mathcal{N}(0,1-\sigma^2(\Delta*))$ and
+    Draw $X_{\rm norm} \sim \mathcal{N}(0,1-\sigma^2(\Delta*))$ and
     $X_{\rm corr}$ from the correction distribution $C_1(X)$\;
         
         \eIf{$\Delta^* + X_{\rm norm} + X_{\rm corr} > 0$}{
@@ -655,26 +648,30 @@ but removal of those values leads to very small error.
         }
     
 }
-\caption{A description of M-H sampling with our acceptance test.}
+\caption{A description of M-H sampling with our acceptance test. {\color{blue}
+Daniel: I think we may want to be careful about the use of $C_1(X)$ because that
+implies that we have a fixed $X_{\rm corr}$ density, but that $C_1(X)$ will
+change depending on the iteration and variance of $\Delta^*$, right? Hopefully
+not by much, but it still changes sometimes?}}
 \label{alg:our_algorithm}
 \end{algorithm}
 
 \begin{table}[t]
-  \centering
-  \begin{tabular}{|l|l|l|l|}
-    \hline
-     N & $\sigma$ & $\lambda$ & L1 error  \\
-        \hline
-     4000 & 0.9 & 1 & 1.0e-4  \\
-     4000 & 0.8 & 0.03 & 5.0e-6 \\
-     \hline
+    \caption{\color{blue} Daniel: TODO need a good title.}
+    \label{tab:xcorr}
+    \centering
+    \begin{tabular}{l l l l}
+    \toprule
+    $N$ & $\sigma$ & $\lambda$ & $L_1$ error  \\
+    \midrule
+    4000 & 0.9 & 1 & 1.0e-4  \\
+    4000 & 0.8 & 0.03 & 5.0e-6 \\
+    \bottomrule
     \end{tabular}
 \end{table}
 
-{\color{blue} Daniel: I can help improve the table and describe it. Also, I'm
-not sure right now about where Algorithm~\ref{alg:our_algorithm} should be
-placed in the paper. Still TODO for me: clean up and/or revise the optimization
-problem formulations and solutions.}
+{\color{blue} Daniel: TODO improve/describe Table~\ref{tab:xcorr} and try to
+relocate Algorithm~\ref{alg:our_algorithm} to be somewhere nicer.}
 
 
 \section{Analysis}\label{sec:analysis}
