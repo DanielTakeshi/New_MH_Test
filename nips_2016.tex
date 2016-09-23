@@ -366,10 +366,15 @@ hypothesis test needs to separate nearly-equal values.  It follows that the
 accelerated M-H tests in~\cite{cutting_mh_2014,icml2014c1_bardenet14} require at
 least a constant fraction $\geq c$ in the amount of data consumed per test
 compared to full-dataset tests, so their speed-up is at most $1/c$.
-{\color{blue} Daniel: doesn't our method also have this issue? In general, it
-seems like any test that requires minibatch information to show deviation from
-the full batch version will suffer from this problem. Why not just force us to
-stop if we use too much data?}
+
+{\color{blue} Daniel: quick question: I think we should explain why our method
+\emph{doesn't} run into this issue. I think it is because we rely on an
+approximation to $\Delta + X_{\rm log} > 0$ and that test does not require any
+``difference between an approximation and an exact version'' because it is
+\emph{already} an exact version, assuming the approximation is enough.
+
+Also, in terms of this example, if we are in the special case with using a lot
+of data, why not force early stopping?}
 
 \subsection{MCMC Posterior Inference}
 There is a separate line of MCMC work drawing principles from statistical
@@ -470,8 +475,8 @@ whether
     \Delta(\theta,\theta') + X > 0
 \end{equation}
 for a logistic random variable $X$. {\color{blue} Daniel: I think the text
-before Equation~\ref{eq:equivalent_test} should be similar to what we had in
-our NIPS submission because I find it much clearer.}
+before Equation~\ref{eq:the_exact_test} should be similar to what we had in our
+NIPS submission because I find it much clearer.}
 
 
 \subsection{A Minibatch Acceptance Test}\label{ssec:deltas_minibatch}
@@ -502,14 +507,14 @@ Our approach is to instead decompose $X_{\rm log}$ as
 \begin{equation}\label{eq:deconvolution}
     X_{\rm log} = X_{\rm norm}+X_{\rm corr},
 \end{equation}
-where we assume $X_{\rm norm} \sim \mathcal{N}(0, \sigma^2)$ and $X_{\rm corr}$
-is a zero-mean ``correction'' variable with density $C_{\sigma}(X)$.  The two
-variables are added (i.e., their distributions convolve) to form $X_{\rm log}$.
-This decomposition requires an appropriate $X_{\rm corr}$ distribution. We show
-in Section~\ref{sec:correction} that it is possible to use deconvolution to
-derive a highly accurate representation of the density $C_\sigma(X)$.
+where we assume $X_{\rm norm} \sim \mathcal{N}(0, \sigma^2)$ and that $X_{\rm
+corr}$ is a zero-mean ``correction'' variable with density $C_{\sigma}(X)$.  The
+two variables are added (i.e., their distributions convolve) to form $X_{\rm
+log}$.  This decomposition requires an appropriate $X_{\rm corr}$ distribution.
+We show in Section~\ref{sec:correction} that it is possible to use deconvolution
+to derive a highly accurate representation of $C_\sigma(X)$.
 Figure~\ref{fig:deconvolution} shows three examples of $X_{\rm norm}$ and
-$X_{\rm corr}$ distributions that sum to $X_{\rm log}$.
+$X_{\rm corr}$ densities that sum to $X_{\rm log}$.
 
 Using $X_{\rm corr}$ samples from $C_\sigma(X)$, the acceptance test is now
 \begin{equation}\label{eq:criteria}
@@ -525,12 +530,16 @@ If $\mathcal{\bar{N}}(0, \sigma^2(\Delta^*))$ is exactly $\mathcal{N}(0,
 Section~\ref{sec:analysis}, if there is a maximum error $\epsilon$ between the
 CDF of $\mathcal{\bar{N}}(0, \sigma^2(\Delta^*))$ and the CDF of $\mathcal{N}(0,
 \sigma^2(\Delta^*))$, then the acceptance test has an error of at most
-$\epsilon$ relative to the full batch version. {\color{blue} Daniel: this
-subsection is improved from earlier. My main concern now is that $X_{\rm norm}$
-is described as being both approximately Gaussian $\bar{\mathcal{N}}$ and
-Gaussian $\mathcal{N}$ here. We may want to clear that up; in our NIPS
-submission we actually used a new variable $\varepsilon$ for that and assigned
-it to be the $\mathcal{N}$ distribution.}
+$\epsilon$ relative to the full batch version.
+
+{\color{blue} Daniel: this subsection is improved from earlier. My main concern
+now is that $X_{\rm norm}$ is described as being both approximately Gaussian
+$\bar{\mathcal{N}}$ and Gaussian $\mathcal{N}$ here. We may want to clear that
+up; in our NIPS submission we actually used a new variable $\varepsilon$ for
+that and assigned it to be the $\mathcal{N}$ distribution. My current
+suggestion is to have $\Delta^*$ be the $\bar{\mathcal{N}}$ approx. normal
+distribution (but with mean $\Delta$, of course), and keep $X_{\rm norm}$ as an
+exact Gaussian.}
 
 \begin{figure}[t]
     \centering
@@ -637,7 +646,7 @@ error.
 \For{$t=\{1, \ldots, T\}$}{
     Propose a candidate $\theta'$\ from proposal distribution $q(\theta'\mid\theta_t)$\;
     Draw a minibatch of $m$ points $x_i$, compute $\Delta^*(\theta_t,\theta')$ and sample variance $\sigma^2(\Delta^*)$\;
-    Estimate moments $E|\Lambda_i-\Lambda|$ and $E|\Lambda_i-\Lambda|^3$ from the sample, and error $\epsilon$ from equation (\ref{eq:clt-bounds3})\;
+    Estimate moments $E|\Lambda_i-\Lambda|$ and $E|\Lambda_i-\Lambda|^3$ from the sample, and error $\epsilon$ from Equation~\ref{eq:clt-bounds3}\;
     \While {$\sigma^2(\Delta^*) \ge 1$ {\bf or} $\epsilon > \delta$}{
     	Draw $m$ more samples to augment the minibatch, update $\Delta^*$, $\sigma^2(\Delta^*)$ and $\epsilon$ estimates\;
     }
@@ -655,7 +664,8 @@ error.
 Daniel: I think we may want to be careful about the use of $C_1(X)$ because that
 implies that we have a fixed $X_{\rm corr}$ density, but that $C_1(X)$ will
 change depending on the iteration and variance of $\Delta^*$, right? Hopefully
-not by much, but it still changes sometimes?}}
+not by much, but it still changes sometimes? ALSO bring up Xinlei's old points
+about $X_{\rm norm}$ confusion.}}
 \label{alg:our_algorithm}
 \end{algorithm}
 
@@ -699,7 +709,7 @@ but they depend on bounding
 \end{equation}
 Such bounds can be derived efficiently for models such as logistic regression,
 but it is unclear how to derive them for a complex model such as a neural
-network. In general, since we obtain a new $\theta'$ value each iteration, one
+network. In general, since a new $\theta'$ value is obtained each iteration, one
 would need to iterate through all the $p(x_i\mid \theta')$ terms, defeating the
 purpose of minibatch MCMC.
 
@@ -741,7 +751,11 @@ the source of considerable confusion for me. Do we want $\sigma(X)$ or
 $\sigma(\hat{X})$? I think in Lemma~\ref{lem:quant_clt} we want the former, not
 the latter. OH ALSO, this section uses $n$ as the full data size, which means
 before this section, we should use $n$, not $N$, for the full data size, right?
-The Bardenet paper uses $n$ to represent the full data size.}
+The Bardenet paper uses $n$ to represent the full data size.
+
+PS: I'd recommend not putting sample mean and sample variance in an equation if
+the $\sigma(\hat{X})$ gets clarified, since those computations are common
+knowledge.}
 
 Lemma~\ref{lem:quant_clt} demonstrates that as long as we know the first and
 third absolute moments $E|X|$ and $E|X|^3$, we can bound the error of the normal
@@ -811,6 +825,13 @@ and since $\sup_x|P(x)-Q(x)|\leq \epsilon$ it follows that for all $z$:
 -\epsilon = \int_{-\infty}^{+\infty} -\epsilon R(x) dx \leq \int_{-\infty}^{+\infty}(P(z-x)-Q(z-x))R(x) dx \leq \int_{-\infty}^{+\infty}\epsilon R(x) dx = \epsilon
 \end{equation}
 \end{proof}
+
+{\color{blue} Daniel: Hold on, the following Lemma seems to add $X_{\rm norm}$
+to both random variables we are comparing (and \emph{then} $X_{\rm corr}$). But
+didn't the previous section already justify that $\Delta^* \approx \Delta +
+X_{\rm norm}$? That is, I don't think we need to add another $X_{\rm norm}$; I
+think we just want to add $X_{\rm corr}$. Otherwise, this new test does not
+match what we wrote earlier.}
 
 Relating Lemma~\ref{lem:cdf_bounds} to our acceptance test, we observe that:
 
