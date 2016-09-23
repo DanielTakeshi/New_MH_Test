@@ -1024,7 +1024,12 @@ due to the MH test. All methods are run 5000 times to collect 5000 samples.
 \begin{figure}[t]
 	\centering
 	\includegraphics[width=\linewidth]{GaussianMixtureResult/first_second_part_gaussian.png}
-	\caption{Value of first and second part of equation (9) in~\cite{icml2014c1_bardenet14} with respect to actual minibatch size}
+	\caption{
+    Value of first and second part of equation (9)
+    in~\cite{icml2014c1_bardenet14} with respect to actual minibatch size.
+    {\color{blue} Daniel: probably debatable on whether we should include this.
+    Let's talk it over.}
+    }
 	\label{fig:gauss_bardenet}
 \end{figure}
 
@@ -1068,18 +1073,27 @@ include it I will help rewrite the explanation.}
 
 \subsection{Logistic Regression}\label{ssec:logistic}
 
-We next use logistic regression for the binary classification of 1s versus 7s in the MNIST
-dataset~\cite{lecun-mnisthandwrittendigit-2010}. The data has 12007 and 1000 training and testing
-points, respectively (we used a random subset of the test data). The proposer is again a random walk
-with covariance matrix $0.05I$ for the $784\times 784$ identity matrix $I$. We set the posterior
-temperature at $T=1000$. We set the minibatch size $m=100$ and compare with ~\cite{cutting_mh_2014} with
-tolerance 0.005 and with ~\cite{icml2014c1_bardenet14} with error bound control parameter $p = 2, \delta = 0.01$.
+We next use logistic regression for the binary classification of 1s versus 7s in
+the MNIST dataset~\cite{lecun-mnisthandwrittendigit-2010}. The data has 12007
+training and 1000 testing elements (we used a random subset of the test data).
+For the proposer, we use a random walk with covariance matrix $0.05I$ for the
+$784\times 784$ identity matrix $I$. We set the posterior temperature at
+$T=1000$ and use the minibatch size $m=100$ and compare
+with~\cite{cutting_mh_2014} with tolerance 0.005 and
+with~\cite{icml2014c1_bardenet14} with error bound control parameters $p = 2$
+and $\delta = 0.01$. {\color{blue} Daniel: just observed this, but why are we
+using a subset of the test data? We really should use all 2000 (I think it's
+2000, right?).}
 
-Figure~\ref{fig:logistic_fig} shows the prediction accuracy and log likelihood on the test set as a
-function of the cumulative training data points processed. Our test increments the cumulative data
-by a fixed amount per iteration, but the other two methods may require more data per iteration.  We
-see that our minibatch MH test is more efficient; it has similar or better performance while
-consuming fewer data points.
+Figure~\ref{fig:logistic_fig} shows the prediction accuracy and log likelihood
+on the test set as a function of the cumulative training data points processed.
+Our test increments the cumulative data by a fixed amount per iteration
+{\color{blue} (Daniel: are we sure about ``fixed amount per iteration'' because
+our Algorithm 1 implies we may have to increment the minibatch size, but it
+happens \emph{less frequently} than the other methods.)}, but the other two
+methods may require more data per iteration. We see that our minibatch MH test
+is more efficient; it has similar or better performance while consuming fewer
+data points.
 
 \begin{figure}[t]
     \centering
@@ -1091,75 +1105,31 @@ consuming fewer data points.
      \centering
     \includegraphics[width=1\linewidth]{LogisticRegressionResult/ll_logistic}
 \end{subfigure}
-\caption{Logistic regression performance (accuracy/log likelihood) and minibatch size analysis}
+\caption{
+    Logistic regression performance (accuracy/log likelihood) and minibatch size
+    analysis. {\color{blue} Daniel: let's use matplotlib's ``subplot''
+    functionality, so that the images appear the same size. We can handle this
+    later; it will be easy.}
+    }
 \label{fig:logistic_fig}
-\vspace{-10pt}
 \end{figure}
 
 \begin{figure}[t]
 	\centering
 	\includegraphics[width=1\linewidth]{LogisticRegressionResult/minibatch_size_logistic.png}
-	\caption{Histograms of minibatch sizes of logistic regression parameter estimation}
+	\caption{
+    Counts of minibatch sizes needed for the three methods in the MNIST
+    classification task.
+    }
 	\label{fig:logistic_minibatch}
 \end{figure}
 
-%\begin{figure}[t]
-  %  \centering
-    %\includegraphics[width=1\linewidth]{CI_v02.png}
-    %\caption{
-   % Histograms of ${\rm std}(\Delta')$, confidence interval of ${\rm std}(\Delta')$ (middle), along with $\rho / \sigma^3$ (right).
-    %}
-    %\label{fig:exp_3}
-    %\vspace{-10pt}
-%\end{figure}
-
-The plot of Figure ~\ref{fig:logistic_minibatch} shows the histogram of minibatch sizes. Choosing an initial minibatch size of 100, 
-the cut MH method, adaptive MH method achieves final average minibatch size of 585 and 2731 respectively, while our method achieves 
-that of 100, showing significant better performance than the benchmark test methods.  
-
-%The third plot of Figure~\ref{fig:logistic_minibatch} shows performance based on minibatch size. The
-%parameter is evaluated on the test set after training iterations 700, 1000, and 1500. For those
-%three cases, when the minibatch size increases beyond about 10, the performance of the sampled data
-%will not improve with a large minibatch size. This makes sense because the error of our MH test is
-%proportional to our estimation error of ${\rm std}(\Delta')$, and as the minibatch increases, ${\rm
-%std}(\Delta')$ decreases. Beyond a certain standard deviation (or minibatch) threshold, the error in
-%our minibatch MH test is negligible.
-
-%Similar as the Subsection~\ref{ssec:gaussians}, we use Figure~\ref{fig:exp_3}
-%to reveal the accuracy of our estimation of ${\rm std}(\Delta')$ and stability
-%of $\rho/\sigma^3$.
-
-%% \subsection{Neural Network Optimization}\label{ssec:nets}
-%% 
-%% In this experiment, we apply our minibatch MH test with a Stochastic Gradient Hamiltonian
-%% Monte Carlo (SGHMC)~\cite{sghmc_2014} proposer to sample the complete parameters for a fully
-%% connected neural network. We use the Higgs data set from the UCI dataset~\cite{Lichman:2013}, which
-%% is a binary classification task with one million instances, each of which are 28-dimensional. The
-%% network we use has four layers: the first is the input, the last is the softmax, and the
-%% intermediate ones apply the sigmoid activation unit.  We also employ dropout and batch
-%% normalization~\cite{icml2015_ioffe15}.  In order to control ${\rm std}(\Delta')$, we initialize the
-%% temperature at 1000, and adjust it at iteration $i$ according to $T_i = \max\{1,
-%% 1000/(i+1)^{0.5}\}$.
-%% 
-%% For our comparison baseline, we train the same network architecture using the Adaptive Gradient
-%% Descent method~\cite{adapGrad}. Since the frequencies of the features are quite different, we use
-%% the same strategy as in Adaptive Gradient to rescale the gradient before applying SGHMC. We
-%% implement our MH test and SGHMCin the open-source BIDMach project~\cite{canny2013bidmach}.  
-%% 
-%% Figure~\ref{fig:nnet_fig} illustrates our experiment results and reveals that SGHMC with our
-%% minibatch MH test achieves higher log likelihood than the baseline. By comparing SGHMC with and
-%% without our minibatch MH test, we see that our MH test has limited benefit. Because we decrease the
-%% step size quickly, the acceptance rate of SGHMC is already high, so there is little need to test.
-%% % Daniel's note: Haoyu said he cannot increase the step size without it violating the variance
-%% % condition.
-%% 
-%% \begin{figure}[t]
-%%     \centering
-%%     \includegraphics[width=1\linewidth]{exp3}
-%%     \caption{Log likelihood versus number of passes for optimization of neural network.}
-%%     \label{fig:nnet_fig}
-%%     \vspace{-10pt}
-%% \end{figure}
+Figure~\ref{fig:logistic_minibatch} shows the histogram of minibatch sizes for
+all three methods. With an initial minibatch size of 100, Korattikara 2014 and
+Bardenet 2014 achieve average minibatch size of 585 and 2731 respectively over
+the MNIST classification task, while our method achieves that of 100, showing
+significant better performance than the benchmark test methods. {\color{blue}
+Daniel: these numbers don't match the figure titles.}
 
 
 \section{Conclusions}\label{sec:conclusion}
