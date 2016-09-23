@@ -1,0 +1,97 @@
+
+:load simulator.ssc
+:load cutMHTest.ssc
+:load adaptiveMHTest.ssc
+
+class DNNModel(ndim:Int, n:Int, sigma:Double, pscale:Double) extends MHmodel(ndim, n, sigma, pscale){
+    // This DNN model is a two layer Bayesian neural network 
+    // The DNN consists of input layer -- sigmoid unit layer -- softmax output
+    // sigma: the initialization std
+    // ndim : 28 
+    var data_load = loadDMat("higgsdata.dmat.lz4"); 
+    val data = data_load.t; // higgs machine learning data, of size num_samples * (num_features + 1)
+    var hidden_size = 50;
+    var param_size = hidden_size * ndim + hidden_size + hidden_size * 2 + 2 ;
+    var sigma_proposer = 0.5;
+    var temp = 100.0;
+
+    def initfn():Mat = {
+        // initialize parameters
+        param_size = hidden_size * ndim + hidden_size + hidden_size * 2 + 2     // H * 28 + H + H * 2 + 2
+        dnormrnd(0, sigma, param_size, 1);
+    }
+
+    def proposalfn(theta:Mat):Mat = {
+	   // using the SGD proposer, based on the current parameters and data, get the gradient of the parameters
+       // or using the random walk proposer
+       theta + dnormrnd(0, sigma_proposer, param_size, 1);
+    }
+
+    def evalfn(batch:Mat,theta:Mat):Mat = {
+	   // forward step, evaluation the likelihood of the data given the current parameters
+       // the return should be a row of the likelihood value of the batch
+
+       var theta_t = DMat(theta.t); // theta is a column vector but batch is a row matrix where every column is one data point
+       var W1 = dzeros(ndim, hidden_size);
+       var b1 = dzeros(1,hidden_size);
+       var W2 = dzeros(hidden_size, 2);
+       var b2 = dzeros(1,2);
+       var X = batch(1 until ndim+1, ?);
+       var Y = batch(0, ?);
+       val (dim, nbatch) = size(batch);
+       var res = dzeros(1, nbatch);
+
+       for(i <- 0 until ndim){
+            W1(i, ?) = theta_t(0, i*hidden_size until (i+1)*hidden_size);
+       }
+
+       b1(0,?) = theta_t(0, ndim*hidden_size until (ndim*hidden_size+hidden_size) );
+       for(i <- 0 until hidden_size){
+            W2(i,?) = theta_t(0, (ndim*hidden_size+hidden_size + i*2) until (ndim*hidden_size+hidden_size + (i+1)*2) );
+       }
+       b2(0,?) = theta_t(0, ndim*hidden_size+hidden_size*3 until ndim*hidden_size+hidden_size*3+2);
+
+       var out1 = FMat(X.t * W1 + b1);
+       var int2 = max(out1, 0);   // N * H
+       var out2 = int2 * W2 + b2;
+       var score = exp(out2);
+       var scores = ln(score/(sum(score,2)));
+
+       
+       for(i <- 0 until nbatch){
+            var idex:DMat = DMat(Y(i));
+            var idex2 = int(idex(0).v);
+
+            res(i) = scores(i, idex2).dv;
+       }
+
+       val scale_and_temp = 1.0 * (nbatch/temp);
+       scale_and_temp * res;
+    }
+}
+
+
+val nsamps = 5000
+val n = 11000000
+val sigma = math.sqrt(2)
+val pscale = 1.0
+val batchsize = 100
+val sigma_proposer = 0.15;
+val nn = new DNNModel(ndim = 28, n = n, sigma = sigma, pscale=pscale);
+
+nn.temp = nn.n/100.0;
+nn.sigma_proposer = sigma_proposer;   
+val newtest = new NewTest;
+newtest.explin = false;
+val oldtest = new OldTest;
+oldtest.explin = true;
+val cutMHtest = new cutMHTest;
+val adaptiveMHtest = new adaptiveMHTest;
+adaptiveMHtest.N = n;
+cutMHtest.N = n;
+cutMHtest.eps = 0.005;
+
+
+tic; 
+val (samples, sizes, lls) = dosimm(mod=nn, test=newtest, size=batchsize, nsamps=nsamps, acc = 0.05);
+val t1 = toc;
