@@ -831,12 +831,18 @@ and since $\sup_x|P(x)-Q(x)|\leq \epsilon$ it follows that for all $z$:
 \end{equation}
 \end{proof}
 
-{\color{blue} Daniel: Hold on, the following Lemma seems to add $X_{\rm norm}$
+{\color{blue} Daniel: Hold on, the following Corollary seems to add $X_{\rm norm}$
 to both random variables we are comparing (and \emph{then} $X_{\rm corr}$). But
 didn't the previous section already justify that $\Delta^* \approx \Delta +
 X_{\rm norm}$? That is, I don't think we need to add another $X_{\rm norm}$; I
 think we just want to add $X_{\rm corr}$. Otherwise, this new test does not
-match what we wrote earlier.}
+match what we wrote earlier.
+
+I think the easiest way to resolve this is to do the following: we assume that
+$\Delta^*$ is already $\Delta + X_{\rm noise}$. Then all we need to do is add
+$X_{\rm corr}$. So this is the same as what we are doing, except we do not need
+to apply Lemma~\ref{lem:cdf_bounds} twice; we just need to do it once because we
+are only adding $X_{\rm corr}$, not $X_{\rm norm}$.}
 
 Relating Lemma~\ref{lem:cdf_bounds} to our acceptance test, we observe that:
 
@@ -855,10 +861,10 @@ We apply Lemma~\ref{lem:cdf_bounds} twice. First take:
     P(y) = {\rm Pr}(\Delta^* < y) \qquad {\rm and}\qquad Q(y) = \Phi\left(\frac{y-\Delta}{\sigma(\Delta^*)}\right)
 \end{equation}
 and convolve with the distribution of $X_n$ {\color{blue} (Daniel: to be clear I
-think this was supposed to be $X_{\rm norm}$ but see comments earlier about why
-I think it is not necessary.)} which has density $\phi(X/\sigma_n)$ where
-$\sigma_n^2 = 1 - \sigma^2(\Delta^*)$. This yields the next iteration of $P$ and
-$Q$
+think this was supposed to be $X_{\rm norm}$ instead of $X_n$ but see comments
+earlier about why I think it is not necessary.)} which has density
+$\phi(X/\sigma_n)$ where $\sigma_n^2 = 1 - \sigma^2(\Delta^*)$. This yields the
+next iteration of $P$ and $Q$:
 \begin{equation}
     P'(y) = {\rm Pr}(\Delta^*+X_{\rm norm} < y) \qquad {\rm and}\qquad Q'(y) = \Phi\left({y-\Delta}\right)
 \end{equation}
@@ -948,7 +954,8 @@ resolution is 10,000, this leads to a table with about 1 billion values, which
 can comfortably be stored in memory.  However, if $g(x,y)$ is moderately smooth
 in $y$, it should be possible to achieve similar accuracy with a much smaller
 table. We leave further analysis and experiments with $g(x,y)$ as future work.
-{\color{blue} Daniel: I will look at the code to understand this paragraph better.}
+{\color{blue} Daniel: I will look at the code to understand this paragraph
+better because right now I am confused.}
 
 
 
@@ -1162,9 +1169,11 @@ In this appendix, we describe the following topics:
     \item The proof of Lemma~\ref{lem:worst_case}.
     \item More information on Section~\ref{ssec:gaussians}.
     \item More information on Section~\ref{ssec:logistic}.
-    %\item More information on Section~\ref{ssec:nets}. % Daniel: this is in
-    %progress.
 \end{itemize}
+
+{\color{blue} Daniel: Note that everything after
+Appendix~\ref{app:worst_case_proof} has yet to be revised. I don't know what we
+will include in them.}
 
 \section{Proof of Lemma~\ref{lem:worst_case}}\label{app:worst_case_proof}
 
