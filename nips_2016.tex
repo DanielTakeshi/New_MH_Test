@@ -120,24 +120,29 @@ relatively simple distributions.
 Here we derive a new test which incorporates the variability in minibatch
 statistics as {\em a natural part of the test}. Because of this, the amount of
 data required for each test is fixed with high probability and in expected
-value. {\color{blue} Daniel: we really need to show the amount of data is fixed
-with ``high probability'' (the results suggest ``OK probability'').} We use a
-Barker test function~\cite{Barker65} rather than a Metropolis test, which makes
-our test naturally error tolerant. The idea of using a noise-tolerant test using
-Barker's test function was suggested but not explored empirically
-in~\cite{Bardenet15} section 6.3. But the asymptotic test statistic CDF and the
-Barker function are different, which leads to fixed errors for the approach
-in~\cite{Bardenet15}. Here we show that the difference between the distributions
-can be corrected with an additive random variable. This leads to a test which is
-fast, and whose error can be made arbitrarily small.
+value.
+%% {\color{blue} Daniel: we really need to show the amount of data is fixed
+%% with ``high probability'' (the results suggest ``OK probability'').} 
+%% Analysis show data amount is gaussian and short-tailed and therefore bounded with high p
+%% experiments back this up. 
+We use a Barker test function~\cite{Barker65} rather than a Metropolis
+test, which makes our test naturally error tolerant. The idea of using
+a noise-tolerant test using Barker's test function was suggested but
+not explored empirically in~\cite{Bardenet15} section 6.3. But the
+asymptotic test statistic CDF and the Barker function are different,
+which leads to fixed errors for the approach
+in~\cite{Bardenet15}. Here we show that the difference between the
+distributions can be corrected with an additive random variable. This
+leads to a test which is fast, and whose error can be made arbitrarily
+small.
 
 Our test is applicable when the variance (over data samples) of the log
 acceptance probability is small enough (less than 1). Its not clear at first why
 this quantity should be bounded, but we will show that it is ``natural'' for
 well-specified models running Metropolis-Hastings sampling with optimal
 proposals~\cite{OptimalScaling01} on a full dataset. When we reduce the amount
-of data for the test, the variance goes up, and we have to reduce it in one of
-several ways. Either:
+of data for the test, the variance goes up. We have to reduce variance in one
+of several ways. Either:
 
 \begin{itemize}
   
@@ -152,11 +157,16 @@ several ways. Either:
   proposal. The variance of the log acceptance probability scales as the
   square of proposal step size. 
 
-\item Increase the minibatch size. Log acceptance variance scales as $1/k$ vs the
-  minibatch size $k$. Increased minibatch size also reduces the error rate for
-  the test. {\color{blue} Daniel: I'm not sure if I'd mention this here, because
-  before this list, we talk about reducing the data, and then suddenly we're
-  talking about increasing it.}
+\item Increase the minibatch size when needed for certain
+  minibatches. Log acceptance variance scales as $1/k$ vs the
+  minibatch size $k$. Our test is adaptive like earlier works, but
+  unlike them, the distribution of minibatch size is gaussian, not
+  long-tailed.  Increased minibatch size also reduces the error rate
+  for the test.
+
+%% {\color{blue} Daniel: I'm not sure if I'd mention this here,
+%%    because before this list, we talk about reducing the data, and
+%%    then suddenly we're talking about increasing it.}
 
 \end{itemize}
 
@@ -295,20 +305,25 @@ the entire dataset, and $\Lambda^*(\theta,\theta')$ is the mean of
 $\Lambda_i(\theta,\theta')$ over its minibatch. 
 
 Since minibatches contains randomly selected samples $x_i$, the values
-$\Lambda_i$ are independent, identically distributed (iid) random variables.
-{\color{blue} Daniel: should we say sampling with or without replacement? Right
-now I think the code does it without replacement (but \emph{with} replacement
-means it's closer to the CLT, right?} By the Central Limit Theorem, we expect
-$\Lambda^*(\theta,\theta')$ to be approximately Gaussian. The acceptance test
-then becomes a statistical test of the hypothesis that
+$\Lambda_i$ are independent, identically distributed (iid) random
+variables\footnote{The analysis assumes sampling with replacement
+  although implementations on typical large datasets will approximate
+  this by sampling without replacement}.
+%% {\color{blue} Daniel: should we say sampling with or without replacement? Right
+%%now I think the code does it without replacement (but \emph{with} replacement
+%% means it's closer to the CLT, right?} 
+By the Central Limit Theorem, we expect $\Lambda^*(\theta,\theta')$ to
+be approximately Gaussian. The acceptance test then becomes a
+statistical test of the hypothesis that
 $\Lambda(\theta,\theta')>\psi(u,\theta,\theta')$ by establishing that
 $\Lambda^*(\theta,\theta')$ is substantially larger than
-$\psi(u,\theta,\theta')$.  In~\cite{cutting_mh_2014} an asymptotic central limit
-argument was used to derive this gap, while in~\cite{icml2014c1_bardenet14} a
-concentration bound was used. In both cases, the resulting tests were shown to
-give useful reductions in number of samples required over using the full
-dataset, but there were no worst-case bounds given on the average number of
-samples needed per iteration.
+$\psi(u,\theta,\theta')$.  In~\cite{cutting_mh_2014} an asymptotic
+central limit argument was used to derive this gap, while
+in~\cite{icml2014c1_bardenet14} a concentration bound was used. In
+both cases, the resulting tests were shown to give useful reductions
+in number of samples required over using the full dataset, but there
+were no worst-case bounds given on the average number of samples
+needed per iteration.
 
 We next show that for a simple distribution, the lower bound of average
 number of data instances consumed for one iteration of~\cite{cutting_mh_2014}
@@ -329,25 +344,25 @@ the $x_i$ have unit variance, their mean has variance $1/b$, and the variance of
 $\Lambda^*(\theta,\theta')$ is $\sigma^2(\Lambda^*) = (\theta'-\theta)^2N^2/b$.
 In order to pass a hypothesis test that $\Lambda > \psi$, there needs to be a
 large enough gap (several $\sigma(\Lambda^*)$) between
-$\Lambda^*(\theta',\theta)$ and $\psi(u,\theta',\theta)$. {\color{blue}
-Daniel: I changed the variance to be $(\theta'-\theta)^2N^2/b$; before it had
-$N$ instead of $N^2$.}
+$\Lambda^*(\theta',\theta)$ and $\psi(u,\theta',\theta)$. 
+% {\color{blue} Daniel: I changed the variance to be $(\theta'-\theta)^2N^2/b$; before it had
+% $N$ instead of $N^2$.}
 
 Our goal is to sample from the posterior $p(\theta \mid x_1,\ldots,x_N)$, which
 is a normal distribution $\mathcal{N}(\mu, 1/N)$ centered on the sample mean
 $\mu$, and with variance $1/N$. In one dimension, an efficient proposal
 distribution has the same variance as the target
 distribution~\cite{OptimalScaling01}, so we use the proposal
-$\mathcal{N}(\theta'-\theta,1/N)$, which is implemented as
+$\mathcal{N}(\theta,1/N)$, which is implemented as
 $q(\theta'\mid\theta)=\phi((\theta'-\theta)N)$, where $\phi(x)$ is the Normal
 density function with zero mean and unit variance. This proposal is symmetric
 $q(\theta'\mid\theta)=q(\theta\mid\theta')$, and since we assumed a uniform
 prior on $\theta$, we see that $\psi(u,\theta',\theta)$ reduces to $\log u$. Our
 worst-case scenario is specified in Lemma~\ref{lem:worst_case}.
-{\color{blue} Daniel: this might be a silly question, but why do we assume the
-proposal has mean $\theta'-\theta$? I thought it would have a mean of $\theta$
-because that is the current sample and the Gaussian is centered at that point?
-That will also clarify my confusion about the $\psi$ function.}
+%{\color{blue} Daniel: this might be a silly question, but why do we assume the
+%proposal has mean $\theta'-\theta$? I thought it would have a mean of $\theta$
+%because that is the current sample and the Gaussian is centered at that point?
+%That will also clarify my confusion about the $\psi$ function.} - fixed
 
 \begin{lemma}\label{lem:worst_case}
     For the model in Section~\ref{ssec:gaussian_example}, there exists a fixed
@@ -367,14 +382,18 @@ accelerated M-H tests in~\cite{cutting_mh_2014,icml2014c1_bardenet14} require at
 least a constant fraction $\geq c$ in the amount of data consumed per test
 compared to full-dataset tests, so their speed-up is at most $1/c$.
 
-{\color{blue} Daniel: quick question: I think we should explain why our method
-\emph{doesn't} run into this issue. I think it is because we rely on an
-approximation to $\Delta + X_{\rm log} > 0$ and that test does not require any
-``difference between an approximation and an exact version'' because it is
-\emph{already} an exact version, assuming the approximation is enough.
+% {\color{blue} Daniel: quick question: I think we should explain why our method
+% \emph{doesn't} run into this issue. I think it is because we rely on an
+% approximation to $\Delta + X_{\rm log} > 0$ and that test does not require any
+% ``difference between an approximation and an exact version'' because it is
+% \emph{already} an exact version, assuming the approximation is enough.
+% Also, in terms of this example, if we are in the special case with using a lot
+% of data, why not force early stopping?}
 
-Also, in terms of this example, if we are in the special case with using a lot
-of data, why not force early stopping?}
+The problem is that these methods use tail bounds to separate $\Delta$ away
+from zero, but for certain input/random $u$ combinations, $\Delta$ can be
+arbitrarily close to zero. We will avoid this by using the {\em approximately
+normal} variation in $\Delta^*$ to {\em replace} the variation due to $u$. 
 
 \subsection{MCMC Posterior Inference}
 There is a separate line of MCMC work drawing principles from statistical
