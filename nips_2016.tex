@@ -407,12 +407,14 @@ whose acceptance approaches 1 in the limit. However, the constraint on proposal
 step size is severe, and the state space exploration reduces to a random walk.
 Full minibatch HMC for minibatches was recently described in~\cite{sghmc_2014}
 which allows momentum-augmented proposals with larger step sizes. However, step
-sizes are still limited by the need to run accurately without MH tests.  Our
+sizes are still limited by the need to run accurately without MH tests.  By providing
+an M-H test with similar cost to standard gradient steps, our
 work opens the door to applying those methods with much more aggressive step
-sizes without loss of accuracy. We demonstrate this in Section ... {\color{blue}
-Daniel: do we ever demonstrate this? I guess another issue is that this implies
-we can use larger step sizes, but earlier we \emph{also} argue that we need
-\emph{small} step sizes (to reduce variance).}
+sizes without loss of accuracy. 
+%{\color{blue}
+%Daniel: do we ever demonstrate this? I guess another issue is that this implies
+%we can use larger step sizes, but earlier we \emph{also} argue that we need
+%\emph{small} step sizes (to reduce variance).}
 
 
 
@@ -444,8 +446,8 @@ A minibatch estimator of $\Delta$, denoted as $\Delta^*$, is
 Note that $\Delta$ and $\Delta^*$ are evaluated on the full dataset and a
 minibatch of size $b$ respectively. The scaling term $N/b$ ensures that
 $\Delta^*(\theta,\theta')$ is an unbiased estimator of $\Delta(\theta,\theta')$.
-{\color{blue} Daniel: a brief question repeated from earlier, should we mention
-sampling with and/or without replacement here?}
+%{\color{blue} Daniel: a brief question repeated from earlier, should we mention
+%sampling with and/or without replacement here?}
 
 The key to our test is a smooth acceptance function.  We consider functions
 other than the classical Metropolis test that satisfy the detailed balance (see
@@ -471,11 +473,12 @@ terms of acceptance rate, since it accepts with probability 1 for $\Delta > 0$.
 For our new MH test we use the Barker logistic~\cite{Barker65} function:
 $g(s)=(1+\exp(-s))^{-1}$. Straightforward arithmetic shows that it satisfies the
 condition in Lemma~\ref{lem:detailed_balance}.  While it is slightly less
-efficient than the Metropolis test when used on the full dataset, we will show
+efficient than the Metropolis test when used on the full dataset, we will see
 that its smoothness allows it to naturally tolerate substantial variance in its
 input argument. This in turn will lead to a much more efficient test on subsets
-of data. {\color{blue} Daniel: aside from the experiments, where do we show it
-``naturally tolerates substantial variance'' in the input?} 
+of data.
+%{\color{blue} Daniel: aside from the experiments, where do we show it
+%``naturally tolerates substantial variance'' in the input?} 
 
 Assume we begin with the current sample $\theta$ and a candidate sample
 $\theta'$, and that $V \sim \mathcal{U}(0,1)$ is a uniform random variable. We
@@ -493,9 +496,10 @@ whether
 \begin{equation}\label{eq:the_exact_test}
     \Delta(\theta,\theta') + X > 0
 \end{equation}
-for a logistic random variable $X$. {\color{blue} Daniel: I think the text
-before Equation~\ref{eq:the_exact_test} should be similar to what we had in our
-NIPS submission because I find it much clearer.}
+for a logistic random variable $X$.
+%{\color{blue} Daniel: I think the text
+%before Equation~\ref{eq:the_exact_test} should be similar to what we had in our
+%NIPS submission because I find it much clearer.}
 
 
 \subsection{A Minibatch Acceptance Test}\label{ssec:deltas_minibatch}
@@ -551,14 +555,14 @@ CDF of $\mathcal{\bar{N}}(0, \sigma^2(\Delta^*))$ and the CDF of $\mathcal{N}(0,
 \sigma^2(\Delta^*))$, then the acceptance test has an error of at most
 $\epsilon$ relative to the full batch version.
 
-{\color{blue} Daniel: this subsection is improved from earlier. My main concern
-now is that $X_{\rm norm}$ is described as being both approximately Gaussian
-$\bar{\mathcal{N}}$ and Gaussian $\mathcal{N}$ here. We may want to clear that
-up; in our NIPS submission we actually used a new variable $\varepsilon$ for
-that and assigned it to be the $\mathcal{N}$ distribution. My current
-suggestion is to have $\Delta^*$ be the $\bar{\mathcal{N}}$ approx. normal
-distribution (but with mean $\Delta$, of course), and keep $X_{\rm norm}$ as an
-exact Gaussian.}
+%% {\color{blue} Daniel: this subsection is improved from earlier. My main concern
+%% now is that $X_{\rm norm}$ is described as being both approximately Gaussian
+%% $\bar{\mathcal{N}}$ and Gaussian $\mathcal{N}$ here. We may want to clear that
+%% up; in our NIPS submission we actually used a new variable $\varepsilon$ for
+%% that and assigned it to be the $\mathcal{N}$ distribution. My current
+%% suggestion is to have $\Delta^*$ be the $\bar{\mathcal{N}}$ approx. normal
+%% distribution (but with mean $\Delta$, of course), and keep $X_{\rm norm}$ as an
+%% exact Gaussian.}
 
 \begin{figure}[t]
     \centering
@@ -595,16 +599,18 @@ the following optimization problem:
 \begin{equation}\label{eq:overall_corr_problem}
     C_\sigma^* = \argmin_{C_\sigma} |\Phi_{\sigma} * C_{\sigma} - S|
 \end{equation}
-where $*$ denotes convolution. {\color{blue} Daniel: This is very unusual use of
-convolutions (i.e., CDF * DENSITY = CDF). It's valid but I was very surprised to
-know that.} For computation of $C_\sigma$, we assume that its input $Y$ and
+where $*$ denotes convolution.
+% {\color{blue} Daniel: This is very unusual use of
+%convolutions (i.e., CDF * DENSITY = CDF). It's valid but I was very surprised to
+% know that.}
+For computation of $C_\sigma$, we assume that its input $Y$ and
 another variable $X$ lie in the intervals $[-V,V]$ and $[-2V,2V]$, respectively.
-{\color{blue} Daniel: I am a little confused at the different interval sizes.}
+% {\color{blue} Daniel: I am a little confused at the different interval sizes.}
 In continuous form, the optimization problem is therefore
 \begin{equation}\label{eq:conv1}
     C_\sigma^* = \argmin_{C\sigma} \; \sup_{x \in [-2V,2V]}\left|\int_{-V}^{V}\Phi_{\sigma}(x-y) C_{\sigma}(y)dy - S(x)\right|
 \end{equation}
-To get $C_\sigma^*$ in a practical form, we discretize $X$ and $Y$ into $4N+1$
+To get $C_\sigma^*$ in a computable form, we discretize $X$ and $Y$ into $4N+1$
 and $2N+1$ values respectively. If $i \in \{-2N, \ldots, 2N\}$ and $j \in \{-N,
 \ldots, N\}$, then we can write $X_i = i(V/N)$ and $Y_j = j(V/N)$, and the
 condition in Equation~\ref{eq:conv1} can be re-expressed as:
@@ -615,26 +621,27 @@ To make the problem easier to understand, we can define a matrix $M$ and vectors
 $u$ and $v$ such that $M_{ij} = \Phi_{\sigma}(X_i-Y_j)$, $u_j =
 C_{\sigma}(Y_j)$, and $v_i = S(X_i)$, where the indices $i$ and $j$ are
 appropriately translated to be non-negative indices for $M, u,$ and $v$. Thus,
-Equation~\ref{eq:conv2} is equivalent to minimizing the $L_1$ norm:
+Equation~\ref{eq:conv2} is equivalent to minimizing the $L_{\infty}$ norm:
 \begin{equation}\label{eq:optimization_l1}
-    u^* = \argmin_{u} \|Mu-v\|_1.
+    u^* = \argmin_{u} \|Mu-v\|_{\infty}.
 \end{equation}
-{\color{blue} Daniel: Equation~\ref{eq:optimization_l1} is finding
-the $C_\sigma$ minimizing the $L_1$ norm, but the previous one,
-Equation~\ref{eq:conv2}, is finding the $C_\sigma$ that is minimizing the
-$L_\infty$ norm, i.e., the maximum value! If we want this to be the $L_1$ norm
-(and I think we do) then Equation~\ref{eq:conv2} needs an outer sum over the $i$
-terms. In addition, Equation~\ref{eq:conv1} also needs to be modified, perhaps
-eliminate the ``sup'' but keep $x \in [-2V,2V]$}
+% {\color{blue} Daniel: Equation~\ref{eq:optimization_l1} is finding
+% the $C_\sigma$ minimizing the $L_{\infty}$ norm, but the previous one,
+% Equation~\ref{eq:conv2}, is finding the $C_\sigma$ that is minimizing the
+% $L_\infty$ norm, i.e., the maximum value! If we want this to be the $L_{\infty}$ norm
+% (and I think we do) then Equation~\ref{eq:conv2} needs an outer sum over the $i$
+% terms. In addition, Equation~\ref{eq:conv1} also needs to be modified, perhaps
+% eliminate the ``sup'' but keep $x \in [-2V,2V]$}
 
 We have the additional constraint that $u_j > 0$ for all $j$, since $u$
 represents a density. We first explored optimizing this problem with linear
 programming to find a $u$ minimizing $|Mu - v|$ subject to $u \ge 0$. This was
 tractable up to a few hundred dimensions for $u$. However, the discretization
-error is bounded by the curvature of the underlying functions which are here
+error is bounded by the curvature of the underlying functions times the squared
+quantization step. The curvatures are here
 slightly less than one, i.e.  the errors are of the order of $(V/N)^2$.
-{\color{blue} Daniel: unfortunately, I do not understand what this means (i.e.,
-the curvature and how the $(V/N)^2$ is obtained).} Here we chose $V=20$ to
+% {\color{blue} Daniel: unfortunately, I do not understand what this means (i.e.,
+% the curvature and how the $(V/N)^2$ is obtained).} Here we chose $V=20$ to
 provide adequate containment of the distributions (the CDFs are extremely close
 to either zero or one outside this range). So with 200 points, we have a
 discretization error of approximately 0.01, which is relatively large.  To yield
@@ -644,12 +651,13 @@ higher resolution and lower error, we switched to a least squares solution:
 \end{equation}
 where we add the standard regularization factor $\lambda$ for stability in high
 dimensions. The solution is well-known from the normal equations: $u^* = (M^TM +
-\lambda I)^{-1}M^Tv$, and in practice, it yields an acceptable $L_1$ norm for
+\lambda I)^{-1}M^Tv$, and in practice, it yields an acceptable $L_{\infty}$ norm for
 Equation~\ref{eq:optimization_l1}.
 
 With this approach, there is no guarantee that $u^* \geq 0$. However, we have
 some flexibility in the choice of $\sigma$ in Equation~\ref{eq:conv1}.
-{\color{blue} Daniel: is this the correct equation?} As we decrease the variance
+% {\color{blue} Daniel: is this the correct equation?}
+As we decrease the variance
 of $X_{\rm norm}$, the variance of $X_{\rm corr}$ grows by the same amount and
 is in fact the result of convolution with a Gaussian whose variance is the
 difference.  Thus as $\sigma$ decreases, $C(X)$ grows and approaches the
@@ -679,28 +687,32 @@ error.
         }
     
 }
-\caption{A description of M-H sampling with our acceptance test. {\color{blue}
-Daniel: I think we may want to be careful about the use of $C_1(X)$ because that
-implies that we have a fixed $X_{\rm corr}$ density, but that $C_1(X)$ will
-change depending on the iteration and variance of $\Delta^*$, right? Hopefully
-not by much, but it still changes sometimes? ALSO bring up Xinlei's old points
-about $X_{\rm norm}$ confusion.}}
+\caption{A description of M-H sampling with our acceptance test.
+% {\color{blue}
+% Daniel: I think we may want to be careful about the use of $C_1(X)$ because that
+% implies that we have a fixed $X_{\rm corr}$ density, but that $C_1(X)$ will
+% change depending on the iteration and variance of $\Delta^*$, right? Hopefully
+% not by much, but it still changes sometimes? ALSO bring up Xinlei's old points
+  %about $X_{\rm norm}$ confusion.}
+}
 \label{alg:our_algorithm}
 \end{algorithm}
 
-\begin{table}[t]
-    \caption{\color{blue} Daniel: TODO need a good title.}
+\begin{table}[h]
+    \caption{Error in $X_{\rm norm}+X_{\rm corr}$ versus $X_{\rm log}$}
     \label{tab:xcorr}
     \centering
     \begin{tabular}{l l l l}
     \toprule
-    $N$ & $\sigma$ & $\lambda$ & $L_1$ error  \\
+    $N$ & $\sigma$ & $\lambda$ & $L_{\infty}$ error  \\
     \midrule
     4000 & 0.9 & 1 & 1.0e-4  \\
     4000 & 0.8 & 0.03 & 5.0e-6 \\
     \bottomrule
     \end{tabular}
 \end{table}
+
+As can be seen from table~\ref{tab:xcorr}, the errors between $X_{\rm norm}+X_{\rm corr}$ and $X_{\rm log}$ can be made very small, approaching single floating precision (about $10^{-7}$). 
 
 {\color{blue} Daniel: TODO improve/describe Table~\ref{tab:xcorr} and try to
 relocate Algorithm~\ref{alg:our_algorithm} to be somewhere nicer.}
@@ -710,13 +722,13 @@ relocate Algorithm~\ref{alg:our_algorithm} to be somewhere nicer.}
 \section{Analysis}\label{sec:analysis}
 
 We now derive error bounds for our M-H test, and for the approximate target
-distribution that it generates. From Section~\ref{sec:correction}, we know that
+distribution that it generates. From Table~\ref{tab:xcorr}, we know that
 it is possible to generate the correction samples $X_{\rm corr}$ with a CDF
-error of at most single-precision floating point error, and possibly better
-{\color{blue} (Daniel: I can fix this to cite Table~\ref{tab:xcorr}'s values,
-that will probably be better.)}. We therefore treat the $X_{\rm corr}$ variable
-as a sample from the exact correction distribution and we will not analyze its
-errors.
+error approaching single-precision floating point error.
+% {\color{blue} (Daniel: I can fix this to cite Table~\ref{tab:xcorr}'s values,
+% that will probably be better.)}.
+We therefore treat the $X_{\rm corr}$ variable as a sample from the
+exact correction distribution and we will not analyze its errors.
 
 In the most similar prior works,~\cite{cutting_mh_2014} uses asymptotic
 arguments based on the Central Limit Theorem to argue that its approximate
