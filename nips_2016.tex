@@ -680,7 +680,9 @@ removal of those values leads to very small error.
     \end{tabular}
 \end{table}
 
-As can be seen from Table~\ref{tab:xcorr}, the errors between $X_{\rm norm}+X_{\rm corr}$ and $X_{\rm log}$ can be made very small, approaching single floating precision (about $10^{-7}$). 
+As can be seen from Table~\ref{tab:xcorr}, the errors between $X_{\rm
+norm}+X_{\rm corr}$ and $X_{\rm log}$ can be made very small, approaching single
+floating precision (about $10^{-7}$). 
 
 The complete procedure is given in Algorithm~\ref{alg:our_algorithm}. A few points:
 
@@ -962,8 +964,8 @@ Equation~\ref{eq:GNderivatives}, its enough to consider a function $g(x,y')$
 parametrized by $y'= \frac{y}{6\sqrt{n}}$. This function can be computed and
 saved offline. As we have shown above, errors in the ``limit'' function
 propagate directly through as errors in the acceptance test.  To achieve a test
-error of say $1e-6$ (close to single floating point precision), we need a $y'$
-spacing of $1e-6$. It should not be necessary to tabulate values all the way to
+error of $10^{-6}$ (close to single floating point precision), we need a $y'$
+spacing of $10^{-6}$. It should not be necessary to tabulate values all the way to
 $y'=1$, since $y'$ is scaled inversely by the square root of minibatch size.
 Assuming a max $y'$ of 0.1 requires us to tabulate about 100,000.  Since our $x$
 resolution is 10,000, this leads to a table with about 1 billion values, which
@@ -1004,36 +1006,30 @@ $p(\theta)\prod_{i=1}^{1,000,000}p(x_i\mid \theta)$, with the prior based on the
 $\theta$ generation process in Equation~\ref{eq:data_generation}. The larger
 number of samples produces a much sharper posterior with two very narrow peaks.
 Our goal is to reproduce the original posterior, so we adjust the temperature
-to $T=10,000$. Taking logs, we
-get the target as shown in the far left of Figure~\ref{fig:gauss_mix_1}.
-%% {\color{blue} Daniel: the ${\rm std}(\Delta')$ stuff is outdated; let's figure
-%% out a way to change this. We may also have to justify such a high temperature,
-%% because this is far from the ``real'' (log) posterior.}
+to $T=10,000$. Taking logs, we get the target as shown in the far left of
+Figure~\ref{fig:gauss_mix_1}.
 
 We run MCMC with our MH test using minibatch size $m=100$.  We also
-run this using the methods from Korattikara
-2014~\cite{cutting_mh_2014} and Bardenet
-2014~\cite{icml2014c1_bardenet14}. For~\cite{cutting_mh_2014}, we use
-$m=100$ and increment minibatches by 100 as recommended for that test,
-and for~\cite{icml2014c1_bardenet14}, we use $m=100$ and increase the
-minibatch size geometrically with a ratio of $\gamma = 1.5$ as
-recommended. These tests use different minibatch size updates because
-of their different approaches to repeated
-testing. \cite{icml2014c1_bardenet14} uses straightforward
-discounting, allocating a fraction of the test error $\delta$ to each
-minibatch test (call these subtests). Its important to bound the
-number of subtests therefore, so that the tolerable error per subtest is
-not too small. \cite{cutting_mh_2014} uses a more aggressive repeated testing
-approach, explicitly modeling correlation between tests and allowing many
-more tests for a given $\delta$. 
+run this using the methods from~\cite{cutting_mh_2014} (``Korattikara 2014'')
+and~\cite{icml2014c1_bardenet14} (``Bardenet 2014'').
+For~\cite{cutting_mh_2014}, we use $m=100$ and increment minibatches by 100 as
+recommended for that test, and for~\cite{icml2014c1_bardenet14}, we use $m=100$
+and increase the minibatch size geometrically with a ratio of $\gamma = 1.5$ as
+recommended. These tests use different minibatch size updates because of their
+different approaches to repeated testing. \cite{icml2014c1_bardenet14} uses
+straightforward discounting, allocating a fraction of the test error $\delta$ to
+each minibatch test (call these subtests). Its important to bound the number of
+subtests therefore, so that the tolerable error per subtest is not too small.
+\cite{cutting_mh_2014} uses a more aggressive repeated testing approach,
+explicitly modeling correlation between tests and allowing many more tests for a
+given $\delta$. 
 
 The tolerance for making a decision in~\cite{cutting_mh_2014} is
 $\epsilon=0.005$, and the error bound control parameters
-in~\cite{icml2014c1_bardenet14} are $p = 2$ and $\delta = 0.01$.
-all three use the same random walk proposer
-with covariance $\Sigma={\rm diag}(0.3, 0.3)$. Since the proposer
-generates a random walk, all shaping of distribution of the samples
-is due to the M-H test. All methods are run 5000
+in~\cite{icml2014c1_bardenet14} are $p = 2$ and $\delta = 0.01$.  All methods
+(including ours) use the same random walk proposer with covariance $\Sigma={\rm
+diag}(0.3, 0.3)$.  Since the proposer generates a random walk, all shaping of
+distribution of the samples is due to the M-H test. All methods are run 5000
 times to collect 5000 samples.
 
 \begin{figure}[t]
@@ -1214,13 +1210,15 @@ significant better performance than the benchmark test methods.
 
 \section{Conclusions}\label{sec:conclusion}
 
-In this paper, we have derived a new MH test for minibatch MCMC methods. We demonstrated how a
-simple deconvolution process allows us to use a minibatch approximation to the full data tests. We
-experimentally show the benefits of our test on Gaussian mixtures and logistic regression.
-Straightforward directions for future work include running more experiments with a
-particular focus on investigation of the variance precondition.  More elaborate extensions include
-combining our results with Hamiltonian Monte Carlo methods, providing a recipe for how to use our
-algorithm (following the framework of~\cite{sgmcmc_2015}), or integrating parallel
+In this paper, we have derived a new MH test for minibatch MCMC methods. We
+demonstrated how a simple deconvolution process allows us to use a minibatch
+approximation to the full data tests. We experimentally show the benefits of our
+test on Gaussian mixtures and logistic regression.  Straightforward directions
+for future work include running more experiments with a particular focus on
+investigation of the variance precondition.  More elaborate extensions include
+testing on deep neural networks and combining our results with Hamiltonian Monte
+Carlo methods, providing a recipe for how to use our algorithm (following the
+framework of~\cite{sgmcmc_2015}), or integrating parallel
 MCMC~\cite{conf/uai/AngelinoKWSA14,conf/icml/AhnSW14} concepts.
 
 
