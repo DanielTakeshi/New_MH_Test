@@ -1,0 +1,117 @@
+// this script calculates the kl divergence 
+
+def log_f(theta: Mat, X: Mat, N: Int, T: Double): Double = {
+	val scale_and_temp = N * 1.0/ (X.size() * T);
+
+	val inverse_covariance = 0.1\0.0 on 0.0\1.0;
+	val prior_constant = 1.0/( 2 * math.Pi * math.sqrt(10.0));
+	val prior = math.log(prior_constant) - 0.5 * (theta.t * inverse_covariance * theta);
+	
+	val prior_temp = math.log(prior_constant) - 0.5 * (theta.t*inverse_covariance*theta);
+	val (size_prior1, size_prior2) = size(prior_temp);
+	var prior = dzeros(size_prior1, 1);
+	for(i <- 0 until size_prior1){
+		prior(i) = prior_temp(i,i);
+	}
+
+	val ll_constant = 1.0 / (4.0 * math.sqrt(math.Pi));
+	val L = ll_constant * (exp(-0.25 * (X - theta(0).dv).dot(X - theta(0).dv) ) + exp(-0.25 * (X - theta(0).dv - theta(1).dv).dot(X - theta(0).dv - theta(1).dv) ) );
+	val log_likelihood = sum(ln(L)).dv * scale_and_temp;
+
+	val res = prior.dv + log_likelihood.dv;
+	return res;
+};
+
+
+def estimate_divergence(all_thetas:Mat, d_space:Double, full_data:Mat, temp:Double): Double = {
+	val (m,n) = size(all_thetas);
+	if (m != 2){
+		println("Data dimension error!");
+	}
+
+	val N = full_data.size;
+
+	val (min_x, max_x) = (-1.5, 2.5);
+	val (min_y, max_y) = (-2.5, 3.0);
+	var clipped_thetas = dzeros(m,n);
+	val min_x_vec = dones(1, n) * min_x;
+	val max_x_vec = dones(1, n) * max_x;
+	val min_y_vec = dones(1, n) * min_y;
+	val max_y_vec = dones(1, n) * max_y;
+	clipped_thetas(0,?) = max(min(all_thetas(0,?), max_x_vec), min_x_vec);
+	clipped_thetas(1,?) = max(min(all_thetas(1,?), max_y_vec), min_y_vec);
+
+	val k = 10; // resolution of single grid
+	val thetas_rounded = d_space/k * round( clipped_thetas/(d_space/k) );
+	val dspace_k = d_space/k;
+
+	val x_coords = DMat(irow(0 -> int((max_x - min_x)/d_space+1).v)) * d_space + min_x;
+	val y_coords = DMat(irow(0 -> int((max_y - min_y)/d_space+1).v)) * d_space + min_y;
+	val num_x = x_coords.size;
+	val num_y = y_coords.size;
+
+	var source_distribution = dzeros(num_x, num_y);
+	for(xc <- 0 until num_x){
+		println("xc %d", xc*1.0);
+		for(yc <- 0 until num_y){
+			val theta1 = x_coords(xc);
+			val theta2 = y_coords(yc);
+			val theta1_list = DMat(irow(0->(k+1)))*(d_space/k) + theta1 - d_space/2;
+			val theta2_list = DMat(irow(0->(k+1))) * (d_space/k) + theta2 - d_space/2;
+			var dis_list = dzeros((k+1), (k+1));
+			for(xc1 <- 0 until (k+1) ) {
+				for(yc1 <- 0 until (k+1)) {
+					val this_theta = theta1_list(xc1) on theta2_list(yc1);
+					dis_list(xc1, yc1) = log_f(this_theta, full_data, N, temp);
+				}
+			}
+			source_distribution(xc, yc) = sum(sum(exp(dis_list))).dv;
+		}
+	}
+	println("finished source distribution calculation");
+
+	var target_distribution = dzeros(num_x, num_y);
+	for(i <- 0 until n){
+		val xt = int( round((thetas_rounded(0,i) - min_x)/d_space)).v;
+		val yt = int( round((thetas_rounded(1,i) - min_y)/d_space)).v;
+		target_distribution(xt,yt) = target_distribution(xt,yt) + 1;		
+	}
+	println("finished target distribution calculation");
+
+	source_distribution = source_distribution / sum(sum(source_distribution)).dv * n;
+	target_distribution = target_distribution / sum(sum(target_distribution)).dv * n;
+
+	// calculate the chi-square statistics
+	val chi_sq = sum(sum( (target_distribution - source_distribution)*@(target_distribution - source_distribution)/source_distribution) ).dv;
+
+	return chi_sq;
+}
+
+
+val nn = 1000000;
+val data = dzeros(1,nn);
+val u = rand(1,nn);
+val theta1 = 0.0;
+val theta2 = 1.0;
+val sigma = math.sqrt(2);
+val temp = 10000.0；
+for(i <- 0 until nn){
+		if (u(i) < 0.5){
+			data(i) = dnormrnd(theta1, sigma.toFloat,1,1)(0)
+		}
+		else{
+			data(i) = dnormrnd(theta1+theta2, sigma.toFloat,1,1)(0)
+		}
+};
+val samples1:DMat = load("gaussiandata.mat","newtestsamples");
+val res1 = estimate_divergence(samples1, d_space=0.1, data, temp);
+
+val samples2:DMat = load("gaussiandata.mat","cutmhamples");
+val res2 = estimate_divergence(samples2, d_space = 0.1, data, temp);
+
+val samples3:DMat = load("gaussiandata.mat", "adaptivemhsamples");
+val res3 = estimate_divergence(samples3, d_space = 0.1, data, temp);
+
+
+
+
