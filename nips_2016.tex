@@ -1177,36 +1177,27 @@ and $\delta = 0.01$.
 % 2000, right?).}
 % JFC- Would be good to fix, but not critical.
 
-Figure~\ref{fig:logistic_fig} shows the prediction accuracy and log likelihood
-on the test set as a function of the cumulative training data points processed.
-We see that our minibatch MH test
-is more efficient; it has similar or better performance while consuming fewer
-data points.
+Figure~\ref{fig:logistic_performance} shows the prediction accuracy and log
+likelihood on the test set as a function of the cumulative training data points
+processed.  We see that our minibatch MH test is more efficient; it has similar
+or better performance while consuming fewer data points.
 
 \begin{figure}[t]
-    \centering
-    \begin{subfigure}{.4\textwidth}
-     \centering
-     \includegraphics[width=1\linewidth]{LogisticRegressionResult/acc_logistic}
-    \end{subfigure}
-    \begin{subfigure}{.4\textwidth}
-     \centering
-    \includegraphics[width=1\linewidth]{LogisticRegressionResult/ll_logistic}
-\end{subfigure}
-\caption{
-    Logistic regression performance (accuracy/log likelihood) and minibatch size
-    analysis. {\color{blue} Daniel: let's use matplotlib's ``subplot''
-    functionality, so that the images appear the same size. We can handle this
-    later; it will be easy.}
+	\centering
+	\includegraphics[width=1\linewidth]{logistic_performance.png}
+	\caption{
+    Logistic regression performance (accuracy/log likelihood) based on
+    cumulative data usage.
     }
-\label{fig:logistic_fig}
+	\label{fig:logistic_performance}
 \end{figure}
+
 
 \begin{figure}[t]
 	\centering
 	\includegraphics[width=1\linewidth]{minibatch_size_logistic.png}
 	\caption{
-    Counts of minibatch sizes that the three methods used in the logistic
+    Counts of minibatch sizes that the three methods used in the MNIST logistic
     regression experiment from Section~\ref{ssec:logistic}. It is analogous to
     Figure~\ref{fig:gauss_mix_2}.
     }
