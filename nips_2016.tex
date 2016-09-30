@@ -1083,9 +1083,8 @@ distributions with parameter $\lambda_i=P_i n$. Given a set of samples $\Theta =
 $\theta_i$ that fall in bin $j$. Then the log probability for the set is
 approximated as
 \begin{equation}\label{eq:log_prob_poissons}
-    \log p(\Theta) \approx \sum_{j=1}^{N_{\rm bins}} c_j \log (n P_j) - n P_j - \log(\Gamma(c_j+1)).
+    \log p(\Theta) \approx \frac{1}{N_{\rm bins}} \sum_{j=1}^{N_{\rm bins}} c_j \log (n P_j) - n P_j - \log(\Gamma(c_j+1)).
 \end{equation}
-
 The results for each model are shown in Table~\ref{tab:poissons} ...
 {\color{blue} Daniel: IN PROGRESS}
 
@@ -1113,18 +1112,18 @@ and 18098 for Korattikara 2014 and Bardenet 2014, respectively. The average
 minibatch sizes accurately predict the running times of these methods since
 all methods have a running time proportional to the total data consumed, with
 one caveat: the method of~\cite{icml2014c1_bardenet14} requires a global bound
-on the term $C_{\theta,\theta'}$ over the entire the data set at every iteration
-in order to calculate the error bound (in Equation~\ref{eq:bad_bound} of this
-paper, i.e., Equation 9 of~\cite{icml2014c1_bardenet14}).  This bound must be
-either computed analytically using properties of the specific dataset, or it
-must be checked at each sample if a black-box test is required.  We found that
-the sample code provided by the authors of~\cite{icml2014c1_bardenet14} in fact
-computed this bound explicitly for each sample generated, i.e. the
-implementation traversed the entire dataset for each sample, providing no
-performance advantage over the complete test. For this reason, we omitted the
-time to compute $C_{\theta,\theta'}$ from our measurements of the running time
-of the sample implementation of \cite{icml2014c1_bardenet14}, and consider only
-the time to process the minibatches.
+on the term $C_{\theta,\theta'}$ (see Equation~\ref{eq:bad_bound}) over the
+entire the data set at every iteration in order to calculate the error bound.
+This bound must be either computed analytically using properties of the specific
+dataset, or it must be checked at each sample if a black-box test is required.
+We found that the sample code provided by the authors
+of~\cite{icml2014c1_bardenet14} in fact computed this bound explicitly for each
+sample generated, i.e. the implementation traversed the entire dataset for each
+sample, providing no performance advantage over the complete test. For this
+reason, we omitted the time to compute $C_{\theta,\theta'}$ from our
+measurements of the running time of the sample implementation
+of~\cite{icml2014c1_bardenet14}, and consider only the time to process the
+minibatches.
 
 %% In Figure ~\ref{fig:gauss_bardenet}, the value
 %% of the first part and second part of equation (9)
@@ -1144,15 +1143,14 @@ the time to process the minibatches.
 %% the same plot. 
 
 \begin{table}[t]
-    \caption{{\color{blue} Daniel: TODO Poisson Probabilities, also we want
-    ground truth right?}}
+    \caption{\color{blue} Daniel: TODO Poisson Probabilities}
     \label{tab:poissons}
     \centering
-    \begin{tabular}{l l l l l}
+    \begin{tabular}{l l l l}
     \toprule
-    Model & Ground Truth & Ours & Korattikara 2014 & Bardenet 2014 \\
+    Model & Ours & Korattikara 2014 & Bardenet 2014 \\
     \midrule
-    Poission Value & TODO & TODO & TODO & TODO \\
+    Poisson Value (Eq.~\ref{eq:log_prob_poissons}) & TODO & TODO & TODO \\
     \bottomrule
     \end{tabular}
 \end{table}
@@ -1178,8 +1176,9 @@ and $\delta = 0.01$.
 
 Figure~\ref{fig:logistic_performance} shows the prediction accuracy and log
 likelihood on the test set as a function of the cumulative training data points
-processed.  We see that our minibatch MH test is more efficient; it has similar
-or better performance while consuming fewer data points.
+processed.  We see that our minibatch MH test is more efficient compared to the
+other two methods, because it has similar or better performance while consuming
+fewer data points.
 
 \begin{figure}[t]
 	\centering
@@ -1204,10 +1203,10 @@ or better performance while consuming fewer data points.
 \end{figure}
 
 Figure~\ref{fig:logistic_minibatch} shows the histogram of minibatch sizes for
-all three methods. With an initial minibatch size of 163, Korattikara 2014 and
-Bardenet 2014 achieve average minibatch size of 2025 and 7612 respectively over
-the MNIST classification task, while our method achieves that of 100, showing
-significant better performance than the benchmark test methods.
+all three methods. With an initial minibatch size of 100, Korattikara 2014 and
+Bardenet 2014 achieve average minibatch size of 2026 and 7612 respectively over
+the MNIST classification task, while our method achieves that of 163, showing
+significantly better performance than the benchmark test methods.
 
 
 
