@@ -984,10 +984,9 @@ table. We leave further analysis and experiments with $g(x,y)$ as future work.
 We conduct two sets of experiments to explore the benefits of our minibatch MH
 test and to benchmark it with previous work. In Section~\ref{ssec:gaussians}, we
 show that our test enables samples to converge to the posterior distribution of
-a heated Gaussian mixture model. In Section~\ref{ssec:logistic}, we analyze its
-efficiency on logistic regression.  Appendices~\ref{app:gaussian}
-and~\ref{app:logistic} contain more detailed information on these respective
-experiments.
+a heated Gaussian mixture model (additional details are in
+Appendix~\ref{app:gaussian}). In Section~\ref{ssec:logistic}, we analyze its
+efficiency on logistic regression.
 
 \subsection{Mixture of Gaussians}\label{ssec:gaussians}
 
@@ -1160,26 +1159,6 @@ minibatches.
 
 \subsection{Logistic Regression}\label{ssec:logistic}
 
-We next use logistic regression for the binary classification of 1s versus 7s in
-the MNIST dataset~\cite{lecun-mnisthandwrittendigit-2010}. The data has 12007
-training and 1000 testing elements (we used a random subset of the test data).
-For the proposer, we use a random walk with covariance matrix $0.05I$ for the
-$784\times 784$ identity matrix $I$. We set the posterior temperature at
-$T=1000$ and use the minibatch size $m=100$ and compare
-with~\cite{cutting_mh_2014} with tolerance 0.005 and
-with~\cite{icml2014c1_bardenet14} with error bound control parameters $p = 2$
-and $\delta = 0.01$.
-% {\color{blue} Daniel: just observed this, but why are we
-% using a subset of the test data? We really should use all 2000 (I think it's
-% 2000, right?).}
-% JFC- Would be good to fix, but not critical.
-
-Figure~\ref{fig:logistic_performance} shows the prediction accuracy and log
-likelihood on the test set as a function of the cumulative training data points
-processed.  We see that our minibatch MH test is more efficient compared to the
-other two methods, because it has similar or better performance while consuming
-fewer data points.
-
 \begin{figure}[t]
 	\centering
 	\includegraphics[width=1\linewidth]{logistic_performance.png}
@@ -1189,7 +1168,6 @@ fewer data points.
     }
 	\label{fig:logistic_performance}
 \end{figure}
-
 
 \begin{figure}[t]
 	\centering
@@ -1202,11 +1180,35 @@ fewer data points.
 	\label{fig:logistic_minibatch}
 \end{figure}
 
-Figure~\ref{fig:logistic_minibatch} shows the histogram of minibatch sizes for
-all three methods. With an initial minibatch size of 100, Korattikara 2014 and
-Bardenet 2014 achieve average minibatch size of 2026 and 7612 respectively over
-the MNIST classification task, while our method achieves that of 163, showing
-significantly better performance than the benchmark test methods.
+We next use logistic regression for the binary classification of 1s versus 7s in
+the MNIST dataset~\cite{lecun-mnisthandwrittendigit-2010}. The data has 12007
+training and 1000 testing elements (we used a random subset of the test data).
+The pixel values are scaled to be in $(0,1)$.  We impose a flat prior on
+$\theta$. For the proposer, we again use a random walk, this time with
+covariance matrix $0.05I$ for the $784\times 784$ identity matrix $I$. The
+posterior temperature is set at $T=1000$.  We run our MH test and compare with
+Korattikara 2014 and Bardenet 2014; minibatch sizes and other parameters are set
+to be the same value as with the Gaussian Mixtures experiment from
+Section~\ref{ssec:gaussians}.
+
+Figure~\ref{fig:logistic_performance} shows the training log likelihood and the
+testing prediction accuracy, each as a function of the cumulative training data
+points processed.\footnote{Note that the curves do not span the same length over
+the x-axis, because our test consumes fewer samples throughout the MCMC
+procedure, so the corresponding curve will ``end'' before the other two.} To
+generate the curves, for each of the 5000 sampled vectors $\theta_t$,
+$t\in\{1,\ldots,5000\}$, we use $\theta_t$ as the parameter for logistic
+regression.  We see that our minibatch MH test is more efficient compared to the
+other two methods, because it achieves similar or superior performance while
+consuming fewer data points.
+
+Figure~\ref{fig:logistic_minibatch}, in a similar manner as
+Figure~\ref{fig:gauss_mix_2}, shows the histogram of minibatch sizes for all
+three methods on a log-log scale. With an initial minibatch size of 100,
+Korattikara 2014 and Bardenet 2014 achieve average minibatch size of 2026 and
+7612 respectively over the MNIST classification task, while our method achieves
+that of 163, showing significantly better performance than the benchmark test
+methods.
 
 
 
@@ -1241,7 +1243,6 @@ In this appendix, we describe the following topics:
 \begin{itemize}[noitemsep]
     \item The proof of Lemma~\ref{lem:worst_case}.
     \item More information on Section~\ref{ssec:gaussians}.
-    \item More information on Section~\ref{ssec:logistic}.
 \end{itemize}
 
 \section{Proof of Lemma~\ref{lem:worst_case}}\label{app:worst_case_proof}
@@ -1338,10 +1339,9 @@ to~(\ref{eq:x_points}), determine the posterior distribution of $\theta$:
 \end{equation}
 Alternatively, depending on the application, we may opt to instead pick a point
 estimate\footnote{We do this for the logistic regression experiment, described
-in Section~\ref{ssec:logistic} and elaborated in Appendix~\ref{app:logistic}.}
-of $\theta$, such as the MAP estimate. (If $N$ is extremely large, it will cause
-the posterior to peak sharply at its modes, reducing distribution estimates to
-point estimates.)
+in Section~\ref{ssec:logistic}.} of $\theta$, such as the MAP estimate. (If $N$
+is extremely large, it will cause the posterior to peak sharply at its modes,
+reducing distribution estimates to point estimates.)
 
 One technique we use to make our test more applicable is to add a temperature to
 the posterior. In general, we will add $T > 1$ so that the posterior is
@@ -1375,63 +1375,19 @@ with modes at $(0,1)$ and $(1,-1)$. A larger $T$ implies a flatter posterior,
 which can be useful for parameter exploration so that the samples do not get
 trapped in a mode.
 
+% Daniel: This was some stuff from the Logistic Regression appendix, but we no
+% longer need that.
 
-\section{Logistic Regression Experiment Details}\label{app:logistic}
+%% In the logistic regression experiment of Section~\ref{ssec:logistic}, the
+%% feature vector for an image consists of its pixel values, normalized between 0
+%% and 1. For simplicity, we consider the binary classification case, so we only
+%% use digits one ($y = 1$) and seven ($y = -1$).  The probability of the $i^{\rm
+%% th}$ output $y_i \in \{-1,+1\}$ with the input vector $x_i$ is
+%% \begin{equation}\label{eq:logistic_probability}
+%% p(y_i \mid x_i) = \frac{1}{1+\exp (-y_i \theta^T x_i)},
+%% \end{equation}
+%% where $\theta$ is the 784-length parameter vector.
 
-In this section, we go over some details of our logistic regression experiment. The feature vector
-for an image consists of its pixel values, normalized between 0 and 1. For simplicity, we only
-consider the binary classification case, so we only use digits one (denoted as output $y = 1$) and
-seven (denoted as $y = -1$). The probability of the $i^{\rm th}$ output $y_i \in \{-1,+1\}$ with the
-input vector $x_i$ is
-\begin{equation}
-p(y_i \mid x_i) = \frac{1}{1+\exp (-y_i \theta^T x_i)},
-\end{equation}
-where $\theta$ is the 784-length parameter vector.
-
-For our experiment, we impose a uniform prior to represent our lack of knowledge about $\theta$.  We
-use a random walk proposer, which can be modeled as $\theta' = \theta_i + \mathcal{N}(0,
-\sigma^2I)$, where $\theta_i$ is the current sample, $\theta'$ is the proposed sample, and we choose
-the variance to be a constant $\sigma^2 = 0.05$ for all components. We initialize $\theta_0$ to be a
-vector of all ones, and set our minibatch size as $m=100$.
-
-For our minibatch MH test, in order to enforce the ${\rm std}(\Delta') < 1.2$ condition, we use a
-constant temperature $T = 1000$. If our estimated ${\rm std}(\Delta') \ge 1.2$, we ignore the
-current iteration.  %Figure~\ref{fig:appendixExp2} plots our estimated ${\rm std}(\Delta')$ values
-%versus iteration count. 
-
-%\begin{figure}[t]
-  %\centering
-  %\includegraphics[width=1\linewidth]{./figures/appendixExp2}
- % \caption{Additional results for the logistic regression experiment.}
-  %\label{fig:appendixExp2}
-%\end{figure}
-
-%For adaptive MH testing, our experimental settings are the same as with our MH test, except we do
-%not impose a temperature. The minibatch size of adaptive MH testing is also initialized as 50, but
-%it may increase by that amount each iteration. Figure~\ref{fig:appendixExp2} shows the histogram of
-%the actual minibatch size at the end of each iteration in adaptive MH testing.
-
-\iffalse
-\section{Neural Network Experiment Details}\label{app:nnet}
-
-For our neural network experiment, we use the architecture discussed in Section~\ref{ssec:nets}. We
-use the SGHMC as the proposer for our minibatch MH testing. For the baseline, we use a tuned
-adaptive gradient descent optimizer, whose step size changes by $0.01 /(i+1)^{0.4}$. Both methods
-have minibatch sizes set at $m=200$. There are one million total data instances $x_i$.
-
-For SGHMC, we use the simplified update equations~\cite{sghmc_2014}:
-\begin{equation}
-\Delta \theta = v, \quad \quad\Delta v = -\eta \nabla U(\theta) - \alpha v + \mathcal{N}(0, 2(\alpha
--\hat{\beta}) \eta),
-\end{equation}
-where $v$ represents auxiliary momentum variables, and $\nabla U(\theta)$ is the gradient of the
-system. We set the hyperparameters to be $\eta_i = 0.01 /(i+1)^{0.4}$, and $\alpha=0.1$. We use the
-empirical Fisher~\cite{conf/icml/AhnBW12} information $V(\theta)$ to estimate the value of
-$\hat{\beta}$, so that $\hat{\beta}=\frac{1}{2}\eta V(\theta)$. In order to control ${\rm
-std}(\Delta')$, we initialize the temperature at 1000, and adjust it at iteration $i$ according to
-$T_i = \max\{1, 1000/(i+1)^{0.5}\}$.
-
-\fi
 
 
 
@@ -1461,4 +1417,3 @@ $T_i = \max\{1, 1000/(i+1)^{0.5}\}$.
 %\includegraphics[width=0.8\linewidth]{myfile.pdf}
 
 \end{document}
-
