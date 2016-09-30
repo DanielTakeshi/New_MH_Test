@@ -1040,7 +1040,8 @@ times to collect 5000 samples.
     \centering
     \includegraphics[width=1\linewidth]{GaussianMixtureResult/posterior_of_gaussian.png}
     \caption{
-    The log posterior contours and scatter plots of sampled $\theta$ values using different methods. 
+    The log posterior contours and scatter plots of sampled $\theta$ values
+    using different methods. 
     }
     \label{fig:gauss_mix_1}
 \end{figure}
@@ -1049,10 +1050,9 @@ times to collect 5000 samples.
     \centering
     \includegraphics[width=1\linewidth]{minibatch_size_gaussian.png}
     \caption{
-    Histograms of minibatch sizes for the three methods used in
-    Section~\ref{ssec:gaussians}. Note the log-log scale, to facilitate
-    comparisons across methods; in particular, the axes have the same
-    range.
+    Counts of minibatch sizes that the three methods used in the experiment of
+    Section~\ref{ssec:gaussians}. To make comparisons easier, the axes have the
+    same range (using a log-log scale).
     }
     \label{fig:gauss_mix_2}
 \end{figure}
@@ -1204,10 +1204,11 @@ data points.
 
 \begin{figure}[t]
 	\centering
-	\includegraphics[width=1\linewidth]{LogisticRegressionResult/minibatch_size_logistic.png}
+	\includegraphics[width=1\linewidth]{minibatch_size_logistic.png}
 	\caption{
-    Counts of minibatch sizes needed for the three methods in the MNIST
-    classification task.
+    Counts of minibatch sizes that the three methods used in the logistic
+    regression experiment from Section~\ref{ssec:logistic}. It is analogous to
+    Figure~\ref{fig:gauss_mix_2}.
     }
 	\label{fig:logistic_minibatch}
 \end{figure}
