@@ -7,12 +7,14 @@ def log_f(theta: Mat, X: Mat, N: Int, T: Double): Double = {
 	val prior_constant = 1.0/( 2 * math.Pi * math.sqrt(10.0));
 	val prior = math.log(prior_constant) - 0.5 * (theta.t * inverse_covariance * theta);
 	
+	/* 
 	val prior_temp = math.log(prior_constant) - 0.5 * (theta.t*inverse_covariance*theta);
 	val (size_prior1, size_prior2) = size(prior_temp);
 	var prior = dzeros(size_prior1, 1);
 	for(i <- 0 until size_prior1){
 		prior(i) = prior_temp(i,i);
 	}
+	*/
 
 	val ll_constant = 1.0 / (4.0 * math.sqrt(math.Pi));
 	val L = ll_constant * (exp(-0.25 * (X - theta(0).dv).dot(X - theta(0).dv) ) + exp(-0.25 * (X - theta(0).dv - theta(1).dv).dot(X - theta(0).dv - theta(1).dv) ) );
