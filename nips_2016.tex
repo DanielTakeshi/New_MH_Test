@@ -160,13 +160,9 @@ of several ways. Either:
 \item Increase the minibatch size when needed for certain
   minibatches. Log acceptance variance scales as $1/k$ vs the
   minibatch size $k$. Our test is adaptive like earlier works, but
-  unlike them, the distribution of minibatch size is gaussian, not
+  unlike them, the distribution of minibatch size is Gaussian, not
   long-tailed.  Increased minibatch size also reduces the error rate
   for the test.
-
-%% {\color{blue} Daniel: I'm not sure if I'd mention this here,
-%%    because before this list, we talk about reducing the data, and
-%%    then suddenly we're talking about increasing it.}
 
 \end{itemize}
 
@@ -272,8 +268,8 @@ that the sample $\theta'$ should be accepted based on an approximate version of
 the test $u < \alpha(\theta,\theta')$. If the approximate test cannot make a
 decision with sufficient confidence, then the minibatch size is increased and
 the test repeats. This process continues until a decision. The bounds depend on
-either a asymptotic central limit theorem \cite{cutting_mh_2014} or a
-concentration bound \cite{icml2014c1_bardenet14}. The latter requires direct
+either a asymptotic Central Limit Theorem~\cite{cutting_mh_2014} or a
+concentration bound~\cite{icml2014c1_bardenet14}. The latter requires direct
 bounds on the log likelihood ratio, which for general distributions requires
 knowing $p(x_i \mid \theta)$ and $p(x_i \mid \theta')$ for all $N$ samples. In
 addition, both methods suffer the drawback of resolving small log likelihood
@@ -307,11 +303,8 @@ $\Lambda_i(\theta,\theta')$ over its minibatch.
 Since minibatches contains randomly selected samples $x_i$, the values
 $\Lambda_i$ are independent, identically distributed (iid) random
 variables\footnote{The analysis assumes sampling with replacement
-  although implementations on typical large datasets will approximate
-  this by sampling without replacement}.
-%% {\color{blue} Daniel: should we say sampling with or without replacement? Right
-%%now I think the code does it without replacement (but \emph{with} replacement
-%% means it's closer to the CLT, right?} 
+although implementations on typical large datasets will approximate
+this by sampling without replacement.}.
 By the Central Limit Theorem, we expect $\Lambda^*(\theta,\theta')$ to
 be approximately Gaussian. The acceptance test then becomes a
 statistical test of the hypothesis that
@@ -345,8 +338,6 @@ $\Lambda^*(\theta,\theta')$ is $\sigma^2(\Lambda^*) = (\theta'-\theta)^2N^2/b$.
 In order to pass a hypothesis test that $\Lambda > \psi$, there needs to be a
 large enough gap (several $\sigma(\Lambda^*)$) between
 $\Lambda^*(\theta',\theta)$ and $\psi(u,\theta',\theta)$. 
-% {\color{blue} Daniel: I changed the variance to be $(\theta'-\theta)^2N^2/b$; before it had
-% $N$ instead of $N^2$.}
 
 Our goal is to sample from the posterior $p(\theta \mid x_1,\ldots,x_N)$, which
 is a normal distribution $\mathcal{N}(\mu, 1/N)$ centered on the sample mean
@@ -359,10 +350,6 @@ density function with zero mean and unit variance. This proposal is symmetric
 $q(\theta'\mid\theta)=q(\theta\mid\theta')$, and since we assumed a uniform
 prior on $\theta$, we see that $\psi(u,\theta',\theta)$ reduces to $\log u$. Our
 worst-case scenario is specified in Lemma~\ref{lem:worst_case}.
-%{\color{blue} Daniel: this might be a silly question, but why do we assume the
-%proposal has mean $\theta'-\theta$? I thought it would have a mean of $\theta$
-%because that is the current sample and the Gaussian is centered at that point?
-%That will also clarify my confusion about the $\psi$ function.} - fixed
 
 \begin{lemma}\label{lem:worst_case}
     For the model in Section~\ref{ssec:gaussian_example}, there exists a fixed
@@ -536,8 +523,6 @@ two variables are added (i.e., their distributions convolve) to form $X_{\rm
 log}$.  This decomposition requires an appropriate $X_{\rm corr}$ distribution.
 We show in Section~\ref{sec:correction} that it is possible to use deconvolution
 to derive a highly accurate representation of $C_{\sigma}(X)$.
-Figure~\ref{fig:deconvolution} shows three examples of $X_{\rm norm}$ and
-$X_{\rm corr}$ densities that sum to $X_{\rm log}$.
 
 Using $X_{\rm corr}$ samples from $C_{\sigma}(X)$, the acceptance test is now
 \begin{equation}\label{eq:criteria}
@@ -564,24 +549,25 @@ $\epsilon$ relative to the full batch version.
 %% distribution (but with mean $\Delta$, of course), and keep $X_{\rm norm}$ as an
 %% exact Gaussian.}
 
+
+
+\section{Computing the Correction Distribution}\label{sec:correction}
+
 \begin{figure}[t]
     \centering
     \includegraphics[width=1\textwidth]{mh_convolution_diagram_v2}
     \caption{
     Three examples of $X_{\rm norm}$ and $X_{\rm corr}$ distributions that
-    convolve to form the standard logistic distribution. We use three standard
-    deviation values of $X_{\rm norm}$. The two red curves convolve to form the
-    logistic, etc. The $y$-axis is capped at 0.5 for readability. This figure
-    must be viewed in color. {\color{blue} Daniel: TODO Change figure to use
-    LaTeX for the titles.}
+    convolve to form the standard logistic distribution. These were obtained
+    based on our original linear programming formulation, as discussed in
+    Section~\ref{sec:correction}. We use three standard deviation values of
+    $X_{\rm norm}$. The two red curves convolve to form the logistic, etc. The
+    $y$-axis is capped at 0.5 for readability. This figure must be viewed in
+    color.
     }
     \label{fig:deconvolution}
     %\vspace{-10pt}
 \end{figure}
-
-
-
-\section{Computing the Correction Distribution}\label{sec:correction}
 
 Our proposed test in Equation~\ref{eq:criteria} requires knowing the
 distribution of the correction variable $X_{\rm corr}$ such that $X_{\rm norm} +
@@ -600,12 +586,9 @@ the following optimization problem:
     C_\sigma^* = \argmin_{C_\sigma} |\Phi_{\sigma} * C_{\sigma} - S|
 \end{equation}
 where $*$ denotes convolution.
-% {\color{blue} Daniel: This is very unusual use of
-%convolutions (i.e., CDF * DENSITY = CDF). It's valid but I was very surprised to
-% know that.}
+
 For computation of $C_\sigma$, we assume that its input $Y$ and
 another variable $X$ lie in the intervals $[-V,V]$ and $[-2V,2V]$, respectively.
-% {\color{blue} Daniel: I am a little confused at the different interval sizes.}
 In continuous form, the optimization problem is therefore
 \begin{equation}\label{eq:conv1}
     C_\sigma^* = \argmin_{C\sigma} \; \sup_{x \in [-2V,2V]}\left|\int_{-V}^{V}\Phi_{\sigma}(x-y) C_{\sigma}(y)dy - S(x)\right|
@@ -625,23 +608,17 @@ Equation~\ref{eq:conv2} is equivalent to minimizing the $L_{\infty}$ norm:
 \begin{equation}\label{eq:optimization_l1}
     u^* = \argmin_{u} \|Mu-v\|_{\infty}.
 \end{equation}
-% {\color{blue} Daniel: Equation~\ref{eq:optimization_l1} is finding
-% the $C_\sigma$ minimizing the $L_{\infty}$ norm, but the previous one,
-% Equation~\ref{eq:conv2}, is finding the $C_\sigma$ that is minimizing the
-% $L_\infty$ norm, i.e., the maximum value! If we want this to be the $L_{\infty}$ norm
-% (and I think we do) then Equation~\ref{eq:conv2} needs an outer sum over the $i$
-% terms. In addition, Equation~\ref{eq:conv1} also needs to be modified, perhaps
-% eliminate the ``sup'' but keep $x \in [-2V,2V]$}
 
 We have the additional constraint that $u_j > 0$ for all $j$, since $u$
 represents a density. We first explored optimizing this problem with linear
-programming to find a $u$ minimizing $|Mu - v|$ subject to $u \ge 0$. This was
-tractable up to a few hundred dimensions for $u$. However, the discretization
-error is bounded by the curvature of the underlying functions times the squared
-quantization step. The curvatures are here
-slightly less than one, i.e.  the errors are of the order of $(V/N)^2$.
-% {\color{blue} Daniel: unfortunately, I do not understand what this means (i.e.,
-% the curvature and how the $(V/N)^2$ is obtained).} Here we chose $V=20$ to
+programming to find a $u$ minimizing $\|Mu - v\|_\infty$ subject to $u \ge 0$.
+Figure~\ref{fig:deconvolution} shows three examples of $X_{\rm norm}$ and
+$X_{\rm corr}$ densities that sum to $X_{\rm log}$ from this process.
+
+This was tractable up to a few hundred dimensions for $u$.  However, the
+discretization error is bounded by the curvature of the underlying functions
+times the squared quantization step. The curvatures are here slightly less than
+one, i.e.  the errors are of the order of $(V/N)^2$.  Here we chose $V=20$ to
 provide adequate containment of the distributions (the CDFs are extremely close
 to either zero or one outside this range). So with 200 points, we have a
 discretization error of approximately 0.01, which is relatively large.  To yield
@@ -656,14 +633,12 @@ Equation~\ref{eq:optimization_l1}.
 
 With this approach, there is no guarantee that $u^* \geq 0$. However, we have
 some flexibility in the choice of $\sigma$ in Equation~\ref{eq:conv1}.
-% {\color{blue} Daniel: is this the correct equation?}
-As we decrease the variance
-of $X_{\rm norm}$, the variance of $X_{\rm corr}$ grows by the same amount and
-is in fact the result of convolution with a Gaussian whose variance is the
-difference.  Thus as $\sigma$ decreases, $C(X)$ grows and approaches the
-derivative of a logistic function at $\sigma = 0$. It retains some very weak
-negative values for $\sigma > 0$ but removal of those values leads to very small
-error.
+As we decrease the variance of $X_{\rm norm}$, the variance of $X_{\rm corr}$
+grows by the same amount and is in fact the result of convolution with a
+Gaussian whose variance is the difference.  Thus as $\sigma$ decreases,
+$C_\sigma(X)$ grows and approaches the derivative of a logistic function at
+$\sigma = 0$. It retains some very weak negative values for $\sigma > 0$ but
+removal of those values leads to very small error.
 
 \SetKwInOut{Input}{Input}
 \SetKwInOut{Output}{Output}
@@ -672,7 +647,7 @@ error.
 \Output{A chain of $T$ samples $\{\theta_1, \ldots, \theta_T\}$ from $p(\theta)$\;}
 \For{$t=\{1, \ldots, T\}$}{
     Propose a candidate $\theta'$\ from proposal distribution $q(\theta'\mid\theta_t)$\;
-    Draw a minibatch of $m$ points $x_i$, compute $\Delta^*(\theta_t,\theta')$ and sample variance $s^2_{\Delta^*})$\;
+    Draw a minibatch of $m$ points $x_i$, compute $\Delta^*(\theta_t,\theta')$ and sample variance $s^2_{\Delta^*}$\;
     Estimate moments $E|\Lambda_i-\Lambda|$ and $E|\Lambda_i-\Lambda|^3$ from the sample, and error $\epsilon$ from Equation~\ref{eq:clt-bounds3}\;
     \While {$s^2_{\Delta^*} \ge 1$ {\bf or} $\epsilon > \delta$}{
     	Draw $m$ more samples to augment the minibatch, update $\Delta^*$, $s^2_{\Delta^*}$ and $\epsilon$ estimates\;
@@ -687,18 +662,11 @@ error.
         }
     
 }
-\caption{A description of M-H sampling with our acceptance test.
-% {\color{blue}
-% Daniel: I think we may want to be careful about the use of $C_1(X)$ because that
-% implies that we have a fixed $X_{\rm corr}$ density, but that $C_1(X)$ will
-% change depending on the iteration and variance of $\Delta^*$, right? Hopefully
-% not by much, but it still changes sometimes? ALSO bring up Xinlei's old points
-  %about $X_{\rm norm}$ confusion.}
-}
+\caption{A description of M-H sampling with our acceptance test.}
 \label{alg:our_algorithm}
 \end{algorithm}
 
-\begin{table}[h]
+\begin{table}[t]
     \caption{Error in $X_{\rm norm}+X_{\rm corr}$ versus $X_{\rm log}$}
     \label{tab:xcorr}
     \centering
@@ -712,22 +680,24 @@ error.
     \end{tabular}
 \end{table}
 
-As can be seen from table~\ref{tab:xcorr}, the errors between $X_{\rm norm}+X_{\rm corr}$ and $X_{\rm log}$ can be made very small, approaching single floating precision (about $10^{-7}$). 
+As can be seen from Table~\ref{tab:xcorr}, the errors between $X_{\rm norm}+X_{\rm corr}$ and $X_{\rm log}$ can be made very small, approaching single floating precision (about $10^{-7}$). 
 
-The complete algorithm is given in~\ref{alg:our_algorithm}. A few points:
+The complete procedure is given in Algorithm~\ref{alg:our_algorithm}. A few points:
+
 \begin{itemize}
-\item The algorithm uses an adaptive step size so as to use the smallest possible
-  average minibatch size. Unlike previous work however (and see the experiments section)
-  the size distribution is short-tailed.
-\item An additional normal variable $X_{\rm nc}$ is added to $\Delta^*$ to produce a variable
-  with unit variance. This is not mathematically necessary, but allows us to use a single
-  correction distribution $C_1$ for $X_{\rm corr}$, saving on memory footprint.
-\end{itemize}
+    \item It uses an adaptive step size so as to use the smallest possible
+    average minibatch size. Unlike previous work however (and as we show in
+    Section~\ref{sec:experiments}) the size distribution is short-tailed.
 
-The sample variance $s^2_{\Delta^*}$ is proportional to $||\theta'-\theta||^2$
-whose distribution for Normal proposals is the square of a normal variable. 
-% {\color{blue} Daniel: TODO improve/describe Table~\ref{tab:xcorr} and try to
-% relocate Algorithm~\ref{alg:our_algorithm} to be somewhere nicer.}
+    \item An additional normal variable $X_{\rm nc}$ is added to $\Delta^*$ to
+    produce a variable with unit variance. This is not mathematically necessary,
+    but allows us to use a single correction distribution $C_1$ with $\sigma=1$
+    for $X_{\rm corr}$, saving on memory footprint.
+
+    \item The sample variance $s^2_{\Delta^*}$ is proportional to
+    $\|\theta'-\theta\|_2^2$ whose distribution for Normal proposals is the
+    square of a normal variable. 
+\end{itemize}
 
 
 
@@ -736,11 +706,9 @@ whose distribution for Normal proposals is the square of a normal variable.
 We now derive error bounds for our M-H test, and for the approximate target
 distribution that it generates. From Table~\ref{tab:xcorr}, we know that
 it is possible to generate the correction samples $X_{\rm corr}$ with a CDF
-error approaching single-precision floating point error.
-% {\color{blue} (Daniel: I can fix this to cite Table~\ref{tab:xcorr}'s values,
-% that will probably be better.)}.
-We therefore treat the $X_{\rm corr}$ variable as a sample from the
-exact correction distribution and we will not analyze its errors.
+error approaching single-precision floating point error. We therefore treat the
+$X_{\rm corr}$ variable as a sample from the exact correction distribution and
+we will not analyze its errors.
 
 In the most similar prior works,~\cite{cutting_mh_2014} uses asymptotic
 arguments based on the Central Limit Theorem to argue that its approximate
@@ -771,10 +739,7 @@ corr}$. From this it follows that the acceptance test has the same error bound.
 
 \subsection{Bounding the Distribution of $\Delta^*$ Versus a Gaussian}\label{ssec:delta_star_distribution}
 
-%{\color{blue} Daniel: the following lemma is, I think, from Corollary 2
-%in~\cite{explicit-clt05} but I cannot derive the exact lemma as we have it
-%here.} To start, we use the following quantitative central-limit result
-%(from~\cite{explicit-clt05}):
+To start, we use the following quantitative central-limit result:
   
 \begin{lemma}\label{lem:quant_clt}
 Let $X_1,\ldots,X_n$ be a set of zero-mean, independent, identically-distributed
@@ -785,20 +750,19 @@ where:
 \end{equation}
 This implies $t=\bar{X}/s_X$ has an approximate Student's distribution
 which approaches a normal distribution in the limit. Then
-from~\cite{explicit-clt05}:
 \begin{equation}\label{eq:clt-bounds}
     \sup_x|{\rm Pr}(t<x) - \Phi(x)| \leq \frac{6.4E|X|^3+2E|X|}{\sqrt{n}}.
 \end{equation}
 \end{lemma}
 
 \begin{proof}
-  The following bound is given immediately after Corollary 2 in from~\cite{explicit-clt05}:
+The following bound is given immediately after Corollary 2 in from~\cite{explicit-clt05}:
 \begin{equation}\label{eq:clt-boundsx}
 -6.4E|X|^3-2E|X| \leq    \sup_x|{\rm Pr}(t<x) - \Phi(x)|{\sqrt{n}} \leq 1.36E|X|^3
 \end{equation}
 This bound applies to $x\geq 0$. Applying the bound to $-x$ when $x<0$
 and combining with $x>0$, we obtain the weaker but unqualified bound
-in equation (\ref{eq:clt-bounds}).
+in Equation~\ref{eq:clt-bounds}.
 \end{proof}
 
 %% {\color{blue} Daniel: the notation here was (and still is, to a lesser extent)
@@ -814,7 +778,7 @@ in equation (\ref{eq:clt-bounds}).
 Lemma~\ref{lem:quant_clt} demonstrates that as long as we know the first and
 third absolute moments $E|X|$ and $E|X|^3$, we can bound the error of the normal
 approximation, which decays as $O(n^{-\frac{1}{2}})$. Making the change of
-variables $y = x s_X)$, Equation~\ref{eq:clt-bounds} becomes
+variables $y = x s_X$, Equation~\ref{eq:clt-bounds} becomes
 \begin{equation}\label{eq:clt-bounds2}
    \sup_y\left|{\rm Pr}(\bar{X}< y) - \Phi\left(\frac{y}{s_X}\right)\right| \leq \frac{6.4E|X|^3+2E|X|}{\sqrt{n}},
 \end{equation}
@@ -911,13 +875,9 @@ We apply Lemma~\ref{lem:cdf_bounds} twice. First take:
 \begin{equation}
     P(y) = {\rm Pr}(\Delta^* < y) \qquad {\rm and}\qquad Q(y) = \Phi\left(\frac{y-\Delta}{s_{\Delta^*}}\right)
 \end{equation}
-and convolve with the distribution of $X_n$ which has density
-%% {\color{blue}
-%%   (Daniel: to be clear I
-%% think this was supposed to be $X_{\rm norm}$ instead of $X_n$ but see comments
-%% earlier about why I think it is not necessary.)}
-$\phi(X/\sigma_n)$ where $\sigma_n^2 = 1 - s^2_{\Delta^*}$. This yields the
-next iteration of $P$ and $Q$:
+and convolve with the distribution of $X_n$ which has density $\phi(X/\sigma_n)$
+where $\sigma_n^2 = 1 - s^2_{\Delta^*}$. This yields the next iteration of $P$
+and $Q$:
 \begin{equation}
     P'(y) = {\rm Pr}(\Delta^*+X_{\rm nc} < y) \qquad {\rm and}\qquad Q'(y) = \Phi\left({y-\Delta}\right)
 \end{equation}
