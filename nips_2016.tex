@@ -1047,34 +1047,15 @@ times to collect 5000 samples.
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=1\linewidth]{GaussianMixtureResult/minibatch_size_gaussian.png}
+    \includegraphics[width=1\linewidth]{minibatch_size_gaussian.png}
     \caption{
     Histograms of minibatch sizes for the three methods used in
-    Section~\ref{ssec:gaussians}. {\color{blue} Daniel: The y-axis should
-    probably just be ``Counts'' not ``Total Counts.'' Also, was this run with
-    the \texttt{plt.tight\_layout()} command? The y-axis text for the second and
-    third subplots almost overlap with the graphs to their left. Finally, I am
-    still thinking about whether the y-axis should be on a log scale. I think
-    the log scale is appropriate for the x-axis, it's a question of whether we
-    should also apply it for the y-axis.}
+    Section~\ref{ssec:gaussians}. Note the log-log scale, to facilitate
+    comparisons across methods; in particular, the axes have the same
+    range.
     }
     \label{fig:gauss_mix_2}
 \end{figure}
-
-%% \begin{figure}[t]
-%% 	\centering
-%% 	\includegraphics[width=\linewidth]{GaussianMixtureResult/first_second_part_gaussian.png}
-%% 	\caption{
-%%     Value of first and second part of equation (9)
-%%     in~\cite{icml2014c1_bardenet14} with respect to actual minibatch size.
-%%     {\color{blue} Daniel: probably debatable on whether we should include this.
-%%     Let's talk it over.}
-%%     }
-%% 	\label{fig:gauss_bardenet}
-%% \end{figure}
-
-
-
 
 Figure~\ref{fig:gauss_mix_1} shows scatter plots of the resulting $\theta$
 samples for the three methods, with darker regions indicating a greater density
@@ -1106,7 +1087,22 @@ Then the log probability for the sample is
   \sum_{j=1}^{N_{\rm bins}} c_j \log (n P_j) - n P_j - \log(\Gamma(c_j+1))
 \end{equation}
 
-The results for each model are shown in table 2...
+The results for each model are shown in Table~\ref{tab:poissons} ...
+{\color{blue} Daniel: IN PROGRESS}
+
+\begin{table}[t]
+    \caption{{\color{blue} Daniel: TODO Poisson Probabilities}}
+    \label{tab:poissons}
+    \centering
+    \begin{tabular}{l l l l}
+    \toprule
+    Model & Ours & Korattikara 2014 & Bardenet 2014 \\
+    \midrule
+    Poission Value & TODO & TODO & TODO \\
+    \bottomrule
+    \end{tabular}
+\end{table}
+
 
 While these results provide general guidance on the relative accuracy of the models
 its difficult interpret the quantitative scores. We can also perform significance tests to
