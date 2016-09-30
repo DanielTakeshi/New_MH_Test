@@ -1060,9 +1060,9 @@ times to collect 5000 samples.
 
 Figure~\ref{fig:gauss_mix_1} shows scatter plots of the resulting $\theta$
 samples for the three methods, with darker regions indicating a greater density
-of points. There are no obvious differences in these distributions. To better
-understand any differences, we measure the similarity between each set of
-samples and the actual posterior. 
+of points. There are no obvious differences, so to better understand any
+differences, we measure the similarity between each set of samples and the
+actual posterior. 
 
 To effect the comparison, we first discretize the posterior coordinates into
 bins (non-overlapping ranges) with respect to the two components of the
@@ -1244,10 +1244,6 @@ In this appendix, we describe the following topics:
     \item More information on Section~\ref{ssec:logistic}.
 \end{itemize}
 
-{\color{blue} Daniel: Note that everything after
-Appendix~\ref{app:worst_case_proof} has yet to be revised. I don't know what we
-will include in them.}
-
 \section{Proof of Lemma~\ref{lem:worst_case}}\label{app:worst_case_proof}
 
 Assume $(\theta' - \theta) \in \pm\frac{1}{\sqrt{N}}[0.5,1]$ and $\theta -0.5
@@ -1309,15 +1305,16 @@ the probability of the conjunction of these events is $c = p_0 p_1 p_2 =
 
 \section{Gaussian Mixture Experiment Details}\label{app:gaussian}
 
-In this section, we go over the math details on the Gaussian mixture model problem borrowed
-from~\cite{langevin_2011}. Our parameter is a 2-D vector $\theta =
-(\theta_1, \theta_2)$, where
+In this section, we provide more details on Section~\ref{ssec:gaussians}.  Our
+parameter is a 2-D vector
+$\theta = \langle \theta_1, \theta_2 \rangle$, where
 \begin{equation}
 \theta_1 \sim \mathcal{N}(0, \sigma_1^2) \quad \mbox{ and } \quad \theta_2 \sim \mathcal{N}(0, \sigma_2^2)
 \end{equation}
-where $\mathcal{N}$ indicates the normal distribution (more generally, the multivariate normal). We
-consider the above as our prior. Following~\cite{langevin_2011}, we set $\sigma_1^2 = 10$ and
-$\sigma_2^2=1$, so the covariance matrix of $\theta$ is $\Sigma = {\rm diag}(10,1)$. Therefore, the
+and where $\mathcal{N}$ indicates the normal distribution (more generally, the
+multivariate normal). We consider the above as our prior.
+Following~\cite{langevin_2011}, we set $\sigma_1^2 = 10$ and $\sigma_2^2=1$, so
+the covariance matrix of $\theta$ is $\Sigma = {\rm diag}(10,1)$. Therefore, the
 log prior probability we endow on $\theta$ is
 \begin{equation}
 \log p(\theta) = \log \left(\frac{1}{2\pi\sqrt{10}}\right) - \frac{1}{2}\theta^T\Sigma^{-1}\theta.
@@ -1326,60 +1323,57 @@ To generate the data, we use the following Gaussian mixture with tied means:
 \begin{equation}\label{eq:x_points}
 x_i \sim \frac{1}{2}\mathcal{N}(\theta_1, \sigma_x^2) + \frac{1}{2}\mathcal{N}(\theta_1+\theta_2, \sigma_x^2)
 \end{equation}
-where, again following~\cite{langevin_2011}, we set $\sigma_x^2 = 2$. This means the log likelihood
-of a single data instance is
+where, again following~\cite{langevin_2011}, we set $\sigma_x^2 = 2$. This means
+the log likelihood of a single data instance is
 \begin{equation}
-\log p(x_i \mid \theta) = \log\left(\frac{1}{4\sqrt{\pi}}\right) +
+\log p(x_i \mid \theta) = \log \frac{1}{4\sqrt{\pi}} +
 \log\left(\exp\left(-\frac{1}{4}(x_i - \theta_1)^2\right) + \exp\left(-\frac{1}{4}(x_i -
 (\theta_1+\theta_2))^2\right)\right)
 \end{equation}
-Here is the problem statement: given some number of conditionally independent data points $x_1, x_2,
-\ldots, x_N$ generated according to~(\ref{eq:x_points}), determine the posterior
-distribution of $\theta$:
+The official problem statement is as follows: given some number of conditionally
+independent data points $x_1, x_2, \ldots, x_N$ generated according
+to~(\ref{eq:x_points}), determine the posterior distribution of $\theta$:
 \begin{equation}\label{eq:log_post}
 \log p(\theta \mid x_1,\ldots,x_N) = \log p(\theta) + \sum_{i=1}^N\log p(x_i \mid \theta).
 \end{equation}
-Alternatively, if there are too many data points, we may opt to instead pick a point estimate of
-$\theta$, generally the MAP estimate. (If $N$ is extremely large, it will cause the posterior to
-peak sharply at its modes, reducing distribution estimates to point estimates.) Note that in many
-cases, we will need to take a \emph{minibatch estimate} of~(\ref{eq:log_post}). In that case, the
-literature generally uses
-\begin{equation}\label{eq:scaling_factor}
-\log p(\theta \mid x_1,\ldots,x_N) \approx \log p(\theta) + \frac{N}{n} \sum_{i=1}^n\log p(x_i \mid \theta).
-\end{equation}
-where we only use $n \ll N$ samples, but we must scale up the likelihood contribution by $N/n$. If we
-didn't add this scaling factor, then the contribution of the likelihood terms would be weaker.
+Alternatively, depending on the application, we may opt to instead pick a point
+estimate\footnote{We do this for the logistic regression experiment, described
+in Section~\ref{ssec:logistic} and elaborated in Appendix~\ref{app:logistic}.}
+of $\theta$, such as the MAP estimate. (If $N$ is extremely large, it will cause
+the posterior to peak sharply at its modes, reducing distribution estimates to
+point estimates.)
 
-One technique we use is adding a \emph{temperature} to our distribution. In general, we will want to
-add $T > 1$ so that our posterior is $p(\theta)((\prod_{i=1}^n p(x_i\mid \theta))^{N/n})^{1/T}$,
-resulting in the log posterior of 
+One technique we use to make our test more applicable is to add a temperature to
+the posterior. In general, we will add $T > 1$ so that the posterior is
+$p(\theta)(\prod_{i=1}^N p(x_i\mid \theta))^{1/T}$, resulting in the log
+posterior of 
 \begin{equation}\label{eq:log_prior_temp}
-\log p(\theta \mid x_1,\ldots,x_N) \approx \log p(\theta) + \frac{1}{T}\frac{N}{n} \sum_{i=1}^n\log p(x_i \mid \theta).
+\log p(\theta \mid x_1,\ldots,x_N) \approx \log p(\theta) + \frac{1}{T}\sum_{i=1}^N\log p(x_i \mid \theta).
 \end{equation}
-which has the extra $1/T$ to decrease the scale factor. Equation~(\ref{eq:log_prior_temp}) is what
-we use for our experiments, because warmer distributions help us satisfy our ${\rm std}(\Delta') <
-1.2$ requirement.
+which has the extra $1/T$ to decrease the scale factor, so the variance scales
+as $1/T^2$.
 
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=1\linewidth]{contour_v1}
-  \caption{The posterior distribution, from 50 to 100k samples, with temperature set at 1.}
-  \label{fig:contour1}
-\end{figure}
+% Daniel: I decided that I don't like this figure anymore.
+% \begin{figure}[t]
+%   \centering
+%   \includegraphics[width=1\linewidth]{contour_v1}
+%   \caption{The posterior distribution, from 50 to 100k samples, with temperature set at 1.}
+%   \label{fig:contour1}
+% \end{figure}
+
 \begin{figure}[t]
   \centering
   \includegraphics[width=1\linewidth]{contour_v2}
-  \caption{The posterior distribution, with $N=10000$ but with temperature $T$ varying.}
+  \caption{The posterior distribution, with $N=10000$ and temperature $T$ varying.}
   \label{fig:contour2}
 \end{figure}
 
-To gain some intuition on what the posterior looks like, Figure~\ref{fig:contour1} shows simulated
-contour plots of the posterior based on varying numbers of data points $N$, with the temperature set
-at $T=1$. Note that because we are using all $N$ points here, the scale factor $N/n=1$. As $N$
-increases, the posterior converges to a multimodal distribution with modes at $(0,1)$ and $(1,-1)$.
-Figure~\ref{fig:contour2} is similar, except this time we fix the number of samples at $N=10000$,
-but show how changing the temperature $T$ affects the distribution. A larger $T$ implies a flatter
-posterior, one that (weakly) peaks in between the two true modes.
+To gain intuition on the shape of the posterior, Figure~\ref{fig:contour2} shows
+simulated contour plots of the posterior based on $N=10000$ data points, and
+temperature varying.  The (non-tempered) posterior is a multimodal distribution
+with modes at $(0,1)$ and $(1,-1)$. A larger $T$ implies a flatter posterior,
+which can be useful for parameter exploration so that the samples do not get
+trapped in a mode.
 
 
 \section{Logistic Regression Experiment Details}\label{app:logistic}
