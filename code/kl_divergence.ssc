@@ -1,7 +1,26 @@
 // this script calculates the kl divergence 
-:silent
 
 def log_f(theta: Mat, X: Mat, N: Int, T: Double): Mat = {
+	// This function calculates the probability of p(theta|X), which is the posterior distribution
+	// Since we know that 
+	// 			p(\theta|X) \propto p(\theta) * p(X|\theta)
+	// where p(\theta) is basically a multivariate gaussian distribution 
+	// 			p(\theta) = \frac{1}{\sqrt(  (2*pi)^k * |\Sigma| )} * exp(-0.5 * (\theta - \mu)^T * inv(\Sigma) * (\theta - \mu));
+	// where \Sigma is the covariance matrix
+	// and that p(X|\theta) is the likelihood term where X is basically a mixture of gaussian distribution
+	//			p(X|\theta) = 0.5 * \frac{1}{\sqrt(2*pi)*\sigma_x} * exp(-0.5 * (X - \theta_0)^2/\sigma_x^2) + 
+	//						  0.5 * \frac{1}{\sqrt(2*pi)*\sigma_x} * exp(-0.5 * (X - \theta_0 - \theta_1)^2/\sigma_x^2)
+	// note that here \sigma_x = \sqrt{2} so we have,
+	//			p(X|\theta) = 0.25 * \frac{1}{\sqrt(pi)} * exp(-0.25 * (X - \theta_0)^2) + 
+	//						  0.25 * \frac{1}{\sqrt(pi)} * exp(-0.25 * (X - \theta_0 - \theta_1)^2)
+
+	// Input : theta: 2 * n matrix. Every column is a sample, and we have n samples 
+	// 		   X    : 1 * N vector. Every entry is a data point, and we have N data points
+	// 		   N    : Int         . Number of data points
+	// 		   T    : Double      . Temperature
+
+	// Output: res  : 1 * n vector. Every entry denotes the log likelihood of that parameter sample
+
 	val (sizet1, sizet2) = size(theta);  // sizet1: 2
 										 // sizet2: the number of all the samples
 
@@ -41,7 +60,7 @@ def log_f(theta: Mat, X: Mat, N: Int, T: Double): Mat = {
 };
 
 
-def estimate_divergence(all_thetas:Mat, d_space:Double, full_data:Mat, temp:Double): Double = {
+def estimate_divergence(all_thetas:Mat, d_space:Double, full_data:Mat, temp:Double): (Double, Double) = {
 	val (m,n) = size(all_thetas);
 	if (m != 2){
 		println("Data dimension error!");
@@ -115,7 +134,12 @@ def estimate_divergence(all_thetas:Mat, d_space:Double, full_data:Mat, temp:Doub
 	// calculate the chi-square statistics
 	val chi_sq = sum(sum( (target_distribution - source_distribution)*@(target_distribution - source_distribution)/source_distribution) ).dv;
 
-	return chi_sq;
+	// calculate the Log Poisson Likelihood term 
+	val obs = round(target_distribution) + 1;   // observed distribution
+	val tho = round(source_distribution) + 1;   // expected distribution
+	val logll = sum(sum(obs*@ln(tho) - tho - ln(gamma(obs+1.0)))).dv;
+
+	return (chi_sq, logll);
 }
 
 
@@ -136,13 +160,16 @@ for(i <- 0 until nn){
 };
 
 val samples1:DMat = load("gaussiandata.mat","newtestsamples");
-val res1 = estimate_divergence(samples1, d_space=0.1, data, temp);
+val res1, logll1 = estimate_divergence(samples1, d_space=0.1, data, temp);
+println("res1 is %d, and logll1 is %d ", res1, logll1);
 
-val samples2:DMat = load("gaussiandata.mat","cutmhamples");
-val res2 = estimate_divergence(samples2, d_space = 0.1, data, temp);
+// val samples2:DMat = load("gaussiandata.mat","cutmhsamples");
+// val res2, logll2 = estimate_divergence(samples2, d_space = 0.1, data, temp);
+// println("res2 is %d, and logll2 is %d ", res2, logll2);
 
-val samples3:DMat = load("gaussiandata.mat", "adaptivemhsamples");
-val res3 = estimate_divergence(samples3, d_space = 0.1, data, temp);
+// val samples3:DMat = load("gaussiandata.mat", "adaptivemhsamples");
+// val res3, logll3 = estimate_divergence(samples3, d_space = 0.1, data, temp);
+// println("res3 is %d, and logll3 is %d ", res3, logll3);
 
 
 

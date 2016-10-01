@@ -137,7 +137,7 @@ leads to a test which is fast, and whose error can be made arbitrarily
 small.
 
 Our test is applicable when the variance (over data samples) of the log
-acceptance probability is small enough (less than 1). Its not clear at first why
+acceptance probability is small enough (less than 1). It's not clear at first why
 this quantity should be bounded, but we will show that it is ``natural'' for
 well-specified models running Metropolis-Hastings sampling with optimal
 proposals~\cite{OptimalScaling01} on a full dataset. When we reduce the amount
@@ -166,7 +166,7 @@ of several ways. Either:
 
 \end{itemize}
 
-Its worth discussing at this point the typical goals of
+It's worth discussing at this point the typical goals of
 M-H sampling on very large datasets.  By the Bernstein-von Mises
 Theorem, the posterior distribution of the parameter $\theta$ for a
 Bayesian inference task is asymptotically normal, and has variance
@@ -180,7 +180,7 @@ away. If there are any other strong modes, it is very likely for the
 sampler to find one of them and become trapped in it when run at the
 normal distribution temperature ($T=1$). A common solution is to anneal
 the sampler, running first at high temperature (scaling log
-likelihoods by $1/T$) which flattens the likelihood landscape.  This is
+likelihoods by $1/T$) which flattens the likelihood landscape.  This in
 turn reduces the variance of the log acceptance probability and allows
 our acceptance test to be applied.
 
