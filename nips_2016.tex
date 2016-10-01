@@ -1266,6 +1266,9 @@ In this appendix, we describe the following topics:
     \item I added in an ``$E$'' because it seemed like you wanted the ``$u$''
     that would make $\psi(u,\theta,\theta') = \log u =
     E[\Lambda^*(\theta,\theta')]$.
+
+    \item Added more detail for the $\Lambda^*(\theta,\theta') \not\approx
+    \psi(u,\theta,\theta')$ part.
 \end{enumerate}
 
 I'm hoping this is correct. I understood the general idea of what you were
@@ -1281,7 +1284,7 @@ to take into account the $1/\sqrt{N}$ in the probabilities? If $N \to \infty$
 zero.}) $p_0=2*(\Phi(1)-\Phi(0.5)) = 0.2997$ and
 $p_1=(\Phi(1)-\Phi(0.5))=0.14988$ respectively, and guarantee that
 $\Lambda^*(\theta,\theta')$ is negative. This then guarantees that we can find a
-$u \in [0,1]$ so that $\psi(u,\theta,\theta') = \log u$ equals
+$u \in [0,1]$ so that $\psi(u,\theta,\theta') = \log u < 0$ equals
 $E[\Lambda^*(\theta,\theta')]$.
 
 Specifically, choose $u_0$ to satisfy $\log u_0 = E[\Lambda^*(\theta,\theta')]$.
@@ -1290,17 +1293,20 @@ Using $E[x_i] = 0.5$, we see that
     \log u_0 &= N(\theta'-\theta)\frac{1}{b} \cdot E\left[\sum_{i=1}^b x_i-\theta-\frac{\theta'-\theta}{2}\right] \\
     &= -N(\theta'-\theta)\left(\theta-0.5+\frac{\theta'-\theta}{2}\right).
 \end{align}
-This means we can rewrite the acceptance test as
-\begin{equation}
-    \frac{1}{b}\sum_{i=1}^b x_i-\left(\theta+\frac{\theta'-\theta}{2} + \frac{\log u_0}{N(\theta'-\theta)}\right)
-    \hspace{0.1in} \not\approx \hspace{0.1in} 0
-\end{equation}
-where $\not\approx$ means ``significantly different from'' under the
-distribution over samples of $x_i$.  The above choice of $u_0$ ensures that the
-terms in parenthesis above sum to 0.5. Since the $x_i$ have mean 0.5, the test
-will never correctly succeed.  Furthermore, if we sample values of $u$ near
-enough to $u_0$, the terms in parenthesis will not be sufficiently different
-from 0.5 to allow the test to succeed. 
+Next, consider the minibatch acceptance test $\Lambda^*(\theta,\theta') \not\approx
+\psi(u,\theta,\theta')$, where $\not\approx$ informally means ``significantly
+different from'' under the distribution over samples of $x_i$. This turns out to
+be
+\begin{align}
+\Lambda^*(\theta,\theta') \hspace{0.1in} \not\approx \hspace{0.1in}
+\psi(u_0,\theta,\theta') &\iff N(\theta'-\theta) \cdot \frac{1}{b}\sum_{i=1}^b x_i-\theta-\frac{\theta'-\theta}{2} \hspace{0.1in} \not\approx \hspace{0.1in} \log u_0 \\
+&\iff \frac{1}{b}\sum_{i=1}^b x_i-\left(\theta+\frac{\theta'-\theta}{2} + \frac{\log u_0}{N(\theta'-\theta)}\right) \hspace{0.1in} \not\approx \hspace{0.1in} 0 \\
+&\iff \frac{1}{b}\sum_{i=1}^b x_i-0.5 \hspace{0.1in} \not\approx \hspace{0.1in} 0.
+\end{align}
+Since the $x_i$ have mean 0.5, the resulting test with our chosen $u_0$ will
+never correctly succeed and must use all $N$ data points.  Furthermore, if we
+sample values of $u$ near enough to $u_0$, the terms in parenthesis will not be
+sufficiently different from 0.5 to allow the test to succeed. 
   
 {\color{blue} Daniel: I would like to ask you about these probabilities because
 I do not know how we got these intervals.} The choices above for $\theta$ and
