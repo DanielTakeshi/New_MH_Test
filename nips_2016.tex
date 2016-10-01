@@ -329,7 +329,6 @@ with a known variance $\sigma^2=1$, true mean $\theta=0.5$, and a uniform prior
 on $\theta$. The log likelihood ratio is
 \begin{equation}
 \Lambda^*(\theta,\theta') =  \frac{N}{b}\sum_{i=1}^b \log\frac{p(x_i|\theta')}{p(x_i|\theta)}=
-  %%\frac{1}{2}\left( (x_i-\theta')^2 - (x_i - \theta)^2\right) =
   N(\theta'-\theta)\left(\frac{1}{b}\sum_{i=1}^b x_i-\theta-\frac{\theta'-\theta}{2}\right)
 \end{equation}
 which is normally distributed over selection of the Normal samples $x_i$.  Since
@@ -1247,6 +1246,33 @@ In this appendix, we describe the following topics:
 
 \section{Proof of Lemma~\ref{lem:worst_case}}\label{app:worst_case_proof}
 
+
+{\color{blue} Daniel: changes I made:
+
+\begin{enumerate}
+    \item Changed all occurrences of $\Lambda^*(\theta',\theta)$ to
+    $\Lambda^*(\theta,\theta')$, i.e., switched the input ordering.
+
+    \item Originally, $\log u_0$ was defined as
+    $N(\Lambda^*(\theta,\theta')-\psi(1,\theta,\theta'))$ but I changed the
+    starting definition so it does \emph{not} have a factor of $N$ in its
+    definition (because we later get $N$ to appear in a subsequent step).
+
+    \item In addition, $\psi(1,\theta,\theta') = 0$ due to uniform priors and
+    symmetric proposals and there didn't seem to be a good enough reason to
+    include it in the definition so I deleted it (sometimes it's insightful to
+    have a nice form of zero inside, but I didn't see it here).
+
+    \item I added in an ``$E$'' because it seemed like you wanted the ``$u$''
+    that would make $\psi(u,\theta,\theta') = \log u =
+    E[\Lambda^*(\theta,\theta')]$.
+\end{enumerate}
+
+I'm hoping this is correct. I understood the general idea of what you were
+trying to do, it's a matter of getting the painful interval arithmetic details
+down.
+}
+
 Assume $(\theta' - \theta) \in \pm\frac{1}{\sqrt{N}}[0.5,1]$ and $\theta -0.5
 \in \pm\frac{1}{\sqrt{N}}[0.5,1]$ with matching sign. These events occur with
 probability ({\color{blue} Daniel: sorry for interjecting here but don't we need
@@ -1254,18 +1280,16 @@ to take into account the $1/\sqrt{N}$ in the probabilities? If $N \to \infty$
 (and it's going to be large with big datasets) the probabilities should be about
 zero.}) $p_0=2*(\Phi(1)-\Phi(0.5)) = 0.2997$ and
 $p_1=(\Phi(1)-\Phi(0.5))=0.14988$ respectively, and guarantee that
-$\Lambda^*(\theta',\theta)$ is negative. This then guarantees that we can find a
-$u \in [0,1]$ so that $\psi(u,\theta',\theta)$ equals
-$\mathbb{E}[\Lambda^*(\theta',\theta)]$.  Specifically, choose $u_0$ to satisfy
-\begin{equation}\label{eq:log_uo}
-    \log u_0 = N(\Lambda^*(\theta',\theta)-\psi(1,\theta',\theta))
-\end{equation}
-which evaluates ({\color{blue} Daniel: sorry again for interjecting but I really
-think $\log u_0$ does not have that $N$ there. Also, for the subsequent
-equation, I think we need to be using \emph{expected} values of $\Lambda^*$}) to
-\begin{equation}
-    \log u_0 = -N(\theta'-\theta)\left(\theta-0.5+\frac{\theta'-\theta}{2}\right).
-\end{equation}
+$\Lambda^*(\theta,\theta')$ is negative. This then guarantees that we can find a
+$u \in [0,1]$ so that $\psi(u,\theta,\theta') = \log u$ equals
+$E[\Lambda^*(\theta,\theta')]$.
+
+Specifically, choose $u_0$ to satisfy $\log u_0 = E[\Lambda^*(\theta,\theta')]$.
+Using $E[x_i] = 0.5$, we see that
+\begin{align}
+    \log u_0 &= N(\theta'-\theta)\frac{1}{b} \cdot E\left[\sum_{i=1}^b x_i-\theta-\frac{\theta'-\theta}{2}\right] \\
+    &= -N(\theta'-\theta)\left(\theta-0.5+\frac{\theta'-\theta}{2}\right).
+\end{align}
 This means we can rewrite the acceptance test as
 \begin{equation}
     \frac{1}{b}\sum_{i=1}^b x_i-\left(\theta+\frac{\theta'-\theta}{2} + \frac{\log u_0}{N(\theta'-\theta)}\right)
