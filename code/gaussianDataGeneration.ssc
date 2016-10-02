@@ -1,0 +1,18 @@
+val sigma = math.sqrt(2);
+val n = 1000000;
+val theta1 = 0.0;
+val theta2 = 1.0;
+val u = rand(1,n);
+val data = dzeros(1,n);
+
+for(i <- 0 until n){
+			if (u(i) < 0.5){
+				data(i) = dnormrnd(theta1, sigma.toFloat,1,1)(0)
+			}
+			else{
+				data(i) = dnormrnd(theta1+theta2, sigma.toFloat,1,1)(0)
+			}
+		};
+
+saveAs("gaussianPureData.mat", data, "data");
+
