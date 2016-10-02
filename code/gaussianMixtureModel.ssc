@@ -12,20 +12,22 @@ class GaussianMixture(n:Int, sigma:Double, pscale:Double) extends MHmodel(2, n, 
 	val theta1 = 0.0;
 	val theta2 = 1.0;
 	val u = rand(1,n);
-	val data = dzeros(1,n);
+	// var data = dzeros(1,n);
+	val data:DMat = load("gaussianPureData.mat", "data");
 	var temp = 1.0;
 
+	// Data Generation
+	/* 
+	for(i <- 0 until n){
+		if (u(i) < 0.5){
+			data(i) = dnormrnd(theta1, sigma.toFloat,1,1)(0)
+		}
+		else{
+			data(i) = dnormrnd(theta1+theta2, sigma.toFloat,1,1)(0)
+		}
+	}; */
+
 	def initfn():Mat = {
-		// Data Generation
-		for(i <- 0 until n){
-			if (u(i) < 0.5){
-				data(i) = dnormrnd(theta1, sigma.toFloat,1,1)(0)
-			}
-			else{
-				data(i) = dnormrnd(theta1+theta2, sigma.toFloat,1,1)(0)
-			}
-		};
-		
 		// Initialize parameters
 		val res = dones(2,1);
 		res(0) = 0.5;
@@ -76,40 +78,33 @@ cutMHtest.N = n;
 cutMHtest.eps = 0.005;
 
 
-tic; 
 println("Doing Our Test");
 val (samples, sizes, lls) = dosimm(mod=nn, test=newtest, size=batchsize, nsamps=nsamps, acc = 0.05);
-val t1 = toc;
 println("Finished Our Test");
 
-println("Doing Old Test");
+// println("Doing Old Test");
 // val (samples2, sizes2, lls2) = dosimm(mod=nn, test=oldtest, size=batchsize, nsamps=nsamps, acc = 0.05);
-val t2 = toc - t1;
-println("Finished Old Test");
+// println("Finished Old Test");
 
 println("Doing cut mh test");
 val (samples3, sizes3, lls3) = cutMHTest_dosimm(mod=nn, test=cutMHtest, size=batchsize, nsamps=nsamps, acc=0.05);
 println("Finished cut mh test");
 
-val t3 = toc - t1 - t2;
-
 println("Doing adaptive (bardenet's ) test")
 val (samples4, sizes4, lls4, bc1c2_list) = adaptiveMH_dosimm(mod=nn, test=adaptiveMHtest, size=batchsize, nsamps = nsamps, acc=0.05);
 println("Finished adaptive (bardenet's) test")
 
-val t4 = toc - t1 - t2 - t3;
 
 // println("Doing cut mh test with decreasing error bound")
 // cutMHtest.error_bound = false; // test with decreasing error bound
 // val (samples5, sizes5, lls5) = cutMHTest_dosimm(mod=nn, test = cutMHtest, size=batchsize, nsamps = nsamps, acc = 0.05);
 // println("Finished cut mh test with decreasing error bound")
 
-val t5 = toc - t1 - t2 - t3 - t4;
 
 
 
 // plot result of new test
-val a = samples(?,(nsamps/2)->nsamps);
+// val a = samples(?,(nsamps/2)->nsamps);
 // scatter(a(0,?),a(1,?));
 val size1 = FMat(sizes)	
 // hist(size1,50);
@@ -122,19 +117,15 @@ val size1 = FMat(sizes)
 // val size2 = FMat(sizes2)
 // hist(size2,50);
 
-
-
-
-
 // plot the result of cut mh test
-val c = samples3(?, (nsamps/2)->nsamps);
+// val c = samples3(?, (nsamps/2)->nsamps);
 // scatter(c(0,?), c(1,?));
 val size3 = FMat(sizes3);
 // hist(size3, 50);
 
 
 // plot the result of adaptive mh test
-val d = samples4(?, (nsamps/2)->nsamps);
+// val d = samples4(?, (nsamps/2)->nsamps);
 // scatter(d(0,?), d(1,?))
 val size4 = FMat(sizes4);
 // hist(size4, 50);
@@ -160,7 +151,9 @@ val size4 = FMat(sizes4);
 
 // save files
 println("Saving results to gaussiandata.mat");
-// val time_list = t1 \ t2 \ t3 \ t4 \ t5;
+
+
 /* saveAs("gaussiandata.mat", samples, "newtestsamples", samples2, "oldtestsamples",  samples3, "cutmhsamples", samples4, "adaptivemhsamples", samples5, "cutmhwithsamples", size1, "newtestsize", size2, "oldtestsize", size3, "cutmhsize", size4, "adaptivemhsize", size5, "cutmhwithsize", lls, "newtestll", lls2, "oldtestll", lls3, "cutmhll", lls4, "adaptivemhll", lls5, "cutmhwithll", bc1c2_list, "adaptivemhbc1c2", time_list, "time_list");
 */
+
 saveAs("gaussiandata.mat", samples, "newtestsamples", samples3, "cutmhsamples", samples4, "adaptivemhsamples", size1, "newtestsize", size3, "cutmhsize", size4, "adaptivemhsize", lls, "newtestll", lls3, "cutmhll", lls4, "adaptivemhll", bc1c2_list, "adaptivemhbc1c2", nn.data, "data");
