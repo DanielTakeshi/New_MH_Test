@@ -327,7 +327,7 @@ points.
 Consider a Gaussian model where $x_1,\ldots,x_N \simiid \mathcal{N}(\theta,1)$
 with a known variance $\sigma^2=1$, true mean $\theta=0.5$, and a uniform prior
 on $\theta$. The log likelihood ratio is
-\begin{equation}
+\begin{equation}\label{eq:lemma_ll_ratio}
 \Lambda^*(\theta,\theta') =  \frac{N}{b}\sum_{i=1}^b \log\frac{p(x_i|\theta')}{p(x_i|\theta)}=
   N(\theta'-\theta)\left(\frac{1}{b}\sum_{i=1}^b x_i-\theta-\frac{\theta'-\theta}{2}\right)
 \end{equation}
@@ -362,7 +362,7 @@ See Appendix~\ref{app:worst_case_proof}.
 \end{proof}
 
 Similar results can be shown for other distributions and proposals by
-identifying regions in product space $(\theta,\theta'-\theta,u)$ such that the
+identifying regions in product space $(\theta,\theta',u)$ such that the
 hypothesis test needs to separate nearly-equal values.  It follows that the
 accelerated M-H tests in~\cite{cutting_mh_2014,icml2014c1_bardenet14} require at
 least a constant fraction $\geq c$ in the amount of data consumed per test
@@ -1279,6 +1279,32 @@ In this appendix, we describe the following topics:
 
     \item Added more detail for the $\Lambda^*(\theta,\theta') \not\approx
     \psi(u,\theta,\theta')$ part.
+
+    \item (TODO later) After Equation~\ref{eq:accept_test_zero}, we say that
+    ``the resulting test with our chosen $u_0$ will never correctly succeed
+    [...]'', but I think we should say it will not succeed with high
+    probability, because we could select a minibatch of samples such that the
+    mean \emph{actually is} different from 0.5 (it depends on the distribution
+    of the variable that corresponds to $Y = \frac{1}{b}\sum_{i=1}^b x_i$).
+
+    \item (TODO later) Unfortunately, I am unable to understand why ``the size
+    of the range in $u$ is at least $\exp([-2,-1.125])$'', unless the real range
+    is $\exp([-2,0])$ (as I think it should be) and you were simply cropping off
+    the extra range.
+
+    \item (TODO later) I do not understand why after
+    Equation~\ref{eq:accept_test_rewritten}, we say that the standard deviation
+    of the LHS ``given the interval constraints is at least $0.5/\sqrt{b}$.'' We
+    already know that the $X_i$ are iid $\mathcal{N}(\theta = 0.5, 1)$ variables
+    with a fixed $\theta = 0.5$ value, so we already know the standard deviation
+    is supposed to be $\sqrt{({\rm Var}(x_1) + \cdots + {\rm Var}(x_b))/b^2} =
+    1/\sqrt{b}$. 
+
+    \item At the end, it said the joint distribution of
+    $(\theta,\theta'-\theta,u)$, but I changed it to $(\theta,\theta',u)$, based
+    on your change to the text of Lemma~\ref{lem:worst_case}. But here's a
+    question: how is the sample of $\theta'$ (or even $\theta'-\theta$, as it
+    was written earlier) independent of $\theta$?
 \end{enumerate}
 }
 
@@ -1295,52 +1321,54 @@ latter event, because we restrict signs, occurs with probability $p_1 =
 - \Phi(0.5) \approx 0.14988$. 
 
 These events together guarantee that $\Lambda^*(\theta,\theta')$ is negative,
-which means that we can find a $u \in [0,1]$ so that $\psi(u,\theta,\theta') =
-\log u < 0$ equals $E[\Lambda^*(\theta,\theta')]$.  Specifically, choose $u_0$
-to satisfy $\log u_0 = E[\Lambda^*(\theta,\theta')]$.  Using $E[x_i] = 0.5$, we
-see that
+intuitively because the next choice of $\theta'$ must be ``further away'' from
+0.5 than $\theta$.  This fact means that we can find a $u \in (0,1)$ so that
+$\psi(u,\theta,\theta') = \log u < 0$ equals $E[\Lambda^*(\theta,\theta')]$.
+Specifically, choose $u_0$ to satisfy $\log u_0 = E[\Lambda^*(\theta,\theta')]$.
+Using $E[x_i] = 0.5$ and Equation~\ref{eq:lemma_ll_ratio}, we see that
 \begin{align}
     \log u_0 &= N(\theta'-\theta)\frac{1}{b} \cdot E\left[\sum_{i=1}^b x_i-\theta-\frac{\theta'-\theta}{2}\right] \\
     &= -N(\theta'-\theta)\left(\theta-0.5+\frac{\theta'-\theta}{2}\right).
 \end{align}
 Next, consider the minibatch acceptance test $\Lambda^*(\theta,\theta') \not\approx
-\psi(u,\theta,\theta')$, where $\not\approx$ informally means ``significantly
-different from'' under the distribution over samples of $x_i$. This turns out to
-be
+\psi(u,\theta,\theta')$ required by these methods, where $\not\approx$
+informally means ``significantly different from'' under the distribution over
+samples of $x_i$. This turns out to be
 \begin{align}
 \Lambda^*(\theta,\theta') \hspace{0.1in} \not\approx \hspace{0.1in}
 \psi(u_0,\theta,\theta') &\iff N(\theta'-\theta) \cdot \frac{1}{b}\sum_{i=1}^b x_i-\theta-\frac{\theta'-\theta}{2} \hspace{0.1in} \not\approx \hspace{0.1in} \log u_0 \\
 &\iff \frac{1}{b}\sum_{i=1}^b x_i-\left(\theta+\frac{\theta'-\theta}{2} + \frac{\log u_0}{N(\theta'-\theta)}\right) \hspace{0.1in} \not\approx \hspace{0.1in} 0 \\
-&\iff \frac{1}{b}\sum_{i=1}^b x_i-0.5 \hspace{0.1in} \not\approx \hspace{0.1in} 0.
+&\iff \frac{1}{b}\sum_{i=1}^b x_i-0.5 \hspace{0.1in} \not\approx \hspace{0.1in} 0. \label{eq:accept_test_zero}
 \end{align}
 Since the $x_i$ have mean 0.5, the resulting test with our chosen $u_0$ will
 never correctly succeed and must use all $N$ data points.  Furthermore, if we
 sample values of $u$ near enough to $u_0$, the terms in parenthesis will not be
 sufficiently different from 0.5 to allow the test to succeed. 
   
-{\color{blue} Daniel: TODO I have not yet updated the rest of this section.}
-
 The choices above for $\theta$ and $\theta'$ guarantee that
-\begin{equation}
-    \log u_0 \in -[0.5,1][0.75,1.5] = -[0.375,1.5]
+\begin{equation}\label{eq:log_uo_range}
+    \log u_0 \in -[0.5,1][0.75,1.5] = [-1.5, -0.375]
 \end{equation}
 and consider the range of $u$ values
-\begin{equation}
+\begin{equation}\label{eq:log_u_range}
     \log u \in \log u_0 + [-0.5,0.375]
 \end{equation}
-the size of the range in $u$ is at least $\exp([-2,-1.125]) = [0.13534,0.32465]$ and occurs
-with probability at least $p_2=0.18932$. With $u$ in this range, we rewrite the test as:
-\begin{equation}
+the size of the range in $u$ is at least $\exp([-2,-1.125]) \approx
+[0.13534,0.32465]$ and occurs with probability at least $p_2=0.18932$. With $u$
+in this range, we rewrite the test as:
+\begin{equation}\label{eq:accept_test_rewritten}
     \frac{1}{b}\sum_{i=1}^b x_i-0.5 \hspace{0.1in} \not\approx \hspace{0.1in} \frac{\log u/u_0}{N(\theta'-\theta)}
 \end{equation}
-so that the LHS has expected value zero.  Given our choice of intervals for the
-variables, the RHS is in the range $1/\sqrt{N}[-1,0.75]$.  The standard
-deviation of the LHS given the interval constraints is at least $0.5/\sqrt{b}$.
-And so the gap between LHS and RHS is at most $2\sqrt{b/N}$ standard deviations. 
+so that, as in Equation~\ref{eq:accept_test_zero}, the LHS has expected value
+zero.  Given our choice of intervals for the variables, the RHS is in the range
+$\frac{1}{\sqrt{N}}[-1,0.75]$. The standard deviation of the LHS given the
+interval constraints is at least $0.5/\sqrt{b}$.  And so the gap between the LHS
+and RHS in Equation~\ref{eq:accept_test_rewritten} is at most $2\sqrt{b/N}$
+standard deviations, limiting the range in which the test will be able to
+``succeed'' without requiring more samples.
 
-The samples $\theta$, $(\theta'-\theta)$ and $u$ are drawn independently and so
-the probability of the conjunction of these events is $c = p_0 p_1 p_2 =
-0.0085$.
+The samples $\theta$, $\theta'$ and $u$ are drawn independently and so the
+probability of the conjunction of these events is $c = p_0 p_1 p_2 = 0.0085$.
 
 
 
