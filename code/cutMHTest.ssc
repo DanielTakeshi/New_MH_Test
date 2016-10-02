@@ -70,9 +70,9 @@ def cutMHTest_dosimm(mod:MHmodel, test:cutMHTest, size:Int, nsamps:Int, acc:Doub
     var here = 0;
     var i = 0;
     while (i < nsamps) {
-    	// if (i % (nsamps/5) == 0){
-    	//	println("cut mh test iteration = %d" format(i));
-    	// }
+    	if (i % (nsamps/5) == 0){
+    		println("cut mh test iteration = %d" format(i));
+    	}
     	if (! test.error_bound){
     		val epsi = 0.01 * pow((0.01 + i), -0.55).dv;
     		test.eps = epsi;

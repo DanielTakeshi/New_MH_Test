@@ -60,7 +60,7 @@ val n = 1000000
 val sigma = math.sqrt(2)
 val pscale = 1.0
 val batchsize = 100
-val sigma_proposer = 0.3;
+val sigma_proposer = 0.15;
 val nn = new GaussianMixture(n = n, sigma = sigma, pscale=pscale);
 
 nn.temp = nn.n/100.0;
