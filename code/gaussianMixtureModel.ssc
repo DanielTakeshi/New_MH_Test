@@ -77,13 +77,13 @@ cutMHtest.eps = 0.005;
 
 
 tic; 
-println("Doing Out Test");
+println("Doing Our Test");
 val (samples, sizes, lls) = dosimm(mod=nn, test=newtest, size=batchsize, nsamps=nsamps, acc = 0.05);
 val t1 = toc;
-println("Finished Out Test");
+println("Finished Our Test");
 
 println("Doing Old Test");
-val (samples2, sizes2, lls2) = dosimm(mod=nn, test=oldtest, size=batchsize, nsamps=nsamps, acc = 0.05);
+// val (samples2, sizes2, lls2) = dosimm(mod=nn, test=oldtest, size=batchsize, nsamps=nsamps, acc = 0.05);
 val t2 = toc - t1;
 println("Finished Old Test");
 
@@ -99,10 +99,10 @@ println("Finished adaptive (bardenet's) test")
 
 val t4 = toc - t1 - t2 - t3;
 
-println("Doing cut mh test with decreasing error bound")
-cutMHtest.error_bound = false; // test with decreasing error bound
-val (samples5, sizes5, lls5) = cutMHTest_dosimm(mod=nn, test = cutMHtest, size=batchsize, nsamps = nsamps, acc = 0.05);
-println("Finished cut mh test with decreasing error bound")
+// println("Doing cut mh test with decreasing error bound")
+// cutMHtest.error_bound = false; // test with decreasing error bound
+// val (samples5, sizes5, lls5) = cutMHTest_dosimm(mod=nn, test = cutMHtest, size=batchsize, nsamps = nsamps, acc = 0.05);
+// println("Finished cut mh test with decreasing error bound")
 
 val t5 = toc - t1 - t2 - t3 - t4;
 
@@ -117,9 +117,9 @@ val size1 = FMat(sizes)
 
 // plot result of old test
 
-val b = samples2(?,(nsamps/2)->nsamps);
+// val b = samples2(?,(nsamps/2)->nsamps);
 // scatter(b(0,?),b(1,?));
-val size2 = FMat(sizes2)
+// val size2 = FMat(sizes2)
 // hist(size2,50);
 
 
@@ -142,23 +142,25 @@ val size4 = FMat(sizes4);
 
 
 // plot the result of cut mh test with decreasing error bound
-val e = samples5(?, (nsamps/2)->nsamps);
+// val e = samples5(?, (nsamps/2)->nsamps);
 // scatter(e(0,?), e(1,?))
-val size5 = FMat(sizes5);
+// val size5 = FMat(sizes5);
 // hist(size5, 50);
 
 
 // calculate acceleration ratio
 // val accelerate = sum(size2).dv/sum(size1).dv;		
 // println("accelerate ratio over old test is %f" format(accelerate));
-val accelerate2 = sum(size3).dv/sum(size1).dv;
-println("accelerate ratio over cutmh test is %f" format(accelerate2));
+// val accelerate2 = sum(size3).dv/sum(size1).dv;
+// println("accelerate ratio over cutmh test is %f" format(accelerate2));
 // val accelerate3 = sum(size4).dv/sum(size1).dv;
 // println("accelerate ratio over adaptive mh test is %f" format(accelerate3));
-val accelerate4 = sum(size5).dv/sum(size1).dv;
-println("accelerate ratio over cut mh test with decreasing error bound is %f" format(accelerate4));
+// val accelerate4 = sum(size5).dv/sum(size1).dv;
+// println("accelerate ratio over cut mh test with decreasing error bound is %f" format(accelerate4));
 
 // save files
 println("Saving results to gaussiandata.mat");
-val time_list = t1 \ t2 \ t3 \ t4 \ t5;
-saveAs("gaussiandata.mat", samples, "newtestsamples", samples2, "oldtestsamples",  samples3, "cutmhsamples", samples4, "adaptivemhsamples", samples5, "cutmhwithsamples", size1, "newtestsize", size2, "oldtestsize", size3, "cutmhsize", size4, "adaptivemhsize", size5, "cutmhwithsize", lls, "newtestll", lls2, "oldtestll", lls3, "cutmhll", lls4, "adaptivemhll", lls5, "cutmhwithll", bc1c2_list, "adaptivemhbc1c2", time_list, "time_list");
+// val time_list = t1 \ t2 \ t3 \ t4 \ t5;
+/* saveAs("gaussiandata.mat", samples, "newtestsamples", samples2, "oldtestsamples",  samples3, "cutmhsamples", samples4, "adaptivemhsamples", samples5, "cutmhwithsamples", size1, "newtestsize", size2, "oldtestsize", size3, "cutmhsize", size4, "adaptivemhsize", size5, "cutmhwithsize", lls, "newtestll", lls2, "oldtestll", lls3, "cutmhll", lls4, "adaptivemhll", lls5, "cutmhwithll", bc1c2_list, "adaptivemhbc1c2", time_list, "time_list");
+*/
+saveAs("gaussiandata.mat", samples, "newtestsamples", samples3, "cutmhsamples", samples4, "adaptivemhsamples", size1, "newtestsize", size3, "cutmhsize", size4, "adaptivemhsize", lls, "newtestll", lls3, "cutmhll", lls4, "adaptivemhll", bc1c2_list, "adaptivemhbc1c2", nn.data, "data");
