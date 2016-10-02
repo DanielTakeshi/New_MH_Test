@@ -131,8 +131,7 @@ def estimate_divergence(all_thetas:Mat, d_space:Double, full_data:Mat, temp:Doub
 	val logll = sum(sum(obs*@ln(tho) - tho - ln(gamma(obs+1.0)))).dv;
 	
 
-	// return (chi_sq=0.0, logll=0.0);
-	return (0.0,0.0);
+	return (chi_sq, logll);
 }
 
 
