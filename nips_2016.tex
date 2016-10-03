@@ -1396,7 +1396,7 @@ In this section, we provide more details on Section~\ref{ssec:gaussians}.  Our
 parameter is a 2-D vector
 $\theta = \langle \theta_1, \theta_2 \rangle$, where
 \begin{equation}
-\theta_1 \sim \mathcal{N}(0, \sigma_1^2) \quad \mbox{ and } \quad \theta_2 \sim \mathcal{N}(0, \sigma_2^2)
+    \theta_1 \sim \mathcal{N}(0, \sigma_1^2) \quad \mbox{ and } \quad \theta_2 \sim \mathcal{N}(0, \sigma_2^2)
 \end{equation}
 and where $\mathcal{N}$ indicates the normal distribution (more generally, the
 multivariate normal). We consider the above as our prior.
@@ -1404,24 +1404,26 @@ Following~\cite{langevin_2011}, we set $\sigma_1^2 = 10$ and $\sigma_2^2=1$, so
 the covariance matrix of $\theta$ is $\Sigma = {\rm diag}(10,1)$. Therefore, the
 log prior probability we endow on $\theta$ is
 \begin{equation}
-\log p(\theta) = \log \left(\frac{1}{2\pi\sqrt{10}}\right) - \frac{1}{2}\theta^T\Sigma^{-1}\theta.
+    \log p(\theta) = \log \left(\frac{1}{2\pi\sqrt{10}}\right) - \frac{1}{2}\theta^T\Sigma^{-1}\theta.
 \end{equation}
 To generate the data, we use the following Gaussian mixture with tied means:
 \begin{equation}\label{eq:x_points}
-x_i \sim \frac{1}{2}\mathcal{N}(\theta_1, \sigma_x^2) + \frac{1}{2}\mathcal{N}(\theta_1+\theta_2, \sigma_x^2)
+    x_i \sim \frac{1}{2}\mathcal{N}(\theta_1, \sigma_x^2) + \frac{1}{2}\mathcal{N}(\theta_1+\theta_2, \sigma_x^2)
 \end{equation}
-where, again following~\cite{langevin_2011}, we set $\sigma_x^2 = 2$. This means
-the log likelihood of a single data instance is
-\begin{equation}
-\log p(x_i \mid \theta) = \log \frac{1}{4\sqrt{\pi}} +
-\log\left(\exp\left(-\frac{1}{4}(x_i - \theta_1)^2\right) + \exp\left(-\frac{1}{4}(x_i -
-(\theta_1+\theta_2))^2\right)\right)
+where, again following~\cite{langevin_2011}, we set $\sigma_x^2 = 2$ and we draw
+the data with $\theta_1=0$ and $\theta_2=1$ fixed (though these values are
+arbitrary, and different choices would yield different posterior shapes).
+This means the log likelihood of a single data instance is
+\begin{equation}\label{eq:log_ll_single_instance}
+    \log p(x_i \mid \theta) = \log \frac{1}{4\sqrt{\pi}} +
+    \log\left(\exp\left(-\frac{1}{4}(x_i - \theta_1)^2\right) + \exp\left(-\frac{1}{4}(x_i -
+    (\theta_1+\theta_2))^2\right)\right)
 \end{equation}
 The official problem statement is as follows: given some number of conditionally
 independent data points $x_1, x_2, \ldots, x_N$ generated according
 to~(\ref{eq:x_points}), determine the posterior distribution of $\theta$:
 \begin{equation}\label{eq:log_post}
-\log p(\theta \mid x_1,\ldots,x_N) = \log p(\theta) + \sum_{i=1}^N\log p(x_i \mid \theta).
+    \log p(\theta \mid x_1,\ldots,x_N) = \log p(\theta) + \sum_{i=1}^N\log p(x_i \mid \theta).
 \end{equation}
 Alternatively, depending on the application, we may opt to instead pick a point
 estimate\footnote{We do this for the logistic regression experiment, described
@@ -1434,7 +1436,7 @@ the posterior. In general, we will add $T > 1$ so that the posterior is
 $p(\theta)(\prod_{i=1}^N p(x_i\mid \theta))^{1/T}$, resulting in the log
 posterior of 
 \begin{equation}\label{eq:log_prior_temp}
-\log p(\theta \mid x_1,\ldots,x_N) \approx \log p(\theta) + \frac{1}{T}\sum_{i=1}^N\log p(x_i \mid \theta).
+    \log p(\theta \mid x_1,\ldots,x_N) \approx \log p(\theta) + \frac{1}{T}\sum_{i=1}^N\log p(x_i \mid \theta).
 \end{equation}
 which has the extra $1/T$ to decrease the scale factor, so the variance scales
 as $1/T^2$.
