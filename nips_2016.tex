@@ -57,9 +57,9 @@ framexleftmargin=20pt}
 %%  \texttt{hippo@cs.cranberry-lemon.edu} \\
 
 \author{
-  John Canny, Haoyu Chen, Daniel Seita, Xinlei Pan \\
+  Haoyu Chen, Daniel Seita, Xinlei Pan, John Canny \\
   University of California, Berkeley \\
-  \texttt{\{canny,haoyuchen,seita,xinleipan\}@berkeley.edu}
+  \texttt{\{haoyuchen,seita,xinleipan,canny\}@berkeley.edu}
  }
 
 \begin{document}
@@ -1076,15 +1076,11 @@ case are problematic with zero counts in some bins as we have here.
 
 In practice, it is difficult to compute multinomial probabilities for large $n$,
 in that case the per-bin distributions are well-approximated by Poisson
-distributions with parameter $\lambda_i=P_i n$. Given a set of samples $\Theta =
-\{\theta_1,\ldots,\theta_T\}$, let $c_j$ denote the number of individual samples
-$\theta_i$ that fall in bin $j$ out of $N_{\rm bins}$ total. We omit bins in
-which either the source or MCMC-generated distributions did not have a single
-sample, resulting in the set of (at most $N_{\rm bins}$) bins $B$. Then the log
-probability for the set of samples is approximated as
+distributions with parameter $\lambda_i=P_i n$. Given a set of samples
+$\{\theta_1,\ldots,\theta_T\}$, let $c_j$ denote the number of individual samples
+$\theta_i$ that fall in bin $j$ out of $N_{\rm bins}$ total. Then we have
 \begin{equation}\label{eq:log_prob_poissons}
-    %\log p(\Theta) \approx \frac{1}{N_{\rm bins}} \sum_{j=1}^{N_{\rm bins}} c_j \log (n P_j) - n P_j - \log(\Gamma(c_j+1)).
-    \log p(\Theta) \approx \sum_{j \in B} c_j \log (n P_j) - n P_j - \log(\Gamma(c_j+1)).
+    \log p(c_1, \ldots, c_{N_{\rm bins}} \mid P_1, \ldots, P_{N_{\rm bins}}) = \sum_{j=1}^{N_{\rm bins}} c_j \log (n P_j) - n P_j - \log(\Gamma(c_j+1)).
 \end{equation}
 The results for each model are shown in Table~\ref{tab:poissons}.
 
