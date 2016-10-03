@@ -1022,7 +1022,7 @@ with a ratio of $\gamma = 1.5$ as recommended. These tests use different
 minibatch size updates because of their different approaches to repeated
 testing. \cite{icml2014c1_bardenet14} uses straightforward discounting,
 allocating a fraction of the test error $\delta$ to each minibatch test (call
-these subtests). Its important to bound the number of subtests therefore, so
+these subtests). It's important to bound the number of subtests therefore, so
 that the tolerable error per subtest is not too small.  \cite{cutting_mh_2014}
 uses a more aggressive repeated testing approach, explicitly modeling
 correlation between tests and allowing many more tests for a given $\delta$. 
@@ -1031,7 +1031,7 @@ The tolerance for making a decision in~\cite{cutting_mh_2014} is
 $\epsilon=0.005$, and the error bound control parameters
 in~\cite{icml2014c1_bardenet14} are $p = 2$ and $\delta = 0.01$.  All methods
 (including ours) use the same random walk proposer with covariance $\Sigma={\rm
-diag}(0.3, 0.3)$.  Since the proposer generates a random walk, all shaping of
+diag}(0.15, 0.15)$.  Since the proposer generates a random walk, all shaping of
 distribution of the samples is due to the MH test. All methods are run 5000
 times to collect 5000 samples.
 
@@ -1078,28 +1078,28 @@ In practice, it is difficult to compute multinomial probabilities for large $n$,
 in that case the per-bin distributions are well-approximated by Poisson
 distributions with parameter $\lambda_i=P_i n$. Given a set of samples $\Theta =
 \{\theta_1,\ldots,\theta_T\}$, let $c_j$ denote the number of individual samples
-$\theta_i$ that fall in bin $j$. Then the log probability for the set is
-approximated as
+$\theta_i$ that fall in bin $j$ out of $N_{\rm bins}$ total. We omit bins in
+which either the source or MCMC-generated distributions did not have a single
+sample, resulting in the set of (at most $N_{\rm bins}$) bins $B$. Then the log
+probability for the set of samples is approximated as
 \begin{equation}\label{eq:log_prob_poissons}
-    \log p(\Theta) \approx \frac{1}{N_{\rm bins}} \sum_{j=1}^{N_{\rm bins}} c_j \log (n P_j) - n P_j - \log(\Gamma(c_j+1)).
+    %\log p(\Theta) \approx \frac{1}{N_{\rm bins}} \sum_{j=1}^{N_{\rm bins}} c_j \log (n P_j) - n P_j - \log(\Gamma(c_j+1)).
+    \log p(\Theta) \approx \sum_{j \in B} c_j \log (n P_j) - n P_j - \log(\Gamma(c_j+1)).
 \end{equation}
-The results for each model are shown in Table~\ref{tab:poissons} ...
-{\color{blue} Daniel: IN PROGRESS}
+The results for each model are shown in Table~\ref{tab:poissons}.
 
 While the Poisson results provide general guidance on the relative accuracy of
-the models it is difficult interpret the quantitative scores. We therefore
-perform significance tests to test the null hypothesis that the ideal
-distribution really generated the samples.  We perform two tests:
+the models, it is difficult to interpret the quantitative scores. We therefore
+perform significance tests to show the difference between the MCMC-sampled
+distributions and the ground-truth.  We perform an approximate test using
+the Chi-Squared distribution as the test statistic, which we also show in
+Table~\ref{tab:poissons}.
 
-\begin{enumerate}
-    \item An exact test using simulation to generate an approximate distribution
-    of scores given the null hypothesis.
-
-    \item An approximate test using the chi-squared distribution as the test
-    statistic. 
-\end{enumerate}
-
-The results were... {\color{blue} Daniel: IN PROGRESS}
+Both the Poisson values and the Chi-Squared test statistic result in similar
+conclusions: our method is slightly superior to~\cite{cutting_mh_2014}, but
+slightly worse than~\cite{icml2014c1_bardenet14}. We now show, however, that
+minibatch size results suggest that our method dominates in terms of speed and
+efficiency.
 
 Figure~\ref{fig:gauss_mix_2} shows a histogram of the final minibatch sizes used
 by the three methods in each iteration. Our method consumes significantly less
@@ -1141,14 +1141,15 @@ minibatches.
 %% the same plot. 
 
 \begin{table}[t]
-    \caption{\color{blue} Daniel: TODO Poisson Probabilities}
+    \caption{Gaussian Mixture Model Statistics}
     \label{tab:poissons}
     \centering
     \begin{tabular}{l l l l}
     \toprule
-    Model & Ours & Korattikara 2014 & Bardenet 2014 \\
+    Model & Our Method & Korattikara 2014 & Bardenet 2014 \\
     \midrule
-    Poisson Value (Eq.~\ref{eq:log_prob_poissons}) & TODO & TODO & TODO \\
+    Poisson Value (Eq.~\ref{eq:log_prob_poissons}) & -1430.0 & -1578.9 & -1232.7 \\
+    Chi-Squared Test Statistic & 3313.9 & 3647.7 & 2444.1 \\
     \bottomrule
     \end{tabular}
 \end{table}
@@ -1246,6 +1247,7 @@ In this appendix, we describe the following topics:
 
 \section{Proof of Lemma~\ref{lem:worst_case}}\label{app:worst_case_proof}
 
+\begin{comment}
 
 {\color{blue} Daniel: changes I made:
 
@@ -1316,6 +1318,8 @@ In this appendix, we describe the following topics:
     was written earlier) independent of $\theta$?
 \end{enumerate}
 }
+
+\end{comment}
 
 Assume $(\theta' - \theta) \in \pm\frac{1}{\sqrt{N}}[0.5,1]$ and $\theta -0.5
 \in \pm\frac{1}{\sqrt{N}}[0.5,1]$ with matching sign (i.e., first establish
