@@ -53,7 +53,7 @@ def log_f(theta:Mat, X:Mat, N:Int, T:Double): Mat = {
 };
 
 
-def estimate_divergence(all_thetas:Mat, d_space:Double, full_data:Mat, temp:Double, sdis:Mat): (Double, Double, Mat) = {
+def estimate_divergence(all_thetas:Mat, d_space:Double, full_data:Mat, temp:Double, sdis:Mat): (Double, Double, Mat, Mat) = {
 	val (m,n) = size(all_thetas);
 	if (m != 2){
 		println("Data dimension error!");
@@ -83,7 +83,7 @@ def estimate_divergence(all_thetas:Mat, d_space:Double, full_data:Mat, temp:Doub
 	val num_y_k = num_y * k;
 
 	// get source distribution, we can precompute this source distribution
-	var source_distribution:Mat = null;
+	var source_distribution:DMat = null;
 	if (sdis != null) {
 		source_distribution = DMat(sdis);
 	} else{
@@ -107,10 +107,10 @@ def estimate_divergence(all_thetas:Mat, d_space:Double, full_data:Mat, temp:Doub
 				xk = xk(find(xk>(-1)));
 				val yk = IMat(kron(ones(k,1), FMat(irow((yc*k) until (yc*k + k)).t)));
 				val idx = (xk + yk).t;
-				source_distribution(xc,yc) = sum(logf_list(idx)).dv;
+				source_distribution(xc,yc) = sum(logf_list(idx)).dv/(k*k);
 			}
 		}
-		source_distribution = source_distribution / sum(sum(source_distribution)).dv * n;
+		
 	}
 
 	println("finished source distribution calculation");
@@ -122,18 +122,56 @@ def estimate_divergence(all_thetas:Mat, d_space:Double, full_data:Mat, temp:Doub
 		val yt = int( round((thetas_rounded(1,i) - min_y)/d_space)).v;
 		target_distribution(xt,yt) = target_distribution(xt,yt) + 1;	
 	}
-	target_distribution = target_distribution / sum(sum(target_distribution)).dv * n;
+	source_distribution = source_distribution / sum(sum(source_distribution)).dv * 5000;
+	target_distribution = target_distribution / sum(sum(target_distribution)).dv * 5000;
 	println("finished target distribution calculation");
 
 	// calculate the chi-square statistics
-	val chi_sq = sum(sum( (target_distribution - source_distribution)*@(target_distribution - source_distribution)/source_distribution) ).dv;
+	val obs1 = DMat((target_distribution));   // observed distribution
+	val tho1 = DMat((source_distribution));
+	val obs3 = obs1(find(tho1>0));
+	val tho3 = tho1(find(tho1>0));
+	var chi_sq = 0.0;
+	for(i<- 0 until num_x){
+		for(j <-0 until num_y){
+			if ( (target_distribution(i,j).dv >=1.0) && (source_distribution(i,j).dv >0.0 ) ) {
+				chi_sq += (target_distribution(i,j).dv - source_distribution(i,j).dv)*(target_distribution(i,j).dv - source_distribution(i,j).dv)/source_distribution(i,j).dv;
+			}
+		}
+	}
+	// val chi_sq = sum(sum( (obs3 - tho3)*@(obs3 - tho3)/tho3) ).dv;
 
 	// calculate the Log Poisson Likelihood term 
-	val obs = round(target_distribution) + 1;   // observed distribution
-	val tho = round(source_distribution) + 1;   // expected distribution
-	val logll = sum(sum(obs*@ln(tho) - tho - ln(gamma(obs+1.0)))).dv;
+	val obs = DMat((target_distribution));   // observed distribution
+	val tho = DMat((source_distribution));   // expected distribution
+	val obs2 = obs(find(tho>0));
+	val tho2 = tho(find(tho>0));
+	// val logll = sum(sum(obs2*@ln(tho2) - tho2 - ln(gamma(obs2+1.0)))).dv;
+	var logll = 0.0;
+	for(i <- 0 until num_x){
+		for(j<- 0 until num_y){
+			if ( (obs(i,j)>=1.0) && (tho(i,j)>=0.1) ){
+				// print(obs(i,j), tho(i,j))
+				// val tmp1 = (obs(i,j).dv)*(ln(tho(i,j))).dv - (tho(i,j)).dv - (ln(gamma(obs(i,j) +1.0))).dv;
+				val tmp1 = (obs(i,j).dv)*(ln(tho(i,j))).dv ;
+				val tmp2 = -1.0 * (tho(i,j)).dv;
+				val tmp3 =  -1.0 * (ln(gamma(obs(i,j) +1.0))).dv
+				// println("tmp1 is", tmp1);
+				// println("tmp2 is", tmp2);
+				// println("obsij and tho is", obs(i,j), tho(i,j))
+				// println("gamma is", gamma(obs(i,j)+1) );
+				// println("tmp3 is", tmp3);
+				if (tmp3 > (-100000000)){
+				    logll = logll + tmp1 + tmp2 + tmp3;
+				}
+				// if (tmp3 < (-100000000)){
+				//	logll = logll + tmp1 + tmp2 -100000000.0;
+				//}
+			}
+		}
+	}
 	
-	return (chi_sq, logll, source_distribution);
+	return (chi_sq, logll, source_distribution, target_distribution);
 };
 
 
@@ -148,16 +186,17 @@ if(Files.exists(Paths.get("sourcedistribution.mat"))==true) {
 
 
 val samples1:DMat = load("gaussiandata.mat","newtestsamples");
-val (res1, logll1, s_dis1) = estimate_divergence(samples1, d_space=0.1, data, temp, sdis);
+val (res1, logll1, sdis1, tdis1) = estimate_divergence(samples1, d_space=0.1, data, temp, sdis);
 println(res1, logll1);
 
 
 val samples2:DMat = load("gaussiandata.mat","cutmhsamples");
-val (res2, logll2, s_dis2) = estimate_divergence(samples2, d_space = 0.1, data, temp, sdis);
+val (res2, logll2, sdis2, tdis2) = estimate_divergence(samples2, d_space = 0.1, data, temp, sdis);
 println(res2, logll2);
 
 val samples3:DMat = load("gaussiandata.mat", "adaptivemhsamples");
-val (res3, logll3, s_dis3) = estimate_divergence(samples3, d_space = 0.1, data, temp, sdis);
+val (res3, logll3, sdis3, tdis3) = estimate_divergence(samples3, d_space = 0.1, data, temp, sdis);
 println(res3, logll3);
-
-
+/*
+saveAs("testresult.mat", sdis1, "sdis1", sdis2, "sdis2", sdis3, "sdis3", tdis1, "tdis1", tdis2, "tdis2", tdis3, "tdis3");
+*/
