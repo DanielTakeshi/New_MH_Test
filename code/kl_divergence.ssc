@@ -1,6 +1,8 @@
 // this script calculates the kl divergence 
+:silent
+import java.nio.file.{Paths, Files};
 
-def log_f(theta: Mat, X: Mat, N: Int, T: Double): Mat = {
+def log_f(theta:Mat, X:Mat, N:Int, T:Double): Mat = {
 	// This function calculates the probability of p(theta|X), which is the posterior distribution
 	// Since we know that 
 	// 			p(\theta|X) \propto p(\theta) * p(X|\theta)
@@ -32,11 +34,8 @@ def log_f(theta: Mat, X: Mat, N: Int, T: Double): Mat = {
 
 	val inverse_covariance = 0.1\0.0 on 0.0\1.0;
 	val prior_constant = 1.0/( 2 * math.Pi * math.sqrt(10.0));
-	// val prior = math.log(prior_constant) - 0.5 * (theta.t * inverse_covariance * theta);
-	// val prior = getdiag(math.log(prior_constant) - 0.5 * (theta.t*inverse_covariance*theta));
 	var prior = math.log(prior_constant) - 0.5 * sum((theta*@theta)*@(0.1 on 1),1);
 	
-
 	val ll_constant = 1.0 / (4.0 * math.sqrt(math.Pi));
 
 	val L = ll_constant * (  exp(-0.25*( kron(ones(sizet2,1), FMat(X))-theta(0,?).t ) *@ (kron(ones(sizet2,1), FMat(X))-theta(0,?).t))  + exp(-0.25 *( kron(ones(sizet2,1), FMat(X))-theta(0,?).t - theta(1,?).t ) *@( kron(ones(sizet2,1), FMat(X))-theta(0,?).t - theta(1,?).t )) );
@@ -54,7 +53,7 @@ def log_f(theta: Mat, X: Mat, N: Int, T: Double): Mat = {
 };
 
 
-def estimate_divergence(all_thetas:Mat, d_space:Double, full_data:Mat, temp:Double): (Double, Double) = {
+def estimate_divergence(all_thetas:Mat, d_space:Double, full_data:Mat, temp:Double, sdis:Mat): (Double, Double, Mat) = {
 	val (m,n) = size(all_thetas);
 	if (m != 2){
 		println("Data dimension error!");
@@ -72,7 +71,7 @@ def estimate_divergence(all_thetas:Mat, d_space:Double, full_data:Mat, temp:Doub
 	clipped_thetas(0,?) = max(min(all_thetas(0,?), max_x_vec), min_x_vec);
 	clipped_thetas(1,?) = max(min(all_thetas(1,?), max_y_vec), min_y_vec);
 
-	val k = 5; // resolution of single grid
+	val k = 10; // resolution of single grid
 	val thetas_rounded = d_space/k * round( clipped_thetas/(d_space/k) );
 	val dspace_k = d_space/k;
 
@@ -83,29 +82,35 @@ def estimate_divergence(all_thetas:Mat, d_space:Double, full_data:Mat, temp:Doub
 	val num_x_k = num_x * k;
 	val num_y_k = num_y * k;
 
-	// get source distribution
-	var source_distribution = dzeros(num_x, num_y);
-	var theta1_list = FMat(kron(ones(num_y_k,1),FMat(irow(0->(num_x_k)))*(d_space/k) + min_x - d_space/2));
-	theta1_list = theta1_list(find(theta1_list<1000));
-	val theta2_list = FMat(kron(ones(num_x_k,1),(FMat(irow(0->(num_y_k)))*(d_space/k) + min_y - d_space/2).t));
-	val theta_list = theta1_list.t on theta2_list.t;
-	var logf_list = log_f(theta_list(?, 0 until (k*k*num_y)), full_data, N, temp);
-	for(i<- 1 until (num_x) ){
-		println("i %d", i*1.0);
-		logf_list = logf_list \ log_f(theta_list(?, (i*k*k*num_y) until ((i+1)*k*k*num_y) ), full_data, N, temp);
-	}
-	// val logf_list = (log_f(theta_list, full_data, N, temp));
-	val kk = irow(0 until k);
-
-	for(xc <- 0 until num_x){
-		println("xc %d", xc*1.0);
-		for(yc <-0 until num_y){
-			var xk = IMat(kron(ones(k,1), FMat((xc * k + kk)* num_y_k)) );
-			xk = xk(find(xk>(-1)));
-			val yk = IMat(kron(ones(k,1), FMat(irow((yc*k) until (yc*k + k)).t)));
-			val idx = (xk + yk).t;
-			source_distribution(xc,yc) = sum(logf_list(idx)).dv;
+	// get source distribution, we can precompute this source distribution
+	var source_distribution:Mat = null;
+	if (sdis != null) {
+		source_distribution = DMat(sdis);
+	} else{
+		source_distribution = dzeros(num_x, num_y);
+		var theta1_list = FMat(kron(ones(num_y_k,1),FMat(irow(0->(num_x_k)))*(d_space/k) + min_x - d_space/2));
+		theta1_list = theta1_list(find(theta1_list<1000));
+		val theta2_list = FMat(kron(ones(num_x_k,1),(FMat(irow(0->(num_y_k)))*(d_space/k) + min_y - d_space/2).t));
+		val theta_list = theta1_list.t on theta2_list.t;
+		var logf_list = log_f(theta_list(?, 0 until (k*k)), full_data, N, temp);
+		for(i<- 1 until (num_x*num_y) ){
+			println("i %d", i*1.0);
+			logf_list = logf_list \ log_f(theta_list(?, (i*k*k) until ((i+1)*k*k) ), full_data, N, temp);
 		}
+		logf_list = exp(logf_list - maxi(logf_list).dv + 70.0);
+		val kk = irow(0 until k);
+
+		for(xc <- 0 until num_x){
+			println("xc %d", xc*1.0);
+			for(yc <-0 until num_y){
+				var xk = IMat(kron(ones(k,1), FMat((xc * k + kk)* num_y_k)) );
+				xk = xk(find(xk>(-1)));
+				val yk = IMat(kron(ones(k,1), FMat(irow((yc*k) until (yc*k + k)).t)));
+				val idx = (xk + yk).t;
+				source_distribution(xc,yc) = sum(logf_list(idx)).dv;
+			}
+		}
+		source_distribution = source_distribution / sum(sum(source_distribution)).dv * n;
 	}
 
 	println("finished source distribution calculation");
@@ -115,12 +120,10 @@ def estimate_divergence(all_thetas:Mat, d_space:Double, full_data:Mat, temp:Doub
 	for(i <- 0 until n){
 		val xt = int( round((thetas_rounded(0,i) - min_x)/d_space)).v;
 		val yt = int( round((thetas_rounded(1,i) - min_y)/d_space)).v;
-		target_distribution(xt,yt) = target_distribution(xt,yt) + 1;		
+		target_distribution(xt,yt) = target_distribution(xt,yt) + 1;	
 	}
-	println("finished target distribution calculation");
-
-	source_distribution = source_distribution / sum(sum(source_distribution)).dv * n;
 	target_distribution = target_distribution / sum(sum(target_distribution)).dv * n;
+	println("finished target distribution calculation");
 
 	// calculate the chi-square statistics
 	val chi_sq = sum(sum( (target_distribution - source_distribution)*@(target_distribution - source_distribution)/source_distribution) ).dv;
@@ -130,24 +133,31 @@ def estimate_divergence(all_thetas:Mat, d_space:Double, full_data:Mat, temp:Doub
 	val tho = round(source_distribution) + 1;   // expected distribution
 	val logll = sum(sum(obs*@ln(tho) - tho - ln(gamma(obs+1.0)))).dv;
 	
-
-	return (chi_sq, logll);
-}
+	return (chi_sq, logll, source_distribution);
+};
 
 
 val nn = 1000000;
 val data:DMat = load("gaussiandata.mat","data");
-val temp = 10000.0
+val temp = 10000.0;
+var sdis:DMat = null;
+if(Files.exists(Paths.get("sourcedistribution.mat"))==true) {
+	val sdis_load: DMat = load("sourcedistribution.mat","sdis");
+	sdis = sdis_load;
+};
+
 
 val samples1:DMat = load("gaussiandata.mat","newtestsamples");
-val (res1, logll1) = estimate_divergence(samples1, d_space=0.1, data, temp);
+val (res1, logll1, s_dis1) = estimate_divergence(samples1, d_space=0.1, data, temp, sdis);
 println(res1, logll1);
 
+
 val samples2:DMat = load("gaussiandata.mat","cutmhsamples");
-val (res2, logll2) = estimate_divergence(samples2, d_space = 0.1, data, temp);
+val (res2, logll2, s_dis2) = estimate_divergence(samples2, d_space = 0.1, data, temp, sdis);
 println(res2, logll2);
 
 val samples3:DMat = load("gaussiandata.mat", "adaptivemhsamples");
-val (res3, logll3) = estimate_divergence(samples3, d_space = 0.1, data, temp);
+val (res3, logll3, s_dis3) = estimate_divergence(samples3, d_space = 0.1, data, temp, sdis);
 println(res3, logll3);
+
 
