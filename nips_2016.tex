@@ -1292,6 +1292,10 @@ In this appendix, we describe the following topics:
     is $\exp([-2,0])$ (as I think it should be) and you were simply cropping off
     the extra range.
 
+    \item (TODO later) My main confusion now is that I am unable to derive
+    Equation~\ref{eq:log_uo_range}, and we may want to clarify the notation used
+    when we put two intervals side by side.
+
     \item (TODO later) I do not understand why after
     Equation~\ref{eq:accept_test_rewritten}, we say that the standard deviation
     of the LHS ``given the interval constraints is at least $0.5/\sqrt{b}$.'' We
@@ -1299,6 +1303,11 @@ In this appendix, we describe the following topics:
     with a fixed $\theta = 0.5$ value, so we already know the standard deviation
     is supposed to be $\sqrt{({\rm Var}(x_1) + \cdots + {\rm Var}(x_b))/b^2} =
     1/\sqrt{b}$. 
+
+    \item I added Equation~\ref{eq:rhs_range}, which I think is how you
+    determined the range. Note that it doesn't seem to matter whether it is
+    $[-1,0.75]$ or $[-0.75,1]$ since the main thing that matters is that we have
+    maximum absolute value of one.
 
     \item At the end, it said the joint distribution of
     $(\theta,\theta'-\theta,u)$, but I changed it to $(\theta,\theta',u)$, based
@@ -1347,25 +1356,34 @@ sufficiently different from 0.5 to allow the test to succeed.
   
 The choices above for $\theta$ and $\theta'$ guarantee that
 \begin{equation}\label{eq:log_uo_range}
-    \log u_0 \in -[0.5,1][0.75,1.5] = [-1.5, -0.375]
+    \log u_0 \in -[0.5,1][0.75,1.5] = [-1.5, -0.375].
 \end{equation}
-and consider the range of $u$ values
+Next, consider the range of $u$ values near $u_0$:
 \begin{equation}\label{eq:log_u_range}
-    \log u \in \log u_0 + [-0.5,0.375]
+    \log u \in \log u_0 + [-0.5,0.375].
 \end{equation}
-the size of the range in $u$ is at least $\exp([-2,-1.125]) \approx
+The size of the range in $u$ is at least $\exp([-2,-1.125]) \approx
 [0.13534,0.32465]$ and occurs with probability at least $p_2=0.18932$. With $u$
 in this range, we rewrite the test as:
 \begin{equation}\label{eq:accept_test_rewritten}
     \frac{1}{b}\sum_{i=1}^b x_i-0.5 \hspace{0.1in} \not\approx \hspace{0.1in} \frac{\log u/u_0}{N(\theta'-\theta)}
 \end{equation}
 so that, as in Equation~\ref{eq:accept_test_zero}, the LHS has expected value
-zero.  Given our choice of intervals for the variables, the RHS is in the range
-$\frac{1}{\sqrt{N}}[-1,0.75]$. The standard deviation of the LHS given the
-interval constraints is at least $0.5/\sqrt{b}$.  And so the gap between the LHS
-and RHS in Equation~\ref{eq:accept_test_rewritten} is at most $2\sqrt{b/N}$
-standard deviations, limiting the range in which the test will be able to
-``succeed'' without requiring more samples.
+zero.  Given our choice of intervals for the variables, we can compute the range
+for the right hand side (RHS) assuming\footnote{If $\theta'-\theta<0$, then the
+range would be $\frac{1}{\sqrt{N}}[-0.75,1]$ but this does not matter for
+the purposes of our analysis.} that $\theta'-\theta > 0$:
+\begin{equation}\label{eq:rhs_range}
+    \min\{{\rm RHS}\} = \frac{-0.5}{\sqrt{N} \cdot 0.5} = -\frac{1}{\sqrt{N}}
+    \quad {\rm and} \quad 
+    \max\{{\rm RHS}\} = \frac{0.375}{\sqrt{N} \cdot 0.5} = \frac{0.75}{\sqrt{N}}
+\end{equation}
+Thus, the RHS is in $\frac{1}{\sqrt{N}}[-1,0.75]$.  The standard deviation of
+the LHS given the interval constraints is at least $0.5/\sqrt{b}$.
+Consequently, the gap between the LHS and RHS in
+Equation~\ref{eq:accept_test_rewritten} is at most $2\sqrt{b/N}$ standard
+deviations, limiting the range in which the test will be able to ``succeed''
+without requiring more samples.
 
 The samples $\theta$, $\theta'$ and $u$ are drawn independently and so the
 probability of the conjunction of these events is $c = p_0 p_1 p_2 = 0.0085$.
