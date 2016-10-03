@@ -134,12 +134,11 @@ def estimate_divergence(all_thetas:Mat, d_space:Double, full_data:Mat, temp:Doub
 	var chi_sq = 0.0;
 	for(i<- 0 until num_x){
 		for(j <-0 until num_y){
-			if ( (target_distribution(i,j).dv >=1.0) && (source_distribution(i,j).dv >0.0 ) ) {
+			if ( (target_distribution(i,j).dv >=1.0) && (source_distribution(i,j).dv >=1.0 ) ) {
 				chi_sq += (target_distribution(i,j).dv - source_distribution(i,j).dv)*(target_distribution(i,j).dv - source_distribution(i,j).dv)/source_distribution(i,j).dv;
 			}
 		}
 	}
-	// val chi_sq = sum(sum( (obs3 - tho3)*@(obs3 - tho3)/tho3) ).dv;
 
 	// calculate the Log Poisson Likelihood term 
 	val obs = DMat((target_distribution));   // observed distribution
@@ -150,23 +149,13 @@ def estimate_divergence(all_thetas:Mat, d_space:Double, full_data:Mat, temp:Doub
 	var logll = 0.0;
 	for(i <- 0 until num_x){
 		for(j<- 0 until num_y){
-			if ( (obs(i,j)>=1.0) && (tho(i,j)>=0.1) ){
-				// print(obs(i,j), tho(i,j))
-				// val tmp1 = (obs(i,j).dv)*(ln(tho(i,j))).dv - (tho(i,j)).dv - (ln(gamma(obs(i,j) +1.0))).dv;
+			if ( (obs(i,j)>=1.0) && (tho(i,j)>=1.0) ){
 				val tmp1 = (obs(i,j).dv)*(ln(tho(i,j))).dv ;
 				val tmp2 = -1.0 * (tho(i,j)).dv;
 				val tmp3 =  -1.0 * (ln(gamma(obs(i,j) +1.0))).dv
-				// println("tmp1 is", tmp1);
-				// println("tmp2 is", tmp2);
-				// println("obsij and tho is", obs(i,j), tho(i,j))
-				// println("gamma is", gamma(obs(i,j)+1) );
-				// println("tmp3 is", tmp3);
 				if (tmp3 > (-100000000)){
 				    logll = logll + tmp1 + tmp2 + tmp3;
 				}
-				// if (tmp3 < (-100000000)){
-				//	logll = logll + tmp1 + tmp2 -100000000.0;
-				//}
 			}
 		}
 	}
