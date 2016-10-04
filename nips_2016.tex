@@ -757,7 +757,7 @@ which approaches a normal distribution in the limit. Then
 \end{lemma}
 
 \begin{proof}
-The following bound is given immediately after Corollary 2 in from~\cite{explicit-clt05}:
+The following bound is given immediately after Corollary 2 from~\cite{explicit-clt05}:
 \begin{equation}\label{eq:clt-boundsx}
 -6.4E|X|^3-2E|X| \leq    \sup_x|{\rm Pr}(t<x) - \Phi(x)|{\sqrt{n}} \leq 1.36E|X|^3
 \end{equation}
@@ -1238,7 +1238,6 @@ In this appendix, we describe the following topics:
 
 \begin{itemize}[noitemsep]
     \item The proof of Lemma~\ref{lem:worst_case}.
-    \item More information on Section~\ref{ssec:gaussians}.
 \end{itemize}
 
 \section{Proof of Lemma~\ref{lem:worst_case}}\label{app:worst_case_proof}
@@ -1317,31 +1316,31 @@ In this appendix, we describe the following topics:
 
 \end{comment}
 
-Assume $(\theta' - \theta) \in \pm\frac{1}{\sqrt{N}}[0.5,1]$ and $\theta -0.5
-\in \pm\frac{1}{\sqrt{N}}[0.5,1]$ with matching sign (i.e., first establish
-$(\theta'-\theta)$, then ``force'' $\theta-0.5$ to be the same sign).  As
+Choose $(\theta' - \theta) \in \pm\frac{1}{\sqrt{N}}[0.5,1]$ (event 1) and $(\theta -0.5)
+\in \pm\frac{1}{\sqrt{N}}[0.5,1]$ filtered for  matching sign (event 2).  As
 discussed in Lemma~\ref{lem:worst_case}, both $q(\theta' \mid \theta)$ and
 $p(\theta \mid x_1,\ldots,x_N)$ have variance $1/N$. If we denote $\Phi$ as the
 CDF of the standard normal distribution, then the former event occurs with
 probability $p_0 = 2(\Phi(\sqrt{N}\frac{1}{\sqrt{N}}) -
 \Phi(\sqrt{N}\frac{0.5}{\sqrt{N}})) = 2(\Phi(1)-\Phi(0.5)) \approx 0.2997$. The
 latter event, because we restrict signs, occurs with probability $p_1 =
-\Phi(\sqrt{N}\frac{1}{\sqrt{N}}) - \Phi(\sqrt{N}\frac{0.5}{\sqrt{N}}) = \Phi(1)
-- \Phi(0.5) \approx 0.14988$. 
+\Phi(1) - \Phi(0.5) \approx 0.14988$. 
 
-These events together guarantee that $\Lambda^*(\theta,\theta')$ is negative,
-intuitively because the next choice of $\theta'$ must be ``further away'' from
-0.5 than $\theta$.  This fact means that we can find a $u \in (0,1)$ so that
+These events together guarantee that $\Lambda^*(\theta,\theta')$ is negative
+by inspection of equation (\ref{eq:whyneg}) below.
+This implies that we can find a $u \in (0,1)$ so that
 $\psi(u,\theta,\theta') = \log u < 0$ equals $E[\Lambda^*(\theta,\theta')]$.
 Specifically, choose $u_0$ to satisfy $\log u_0 = E[\Lambda^*(\theta,\theta')]$.
 Using $E[x_i] = 0.5$ and Equation~\ref{eq:lemma_ll_ratio}, we see that
-\begin{align}
-    \log u_0 &= N(\theta'-\theta)\frac{1}{b} \cdot E\left[\sum_{i=1}^b x_i-\theta-\frac{\theta'-\theta}{2}\right] \\
-    &= -N(\theta'-\theta)\left(\theta-0.5+\frac{\theta'-\theta}{2}\right).
-\end{align}
+\begin{equation}
+  \log u_0 = N(\theta'-\theta)\frac{1}{b} \cdot E\left[\sum_{i=1}^b x_i-\theta-\frac{\theta'-\theta}{2}\right]
+\end{equation}
+\begin{equation}\label{eq:whyneg}
+    log u_0 = -N(\theta'-\theta)\left(\theta-0.5+\frac{\theta'-\theta}{2}\right).
+\end{equation}
 Next, consider the minibatch acceptance test $\Lambda^*(\theta,\theta') \not\approx
-\psi(u,\theta,\theta')$ required by these methods, where $\not\approx$
-informally means ``significantly different from'' under the distribution over
+\psi(u,\theta,\theta')$ used in ~\cite{cutting_mh_2014} and~\cite{icml2014c1_bardenet14} , where $\not\approx$
+means ``significantly different from'' under the distribution over
 samples of $x_i$. This turns out to be
 \begin{align}
 \Lambda^*(\theta,\theta') \hspace{0.1in} \not\approx \hspace{0.1in}
@@ -1390,56 +1389,56 @@ probability of the conjunction of these events is $c = p_0 p_1 p_2 = 0.0085$.
 
 
 
-\section{Gaussian Mixture Experiment Details}\label{app:gaussian}
+%% \section{Gaussian Mixture Experiment Details}\label{app:gaussian}
 
-In this section, we provide more details on Section~\ref{ssec:gaussians}.  Our
-parameter is a 2-D vector
-$\theta = \langle \theta_1, \theta_2 \rangle$, where
-\begin{equation}
-    \theta_1 \sim \mathcal{N}(0, \sigma_1^2) \quad \mbox{ and } \quad \theta_2 \sim \mathcal{N}(0, \sigma_2^2)
-\end{equation}
-and where $\mathcal{N}$ indicates the normal distribution (more generally, the
-multivariate normal). We consider the above as our prior.
-Following~\cite{langevin_2011}, we set $\sigma_1^2 = 10$ and $\sigma_2^2=1$, so
-the covariance matrix of $\theta$ is $\Sigma = {\rm diag}(10,1)$. Therefore, the
-log prior probability we endow on $\theta$ is
-\begin{equation}
-    \log p(\theta) = \log \left(\frac{1}{2\pi\sqrt{10}}\right) - \frac{1}{2}\theta^T\Sigma^{-1}\theta.
-\end{equation}
-To generate the data, we use the following Gaussian mixture with tied means:
-\begin{equation}\label{eq:x_points}
-    x_i \sim \frac{1}{2}\mathcal{N}(\theta_1, \sigma_x^2) + \frac{1}{2}\mathcal{N}(\theta_1+\theta_2, \sigma_x^2)
-\end{equation}
-where, again following~\cite{langevin_2011}, we set $\sigma_x^2 = 2$ and we draw
-the data with $\theta_1=0$ and $\theta_2=1$ fixed (though these values are
-arbitrary, and different choices would yield different posterior shapes).
-This means the log likelihood of a single data instance is
-\begin{equation}\label{eq:log_ll_single_instance}
-    \log p(x_i \mid \theta) = \log \frac{1}{4\sqrt{\pi}} +
-    \log\left(\exp\left(-\frac{1}{4}(x_i - \theta_1)^2\right) + \exp\left(-\frac{1}{4}(x_i -
-    (\theta_1+\theta_2))^2\right)\right)
-\end{equation}
-The official problem statement is as follows: given some number of conditionally
-independent data points $x_1, x_2, \ldots, x_N$ generated according
-to~(\ref{eq:x_points}), determine the posterior distribution of $\theta$:
-\begin{equation}\label{eq:log_post}
-    \log p(\theta \mid x_1,\ldots,x_N) = \log p(\theta) + \sum_{i=1}^N\log p(x_i \mid \theta).
-\end{equation}
-Alternatively, depending on the application, we may opt to instead pick a point
-estimate\footnote{We do this for the logistic regression experiment, described
-in Section~\ref{ssec:logistic}.} of $\theta$, such as the MAP estimate. (If $N$
-is extremely large, it will cause the posterior to peak sharply at its modes,
-reducing distribution estimates to point estimates.)
+%% In this section, we provide more details on Section~\ref{ssec:gaussians}.  Our
+%% parameter is a 2-D vector
+%% $\theta = \langle \theta_1, \theta_2 \rangle$, where
+%% \begin{equation}
+%%     \theta_1 \sim \mathcal{N}(0, \sigma_1^2) \quad \mbox{ and } \quad \theta_2 \sim \mathcal{N}(0, \sigma_2^2)
+%% \end{equation}
+%% and where $\mathcal{N}$ indicates the normal distribution (more generally, the
+%% multivariate normal). We consider the above as our prior.
+%% Following~\cite{langevin_2011}, we set $\sigma_1^2 = 10$ and $\sigma_2^2=1$, so
+%% the covariance matrix of $\theta$ is $\Sigma = {\rm diag}(10,1)$. Therefore, the
+%% log prior probability we endow on $\theta$ is
+%% \begin{equation}
+%%     \log p(\theta) = \log \left(\frac{1}{2\pi\sqrt{10}}\right) - \frac{1}{2}\theta^T\Sigma^{-1}\theta.
+%% \end{equation}
+%% To generate the data, we use the following Gaussian mixture with tied means:
+%% \begin{equation}\label{eq:x_points}
+%%     x_i \sim \frac{1}{2}\mathcal{N}(\theta_1, \sigma_x^2) + \frac{1}{2}\mathcal{N}(\theta_1+\theta_2, \sigma_x^2)
+%% \end{equation}
+%% where, again following~\cite{langevin_2011}, we set $\sigma_x^2 = 2$ and we draw
+%% the data with $\theta_1=0$ and $\theta_2=1$ fixed (though these values are
+%% arbitrary, and different choices would yield different posterior shapes).
+%% This means the log likelihood of a single data instance is
+%% \begin{equation}\label{eq:log_ll_single_instance}
+%%     \log p(x_i \mid \theta) = \log \frac{1}{4\sqrt{\pi}} +
+%%     \log\left(\exp\left(-\frac{1}{4}(x_i - \theta_1)^2\right) + \exp\left(-\frac{1}{4}(x_i -
+%%     (\theta_1+\theta_2))^2\right)\right)
+%% \end{equation}
+%% The problem statement is as follows: given some number of conditionally
+%% independent data points $x_1, x_2, \ldots, x_N$ generated according
+%% to~(\ref{eq:x_points}), determine the posterior distribution of $\theta$:
+%% \begin{equation}\label{eq:log_post}
+%%     \log p(\theta \mid x_1,\ldots,x_N) = \log p(\theta) + \sum_{i=1}^N\log p(x_i \mid \theta).
+%% \end{equation}
+%% Alternatively, depending on the application, we may opt to instead pick a point
+%% estimate\footnote{We do this for the logistic regression experiment, described
+%% in Section~\ref{ssec:logistic}.} of $\theta$, such as the MAP estimate. (If $N$
+%% is extremely large, it will cause the posterior to peak sharply at its modes,
+%% reducing distribution estimates to point estimates.)
 
-One technique we use to make our test more applicable is to add a temperature to
-the posterior. In general, we will add $T > 1$ so that the posterior is
-$p(\theta)(\prod_{i=1}^N p(x_i\mid \theta))^{1/T}$, resulting in the log
-posterior of 
-\begin{equation}\label{eq:log_prior_temp}
-    \log p(\theta \mid x_1,\ldots,x_N) \approx \log p(\theta) + \frac{1}{T}\sum_{i=1}^N\log p(x_i \mid \theta).
-\end{equation}
-which has the extra $1/T$ to decrease the scale factor, so the variance scales
-as $1/T^2$.
+%% One technique we use to make our test more applicable is to add a temperature to
+%% the posterior. In general, we will add $T > 1$ so that the posterior is
+%% $p(\theta)(\prod_{i=1}^N p(x_i\mid \theta))^{1/T}$, resulting in the log
+%% posterior of 
+%% \begin{equation}\label{eq:log_prior_temp}
+%%     \log p(\theta \mid x_1,\ldots,x_N) \approx \log p(\theta) + \frac{1}{T}\sum_{i=1}^N\log p(x_i \mid \theta).
+%% \end{equation}
+%% which has the extra $1/T$ to decrease the scale factor, so the variance scales
+%% as $1/T^2$.
 
 % Daniel: I decided that I don't like this figure anymore.
 % \begin{figure}[t]
@@ -1449,19 +1448,19 @@ as $1/T^2$.
 %   \label{fig:contour1}
 % \end{figure}
 
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=1\linewidth]{contour_v2}
-  \caption{The posterior distribution, with $N=10000$ and temperature $T$ varying.}
-  \label{fig:contour2}
-\end{figure}
+%% \begin{figure}[t]
+%%   \centering
+%%   \includegraphics[width=1\linewidth]{contour_v2}
+%%   \caption{The posterior distribution, with $N=10000$ and temperature $T$ varying.}
+%%   \label{fig:contour2}
+%% \end{figure}
 
-To gain intuition on the shape of the posterior, Figure~\ref{fig:contour2} shows
-simulated contour plots of the posterior based on $N=10000$ data points, and
-temperature varying.  The (non-tempered) posterior is a multimodal distribution
-with modes at $(0,1)$ and $(1,-1)$. A larger $T$ implies a flatter posterior,
-which can be useful for parameter exploration so that the samples do not get
-trapped in a mode.
+%% To gain intuition on the shape of the posterior, Figure~\ref{fig:contour2} shows
+%% simulated contour plots of the posterior based on $N=10000$ data points, and
+%% temperature varying.  The (non-tempered) posterior is a multimodal distribution
+%% with modes at $(0,1)$ and $(1,-1)$. A larger $T$ implies a flatter posterior,
+%% which can be useful for parameter exploration so that the samples do not get
+%% trapped in a mode.
 
 % Daniel: This was some stuff from the Logistic Regression appendix, but we no
 % longer need that.
