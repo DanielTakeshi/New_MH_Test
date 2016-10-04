@@ -421,7 +421,7 @@ as $\Delta$ and $\Delta^*$.  First, $\Delta$ is defined as
     \theta')}{p_0(\theta)\prod_{i=1}^N p(x_i \mid \theta)q(\theta' \mid\theta)},
 \end{equation}
 where $p_0, p$, and $q$ match the corresponding functions within
-Equation~\ref{eq:acceptance_probability}. We separate out terms dependent and
+Equation~(\ref{eq:acceptance_probability}). We separate out terms dependent and
 independent of the data $x$ as:
 \begin{equation}\label{eq:delta2}
     \Delta(\theta,\theta') = \sum_{i=1}^N\log\frac{p(x_i\mid\theta')}{p(x_i\mid\theta)} - \psi(1,\theta,\theta') =
@@ -441,7 +441,7 @@ $\Delta^*(\theta,\theta')$ is an unbiased estimator of $\Delta(\theta,\theta')$.
 
 The key to our test is a smooth acceptance function.  We consider functions
 other than the classical Metropolis test that satisfy the detailed balance (see
-Equation~\ref{eq:detailed_balance2}) condition needed for accurate posterior
+Equation~(\ref{eq:detailed_balance2})) condition needed for accurate posterior
 estimation. A class of functions leading to detailed balance is specified as
 follows:
 
@@ -495,7 +495,7 @@ for a logistic random variable $X$.
 \subsection{A Minibatch Acceptance Test}\label{ssec:deltas_minibatch}
 
 We now describe acceptance testing using the minibatch estimator
-$\Delta^*(\theta,\theta')$. From Equation~\ref{eq:delta3},
+$\Delta^*(\theta,\theta')$. From Equation~(\ref{eq:delta3}),
 $\Delta^*(\theta,\theta')$ can be represented as a constant term plus the mean
 of $b$ IID terms $\Lambda_i(\theta,\theta')$ of the form
 $N\log\frac{p(x_i|\theta')}{p(x_i|\theta)}$. As $b$ increases,
@@ -511,7 +511,7 @@ we can write
 \end{equation}
 where $\mathcal{\bar{N}}(0, \sigma^2(\Delta^*))$ denotes a distribution which is
 approximately normal with variance $\sigma^2(\Delta^*)$.  But to perform the
-test in Equation~\ref{eq:the_exact_test} we want $\Delta + X$ for a logistic
+test in Equation~(\ref{eq:the_exact_test}) we want $\Delta + X$ for a logistic
 random variable $X$ (call it $X_{\rm log}$ from now on). In~\cite{Bardenet15} it
 was proposed to use $\Delta^*$ in a Barker test anyway and tolerate the fixed
 error caused by this approximation. 
@@ -572,7 +572,7 @@ $\epsilon$ relative to the full batch version.
     %\vspace{-10pt}
 \end{figure}
 
-Our proposed test in Equation~\ref{eq:criteria} requires knowing the
+Our proposed test in Equation~(\ref{eq:criteria}) requires knowing the
 distribution of the correction variable $X_{\rm corr}$ such that $X_{\rm norm} +
 X_{\rm corr} = X_{\rm log}$, where $X_{\rm norm} \sim \mathcal{N}(0,\sigma^2)$
 and $X_{\rm log}$ has a standard logistic CDF, $(1+\exp(-X))^{-1}$. In
@@ -583,7 +583,7 @@ corr}$. More formally, let $\Phi_{s_X} = \Phi(X/s_X)$ where $\Phi$ is the
 standard normal CDF\footnote{Hence, $\Phi_{s_X}$ is the CDF of a zero-mean
 Gaussian with standard deviation $s_X$.}, $S(X)$ be the logistic function, and
 $C_{\sigma}(X)$ be the \emph{density} of the correction $X_{\rm corr}$
-distribution. Our goal, based on Equation~\ref{eq:deconvolution}, is to solve
+distribution. Our goal, based on Equation~(\ref{eq:deconvolution}), is to solve
 the following optimization problem:
 \begin{equation}\label{eq:overall_corr_problem}
     C_\sigma^* = \argmin_{C_\sigma} |\Phi_{\sigma} * C_{\sigma} - S|
@@ -599,7 +599,7 @@ In continuous form, the optimization problem is therefore
 To get $C_\sigma^*$ in a computable form, we discretize $X$ and $Y$ into $4N+1$
 and $2N+1$ values respectively. If $i \in \{-2N, \ldots, 2N\}$ and $j \in \{-N,
 \ldots, N\}$, then we can write $X_i = i(V/N)$ and $Y_j = j(V/N)$, and the
-condition in Equation~\ref{eq:conv1} can be re-expressed as:
+condition in Equation~(\ref{eq:conv1}) can be re-expressed as:
 \begin{equation}\label{eq:conv2}
     C_\sigma^* = \argmin_{C_\sigma} \max_{i \in \{-2N,\ldots,2N\}}\left|\sum_{j = -N}^{N}\Phi_{\sigma}(X_i-Y_j) C_{\sigma}(Y_j) - S(X_i)\right|.
 \end{equation}
@@ -607,7 +607,7 @@ To make the problem easier to understand, we can define a matrix $M$ and vectors
 $u$ and $v$ such that $M_{ij} = \Phi_{\sigma}(X_i-Y_j)$, $u_j =
 C_{\sigma}(Y_j)$, and $v_i = S(X_i)$, where the indices $i$ and $j$ are
 appropriately translated to be non-negative indices for $M, u,$ and $v$. Thus,
-Equation~\ref{eq:conv2} is equivalent to minimizing the $L_{\infty}$ norm:
+Equation~(\ref{eq:conv2}) is equivalent to minimizing the $L_{\infty}$ norm:
 \begin{equation}\label{eq:optimization_l1}
     u^* = \argmin_{u} \|Mu-v\|_{\infty}.
 \end{equation}
@@ -632,10 +632,10 @@ higher resolution and lower error, we switched to a least squares solution:
 where we add the standard regularization factor $\lambda$ for stability in high
 dimensions. The solution is well-known from the normal equations: $u^* = (M^TM +
 \lambda I)^{-1}M^Tv$, and in practice, it yields an acceptable $L_{\infty}$ norm for
-Equation~\ref{eq:optimization_l1}.
+Equation~(\ref{eq:optimization_l1}).
 
 With this approach, there is no guarantee that $u^* \geq 0$. However, we have
-some flexibility in the choice of $\sigma$ in Equation~\ref{eq:conv1}.
+some flexibility in the choice of $\sigma$ in Equation~(\ref{eq:conv1}).
 As we decrease the variance of $X_{\rm norm}$, the variance of $X_{\rm corr}$
 grows by the same amount and is in fact the result of convolution with a
 Gaussian whose variance is the difference.  Thus as $\sigma$ decreases,
@@ -651,7 +651,7 @@ removal of those values leads to very small error.
 \For{$t=\{1, \ldots, T\}$}{
     Propose a candidate $\theta'$\ from proposal distribution $q(\theta'\mid\theta_t)$\;
     Draw a minibatch of $m$ points $x_i$, compute $\Delta^*(\theta_t,\theta')$ and sample variance $s^2_{\Delta^*}$\;
-    Estimate moments $E|\Lambda_i-\Lambda|$ and $E|\Lambda_i-\Lambda|^3$ from the sample, and error $\epsilon$ from Equation~\ref{eq:clt-bounds3}\;
+    Estimate moments $E|\Lambda_i-\Lambda|$ and $E|\Lambda_i-\Lambda|^3$ from the sample, and error $\epsilon$ from Equation~(\ref{eq:clt-bounds3})\;
     \While {$s^2_{\Delta^*} \ge 1$ {\bf or} $\epsilon > \delta$}{
     	Draw $m$ more samples to augment the minibatch, update $\Delta^*$, $s^2_{\Delta^*}$ and $\epsilon$ estimates\;
     }
@@ -767,7 +767,7 @@ The following bound is given immediately after Corollary 2 from~\cite{explicit-c
 \end{equation}
 This bound applies to $x\geq 0$. Applying the bound to $-x$ when $x<0$
 and combining with $x>0$, we obtain the weaker but unqualified bound
-in Equation~\ref{eq:clt-bounds}.
+in Equation~(\ref{eq:clt-bounds}).
 \end{proof}
 
 %% {\color{blue} Daniel: the notation here was (and still is, to a lesser extent)
@@ -783,7 +783,7 @@ in Equation~\ref{eq:clt-bounds}.
 Lemma~\ref{lem:quant_clt} demonstrates that as long as we know the first and
 third absolute moments $E|X|$ and $E|X|^3$, we can bound the error of the normal
 approximation, which decays as $O(n^{-\frac{1}{2}})$. Making the change of
-variables $y = x s_X$, Equation~\ref{eq:clt-bounds} becomes
+variables $y = x s_X$, Equation~(\ref{eq:clt-bounds}) becomes
 \begin{equation}\label{eq:clt-bounds2}
    \sup_y\left|{\rm Pr}(\bar{X}< y) - \Phi\left(\frac{y}{s_X}\right)\right| \leq \frac{6.4E|X|^3+2E|X|}{\sqrt{n}},
 \end{equation}
@@ -805,7 +805,7 @@ so that $s_X = s_{\Delta^*}$.
 This results in the following Corollary:
 
 \begin{corollary}\label{cor:our_bound_delta_prime}
-We can now substitute into Equation~\ref{eq:clt-bounds2} and displace by the mean, giving:
+We can now substitute into Equation~(\ref{eq:clt-bounds2}) and displace by the mean, giving:
 \begin{equation}\label{eq:clt-bounds3}
     \sup_y\left|{\rm Pr}(\Delta^*< y) - \Phi\left(\frac{y-\Delta}{s_{\Delta^*}}\right)\right| \leq \frac{6.4E|X|^3+2E|X|}{\sqrt{b}} = \epsilon(\theta,\theta',b)
 \end{equation}
@@ -980,13 +980,13 @@ wish to estimate the error in $\Delta^*$ vs $G_n(x,y)$. Since all of the
 component functions of $G_n(x,y)$ are derivatives of a (unit variance)
 $\Phi(x)$, adding a normal variable with variance $\sigma'$ increases the
 variance of all three functions to $1+\sigma'$. Thus we add $X_{\rm nc}$ as
-per Algorithm 1 preserving the limit in Equation~\ref{eq:GNderivatives}.
+per Algorithm 1 preserving the limit in Equation~(\ref{eq:GNderivatives}).
 
 The deconvolution approach can be used to construct a correction variable
 $X_{\rm corr}$ between $G_n(x,y)$ and $S(x)$ the standard logistic function. An
 additional complexity is that $G_n(x,y)$ has additional parameters $y$ and $n$.
 Since these act as a single multiplier $\frac{y}{6\sqrt{n}}$ in
-Equation~\ref{eq:GNderivatives}, its enough to consider a function $g(x,y')$
+Equation~(\ref{eq:GNderivatives}), its enough to consider a function $g(x,y')$
 parametrized by $y'= \frac{y}{6\sqrt{n}}$. This function can be computed and
 saved offline. As we have shown above, errors in the ``limit'' function
 propagate directly through as errors in the acceptance test.  To achieve a test
@@ -1032,7 +1032,7 @@ We set $\sigma_1^2 = 10, \sigma_2^2 = 1$ and $\sigma_x^2=2$.  We fix $\theta =
 distribution, and estimated the posterior in the parameters. We are interested
 in performance on larger problems and so sampled 1,000,000 points to form the
 posterior of $p(\theta)\prod_{i=1}^{1,000,000}p(x_i\mid \theta)$ with the same
-prior from Equation~\ref{eq:data_generation}. The larger number of samples
+prior from Equation~(\ref{eq:data_generation}). The larger number of samples
 produces a much sharper posterior with two very narrow peaks.  Our goal is to
 reproduce the original posterior, so we adjust the temperature to $T=10,000$.
 Taking logs, we get the target as shown in the far left of
@@ -1131,7 +1131,7 @@ and 16857 for Korattikara 2014 and Bardenet 2014, respectively. The average
 minibatch sizes accurately predict the running times of these methods since
 all methods have a running time proportional to the total data consumed, with
 one caveat: the method of~\cite{icml2014c1_bardenet14} requires a global bound
-on the term $C_{\theta,\theta'}$ (see Equation~\ref{eq:bad_bound}) over the
+on the term $C_{\theta,\theta'}$ (see Equation~(\ref{eq:bad_bound})) over the
 entire the data set at every iteration in order to calculate the error bound.
 This bound must be either computed analytically using properties of the specific
 dataset, or it must be checked at each sample if a black-box test is required.
@@ -1356,7 +1356,7 @@ by inspection of equation (\ref{eq:whyneg}) below.
 This implies that we can find a $u \in (0,1)$ so that
 $\psi(u,\theta,\theta') = \log u < 0$ equals $E[\Lambda^*(\theta,\theta')]$.
 Specifically, choose $u_0$ to satisfy $\log u_0 = E[\Lambda^*(\theta,\theta')]$.
-Using $E[x_i] = 0.5$ and Equation~\ref{eq:lemma_ll_ratio}, we see that
+Using $E[x_i] = 0.5$ and Equation~(\ref{eq:lemma_ll_ratio}), we see that
 \begin{equation}
   \log u_0 = N(\theta'-\theta)\frac{1}{b} \cdot E\left[\sum_{i=1}^b x_i-\theta-\frac{\theta'-\theta}{2}\right]
 \end{equation}
@@ -1392,7 +1392,7 @@ in this range, we rewrite the test as:
 \begin{equation}\label{eq:accept_test_rewritten}
     \frac{1}{b}\sum_{i=1}^b x_i-0.5 \hspace{0.1in} \not\approx \hspace{0.1in} \frac{\log u/u_0}{N(\theta'-\theta)}
 \end{equation}
-so that, as in Equation~\ref{eq:accept_test_zero}, the LHS has expected value
+so that, as in Equation~(\ref{eq:accept_test_zero}), the LHS has expected value
 zero.  Given our choice of intervals for the variables, we can compute the range
 for the right hand side (RHS) assuming\footnote{If $\theta'-\theta<0$, then the
 range would be $\frac{1}{\sqrt{N}}[-0.75,1]$ but this does not matter for
@@ -1405,7 +1405,7 @@ the purposes of our analysis.} that $\theta'-\theta > 0$:
 Thus, the RHS is in $\frac{1}{\sqrt{N}}[-1,0.75]$.  The standard deviation of
 the LHS given the interval constraints is at least $0.5/\sqrt{b}$.
 Consequently, the gap between the LHS and RHS in
-Equation~\ref{eq:accept_test_rewritten} is at most $2\sqrt{b/N}$ standard
+Equation~(\ref{eq:accept_test_rewritten}) is at most $2\sqrt{b/N}$ standard
 deviations, limiting the range in which the test will be able to ``succeed''
 without requiring more samples.
 
