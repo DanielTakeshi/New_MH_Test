@@ -916,7 +916,9 @@ and~\cite{icml2014c1_bardenet14}. We include the result from
 ~\cite{cutting_mh_2014} (Theorem 1) here: Let $d_v(P,Q)$ denote the total
 variation distance between two distributions $P$ and $Q$.  Let
 $\mathcal{T}_0$ denote the transition kernel of the exact Markov
-chain, and $\mathcal{S}_0$ denote the exact posterior distribution.
+chain, $\mathcal{S}_0$ denote the exact posterior distribution,
+and  $\mathcal{S}_{\epsilon}$ denote the stationary distribution
+of the approximate transition kernel. 
 \begin{lemma}
  If $\mathcal{T}_0$ satisfies the contraction
   condition $d_v(P\mathcal{T}_0,\mathcal{S}_0) < \eta
@@ -925,6 +927,7 @@ chain, and $\mathcal{S}_0$ denote the exact posterior distribution.
     \begin{equation}
       d_v(S_0, S_{\epsilon}) \leq\frac{\epsilon}{1-\eta}
     \end{equation}
+where $\epsilon$ is the bound on the error in the acceptance test. 
 \end{lemma}
 
 \subsection{Improved Error Bounds Based on Skew Estimation}
