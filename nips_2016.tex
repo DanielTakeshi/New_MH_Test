@@ -118,7 +118,7 @@ statistics, and on the value of an additional uniform random variable
 $u$. The amount of data consumed for each test varies significantly
 from one minibatch to the next, and depends on the current sample, the
 proposed sample, and on the random variable $u$. By
-contrast,~\cite{conf/uai/MaclaurinA14}\cite{TallData15} perform exact
+contrast,~\cite{conf/uai/MaclaurinA14,TallData15} perform exact
 tests but require a lower bound on parameter distribution across its
 domain.  The amount of data reduction depends on the accuracy of this
 bound, and such bounds are only available for relatively simple
@@ -136,10 +136,10 @@ value.
 We use a Barker test function~\cite{Barker65} rather than a Metropolis
 test, which makes our test naturally error tolerant. The idea of using
 a noise-tolerant test using Barker's test function was suggested but
-not explored empirically in~\cite{Bardenet15} section 6.3. But the
+not explored empirically in~\cite{TallData15} section 6.3. But the
 asymptotic test statistic CDF and the Barker function are different,
 which leads to fixed errors for the approach
-in~\cite{Bardenet15}. Here we show that the difference between the
+in~\cite{TallData15}. Here we show that the difference between the
 distributions can be corrected with an additive random variable. This
 leads to a test which is fast, and whose error can be made arbitrarily
 small.
@@ -516,7 +516,7 @@ we can write
 where $\mathcal{\bar{N}}(0, \sigma^2(\Delta^*))$ denotes a distribution which is
 approximately normal with variance $\sigma^2(\Delta^*)$.  But to perform the
 test in Equation~(\ref{eq:the_exact_test}) we want $\Delta + X$ for a logistic
-random variable $X$ (call it $X_{\rm log}$ from now on). In~\cite{Bardenet15} it
+random variable $X$ (call it $X_{\rm log}$ from now on). In~\cite{TallData15} it
 was proposed to use $\Delta^*$ in a Barker test anyway and tolerate the fixed
 error caused by this approximation. 
 
@@ -1365,7 +1365,7 @@ Using $E[x_i] = 0.5$ and Equation~(\ref{eq:lemma_ll_ratio}), we see that
   \log u_0 = N(\theta'-\theta)\frac{1}{b} \cdot E\left[\sum_{i=1}^b x_i-\theta-\frac{\theta'-\theta}{2}\right]
 \end{equation}
 \begin{equation}\label{eq:whyneg}
-    log u_0 = -N(\theta'-\theta)\left(\theta-0.5+\frac{\theta'-\theta}{2}\right).
+    \log u_0 = -N(\theta'-\theta)\left(\theta-0.5+\frac{\theta'-\theta}{2}\right).
 \end{equation}
 Next, consider the minibatch acceptance test $\Lambda^*(\theta,\theta') \not\approx
 \psi(u,\theta,\theta')$ used in ~\cite{cutting_mh_2014} and~\cite{icml2014c1_bardenet14} , where $\not\approx$
