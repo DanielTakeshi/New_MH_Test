@@ -101,21 +101,25 @@ Metropolis test~\cite{Metropolis1953,hastings70}. Conventional
 Metropolis-Hastings requires all $N$ data instances to generate one
 posterior sample.
 
-Many state-of-the-art machine learning methods, and deep learning in particular,
-are based on minibatch updates (such as SGD) to a model.  Minibatch updates
-produce many improvements to the model for each pass over the dataset, and have
-high sample efficiency. They also map very well onto hardware such as GPUs. In
-contrast, M-H requires calculations over the full dataset to produce a new
-sample.  Recent results from~\cite{cutting_mh_2014,icml2014c1_bardenet14}
-perform approximate (bounded error) acceptance tests using subsets (minibatches)
-of the full dataset. The tests depend on minibatch statistics, and on the value
-of an additional uniform random variable $u$. The amount of data consumed for
-each test varies significantly from one minibatch to the next, and depends on
-the current sample, the proposed sample, and on the random variable $u$. By
-contrast,~\cite{conf/uai/MaclaurinA14} performs exact tests but requires a lower
-bound on parameter distribution across its domain.  The amount of data reduction
-depends on the accuracy of this bound, and such bounds are only available for
-relatively simple distributions.
+Many state-of-the-art machine learning methods, and deep learning in
+particular, are based on minibatch updates (such as SGD) to a model.
+Minibatch updates produce many improvements to the model for each pass
+over the dataset, and have high sample efficiency. They also map very
+well onto hardware such as GPUs. In contrast, M-H requires
+calculations over the full dataset to produce a new sample.  Recent
+results from~\cite{cutting_mh_2014,icml2014c1_bardenet14} perform
+approximate (bounded error) acceptance tests using subsets
+(minibatches) of the full dataset. The tests depend on minibatch
+statistics, and on the value of an additional uniform random variable
+$u$. The amount of data consumed for each test varies significantly
+from one minibatch to the next, and depends on the current sample, the
+proposed sample, and on the random variable $u$. By
+contrast,~\cite{conf/uai/MaclaurinA14}\cite{TallData15} perform exact
+tests but require a lower bound on parameter distribution across its
+domain.  The amount of data reduction depends on the accuracy of this
+bound, and such bounds are only available for relatively simple
+distributions. By contrast our approach is ``black box'' and requires
+only statistics gathered from the minibatches as they are used. 
 
 Here we derive a new test which incorporates the variability in minibatch
 statistics as {\em a natural part of the test}. Because of this, the amount of
@@ -738,7 +742,7 @@ Section~\ref{ssec:preserve_bounds} that these error bounds are preserved after
 the addition of other random variables, in particular $X_{\rm nc}$ and $X_{\rm
 corr}$. From this it follows that the acceptance test has the same error bound.
 
-\subsection{Bounding the Distribution of $\Delta^*$ Versus a Gaussian}\label{ssec:delta_star_distribution}
+\subsection{Bounding the Error of $\Delta^*$ from Gaussian}\label{ssec:delta_star_distribution}
 
 To start, we use the following quantitative central-limit result:
   
@@ -819,7 +823,7 @@ bootstrap CI limits will provide high-confidence error bounds.
 
 
 
-\subsection{Bounds are Preserved After Adding Random Variables}\label{ssec:preserve_bounds}
+\subsection{Error Bounds are Preserved After Adding Random Variables}\label{ssec:preserve_bounds}
 
 We next relate the CDFs of distributions and show that bounds are preserved
 after adding random variables.
@@ -904,7 +908,27 @@ the random variables we use, showing that our test should remain accurate.
 %% two different ways we show the bound. The first part (above) is nice and I like
 %% it (and it seems to show all we need for Algorithm 1, doesn't it?}
 
-In fact we can do better than this approximation (showing the error decreases as
+\subsection{Bounds on the Stationary Distribution}
+Bounds on the error of an M-H test imply bounds on the stationary
+distributed of the Markov chain under appropriate conditions. Such
+bounds were derived in both ~\cite{cutting_mh_2014}
+and~\cite{icml2014c1_bardenet14}. We include the result from
+~\cite{cutting_mh_2014} (Theorem 1) here: Let $d_v(P,Q)$ denote the total
+variation distance between two distributions $P$ and $Q$.  Let
+$\mathcal{T}_0$ denote the transition kernel of the exact Markov
+chain, and $\mathcal{S}_0$ denote the exact posterior distribution.
+\begin{lemma}
+ If $\mathcal{T}_0$ satisfies the contraction
+  condition $d_v(P\mathcal{T}_0,\mathcal{S}_0) < \eta
+  d_v(P,\mathcal{S}_0)$ for some constant $\eta\in [0,1)$ and all
+    probability distributions $P$, then
+    \begin{equation}
+      d_v(S_0, S_{\epsilon}) \leq\frac{\epsilon}{1-\eta}
+    \end{equation}
+\end{lemma}
+
+\subsection{Improved Error Bounds Based on Skew Estimation}
+In fact we can do better than $O(n^{-1/2})$ error for the quantitative CLT (showing the error decreases as
 $O(n^{-1})$) by using a more precise limit distribution under an additional
 assumption. Let $\mu_i$ denote the $i^{th}$ moment, and $b_i$ denote the
 $i^{th}$ absolute moment of $X$. If Cramer's condition holds:
@@ -935,7 +959,7 @@ the correction term is zero, and the CDF of the average of the $X_i$ converges
 to $\Phi(x)$ at a rate of $O(n^{-1})$.
 
 Here the limit $G_n(x,y)$ is a normal CDF plus a correction term that decays as
-$n^{1/2}$.
+$n^{-1/2}$.
 %{\color{blue} (Daniel: how did the equation in the next sentence
 % appear? I verified it and it seems correct, but it looks like it popped out of
 %nowhere.)}
@@ -977,14 +1001,12 @@ table. We leave further analysis and experiments with $g(x,y)$ as future work.
 
 
 
-
 \section{Experiments}\label{sec:experiments}
 
 We conduct two sets of experiments to explore the benefits of our minibatch MH
 test and to benchmark it with previous work. In Section~\ref{ssec:gaussians}, we
 show that our test enables samples to converge to the posterior distribution of
-a heated Gaussian mixture model (additional details are in
-Appendix~\ref{app:gaussian}). In Section~\ref{ssec:logistic}, we analyze its
+a heated Gaussian mixture model. In Section~\ref{ssec:logistic}, we analyze its
 efficiency on logistic regression.
 
 \subsection{Mixture of Gaussians}\label{ssec:gaussians}
