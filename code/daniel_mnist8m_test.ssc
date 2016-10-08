@@ -107,15 +107,14 @@ def combine_combos_v2 = {
  * This does our final processing on the single data matrix we have. We should shuffle it, split it
  * in training/testing splits, save the matrices, but *keep* the labels in there. Use that clever
  * 'sort2' trick from BIDMach to do this. We provide the fraction of data to be for training.
- * NOTE: We really should not use the full data, i.e., set min_i to be higher or (better) max_i
- * should be much smaller.
+ * NOTE: We really should not use the full data, i.e., change min_i or (better) max_i.
  */
-def final_processing(frac_train:Double) = {
+def final_processing(frac_train:Double, max_i_val:Int) = {
     val full_data = loadFMat(output_dir + "FINAL_UNSHUFFLED_1_7_MNIST8M_DATA.lz4")
 
     // Figure out what indices to include, and find the cutoff for train/test.
     val min_i = 0
-    val max_i = full_data.ncols
+    val max_i = max_i_val
     val threshold = (max_i * frac_train).toInt
 
     // Nice shuffle trick, uses all columns in case we need them. Then assign indices.
@@ -130,8 +129,10 @@ def final_processing(frac_train:Double) = {
     val test  = full_data(?, indices_test)
     println("size(train)=" +size(train))
     println("size(test)=" +size(test))
-    saveFMat(output_dir + "FINAL_SHUFFLED_MNIST8M_TRAIN.fmat.lz4", train)
-    saveFMat(output_dir + "FINAL_SHUFFLED_MNIST8M_TEST.fmat.lz4", test)
+
+    // Let's make the file names based on the 'max_i' variable.
+    saveFMat(output_dir + "FINAL_MNIST8M_TRAIN_" +max_i+ ".fmat.lz4", train)
+    saveFMat(output_dir + "FINAL_MNIST8M_TEST_" +max_i+ ".fmat.lz4", test)
 }
 
 // -------------------------- //
@@ -164,5 +165,6 @@ def final_processing(frac_train:Double) = {
 //combine_combos_v2
 
 val frac_train = 0.9
-final_processing(frac_train)
+val max_i = 1000
+final_processing(frac_train, max_i)
 

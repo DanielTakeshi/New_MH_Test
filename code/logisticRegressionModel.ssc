@@ -1,33 +1,46 @@
+/**
+ * Code for running Logistic Regression results.
+ *
+ * TODO Documentation in progress
+ * TODO There needs to be a better way to input the data than what we have now.
+ * TODO don't forget to adjust model parameters in case we change 'n'.
+ */
+
+// TODO Have my data directories here (but again, this has to be in a better spot).
+val train_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TRAIN_1000.fmat.lz4"
+val test_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TEST_1000.fmat.lz4"
+
+
 :load simulator.ssc
 :load cutMHTest.ssc
 :load adaptiveMHTest.ssc
 
 class LogisticRegression(n:Int, sigma:Double, pscale: Double) extends MHmodel (1, n, sigma, pscale) {
 	
-		var sigma_proposer = 0.05;
-		val data:DMat= load("minist7vs1.mat","Train");
-		var temp = 1.0;
-
-		def initfn():Mat = {
-			val parameter_dim = data.dims(0) - 1;
-			val theta = drand(parameter_dim,1);
-			theta;
-		};
-		
-
-		def proposalfn(theta:Mat):Mat = {
-			theta + dnormrnd(0, sigma_proposer, theta.dims(0), 1);
-		};
-
-		def evalfn(batch:Mat, theta:Mat):Mat = {
-			val X = batch(0 until batch.dims(0)-1, ?)
-			val Y = batch(batch.dims(0)-1,?)
-			val z = Y dot (theta.t * X);
-			val sig = 1/(1 + exp(-1.0 * z));
-			val log_sig = ln(sig);
-			val scale_and_temp = 1.0 * (n/temp);
-			scale_and_temp * log_sig;
-		};
+    var sigma_proposer = 0.05;
+    var temp = 1.0;
+    // val data:DMat = load("minist7vs1.mat","Train");
+    val data = loadFMat(train_data_dir)
+   
+    def initfn():Mat = {
+        val parameter_dim = data.dims(0) - 1;
+        val theta = drand(parameter_dim,1);
+        theta;
+    };
+    
+    def proposalfn(theta:Mat):Mat = {
+        theta + dnormrnd(0, sigma_proposer, theta.dims(0), 1);
+    };
+    
+    def evalfn(batch:Mat, theta:Mat):Mat = {
+        val X = batch(0 until batch.dims(0)-1, ?)
+        val Y = batch(batch.dims(0)-1,?)
+        val z = Y dot (theta.t * X);
+        val sig = 1/(1 + exp(-1.0 * z));
+        val log_sig = ln(sig);
+        val scale_and_temp = 1.0 * (n/temp);
+        scale_and_temp * log_sig;
+    };
 }
 	
 def eval_cost(X:DMat, Y:DMat, theta:DMat): (DMat, DMat) = {
@@ -46,7 +59,7 @@ def eval_cost(X:DMat, Y:DMat, theta:DMat): (DMat, DMat) = {
 
 // define model parameters
 val nsamps = 5000
-val n = 12007
+val n = 1000 // Daniel, October 7 2016: this previously was 12007.
 val sigma = 1.0
 val pscale = 1.0
 val batchsize = 100
@@ -56,7 +69,6 @@ nn.temp = 1000.0;
 nn.sigma_proposer = sigma_proposer;
 
 // define test parameters
-
 val newtest = new NewTest;
 newtest.explin = false;
 val oldtest = new OldTest;
@@ -68,73 +80,55 @@ adaptiveMHtest.N = n;
 cutMHtest.eps = 0.005;
 
 
-// do MH Test
+// ---------------------------------------- //
+// ----- TEST #1: OUR METHOD ("ours") ----- //
+// ---------------------------------------- //
 tic;
-val (samples, sizes, lls) = dosimm(mod=nn, test=newtest, size=batchsize, nsamps=nsamps, acc=0.05);
+val (samples_ours, mb_sizes_ours, ll_train_ours) = dosimm(mod=nn, test=newtest, size=batchsize, nsamps=nsamps, acc=0.05);
 val t1 = toc;
-val (samples2, sizes2, lls2) = dosimm(mod=nn, test=oldtest, size=batchsize, nsamps=nsamps, acc=0.05);
+
+// ----------------------------------------- //
+// ----- TEST #2: KORATTIKARA ("kora") ----- //
+// ----------------------------------------- //
+val (samples_kora, mb_sizes_kora, ll_train_kora) = cutMHTest_dosimm(mod=nn, test=cutMHtest, size=batchsize, nsamps=nsamps, acc=0.05);
 val t2 = toc - t1;
 
-val (samples3, sizes3, lls3) = cutMHTest_dosimm(mod=nn, test=cutMHtest, size=batchsize,nsamps = nsamps, acc = 0.05);
-val t3 = toc - t1 - t2;
-
-val (samples4, sizes4, lls4, bc1c2_list) = adaptiveMH_dosimm(mod=nn, test=adaptiveMHtest, size=batchsize, nsamps = nsamps, acc = 0.05);
-
-val t4 = toc - t1 - t2 - t3;
-
-cutMHtest.error_bound = false; // test with decreasing error bound
-val (samples5, sizes5, lls5) = cutMHTest_dosimm(mod=nn, test = cutMHtest, size=batchsize, nsamps = nsamps, acc = 0.05);
-
-val t5 = toc - t1 - t2 - t3 - t4;
-
-// get accuracy with test
-
-val size2 = DMat(sizes2);
-val size1 = DMat(sizes);
-val size3 = DMat(sizes3);
-val size4 = DMat(sizes4);
-val size5 = DMat(sizes5);
+// -------------------------------------- //
+// ----- TEST #3: BARDENET ("bard") ----- //
+// -------------------------------------- //
+val (samples_bard, mb_sizes_bard, ll_train_bard, bc1c2_list) = adaptiveMH_dosimm(mod=nn, test=adaptiveMHtest, size=batchsize, nsamps=nsamps, acc=0.05);
+val t3 = toc - t2;
 
 
-val testdata:DMat = load("minist7vs1.mat","Test");
+// val testdata:DMat = load("minist7vs1.mat","Test");
+val testdata = loadFMat(test_data_dir)
+
 val X = testdata(0 until testdata.dims(0)-1, ?)
 val Y = testdata(testdata.dims(0)-1, ?)
-val (accuracy2, ll2) = eval_cost(X, Y, samples2);
-val (accuracy1, ll1) = eval_cost(X, Y, samples);
-val (accuracy3, ll3) = eval_cost(X, Y, samples3);
-val (accuracy4, ll4) = eval_cost(X, Y, samples4);
-val (accuracy5, ll5) = eval_cost(X, Y, samples5);
+val (accuracy_ours, ll_test_ours) = eval_cost(X, Y, samples_ours);
+val (accuracy_kora, ll_test_kora) = eval_cost(X, Y, samples_kora);
+val (accuracy_bard, ll_test_bard) = eval_cost(X, Y, samples_bard);
 
-val size_2 = cumsum(DMat(size2));
-val size_1 = cumsum(DMat(size1));
-val size_3 = cumsum(DMat(size3));
-val size_4 = cumsum(DMat(size4));
-val size_5 = cumsum(DMat(size5));
+val cum_size_ours = cumsum(DMat(mb_size_ours));
+val cum_size_kora = cumsum(DMat(mb_size_kora));
+val cum_size_bard = cumsum(DMat(mb_size_bard));
 
-// plot(size_2, accuracy2, size_1, accuracy1, size_3, accuracy3, size_4, accuracy4);
+// Might be useful later.
+times = t1 \ t2 \ t3
+print(times)
 
-// plot(size_2, ll2, size_1, ll1, size_3, ll3,size_4, ll4);
-
-// hist(size2,50);
-// hist(size1,50);
-// hist(size3,50); 
-// hist(size4,50);
-
-val accelerate = (sum(size2).dv * 1.0 / sum(size1).dv * 1.0);
-println("The acceleration ratio over old test is %f" format(accelerate));
-val accelerate2 = (sum(size3).dv * 1.0 / sum(size1).dv * 1.0);
-println("The acceleration ratio over cutmh test is %f" format(accelerate2));
-val accelerate3 = (sum(size4).dv * 1.0 / sum(size1).dv * 1.0);
-println("The acceleration ratio over adaptive mh test is %f" format(accelerate3));
-
-val accelerate4 = sum(size5).dv/sum(size1).dv;
-println("accelerate ratio over cut mh test with decreasing error bound is %f" format(accelerate4));
-
-// save files
-val time_list = t1 \ t2 \ t3 \ t4 \ t5;
-saveAs("logisticdata.mat", samples, "newtestsamples", samples2, "oldtestsamples",  samples3, "cutmhsamples", samples4, "adaptivemhsamples", samples5, "cutmhwithsamples", size1, "newtestsize", size2, "oldtestsize", size3, "cutmhsize", size4, "adaptivemhsize", size5, "cutmhwithsize", lls, "newtestll", lls2, "oldtestll", lls3, "cutmhll", lls4, "adaptivemhll", lls5, "cutmhwithll", bc1c2_list, "adaptivemhbc1c2", time_list, "time_list", ll1, "newtestll", ll2, "oldtestll", ll3, "cutmhll", ll4, "adaptivemhll", ll5, "cutmhwithll", accuracy1, "newtestacc", accuracy2, "oldtestacc", accuracy3, "cutmhacc", accuracy4, "adaptivemhacc", accuracy5, "cutmhwithacc");
-
-
-
-
-    
+saveAs("logisticdata.mat", samples_ours, "samples_ours", 
+                           samples_kora, "samples_kora",
+                           samples_bard, "samples_bard",
+                           cum_size_ours, "cum_size_ours",
+                           cum_size_kora, "cum_size_kora", 
+                           cum_size_bard, "cum_size_bard", 
+                           ll_train_ours, "ll_train_ours", 
+                           ll_train_kora, "ll_train_kora", 
+                           ll_train_bard, "ll_train_bard", 
+                           ll_test_ours, "ll_test_ours", 
+                           ll_test_kora, "ll_test_kora", 
+                           ll_test_bard, "ll_test_bard", 
+                           accuracy_ours, "accuracy_ours", 
+                           accuracy_kora, "accuracy_kora", 
+                           accuracy_bard, "accuracy_bard");
