@@ -14,9 +14,12 @@
 val nsamps = 5000 
 
 // This was 12007 for regular MNIST. **If changing, this automatically changes the data directories!**
-val n = 10000 
-val train_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TRAIN_" +n+ ".fmat.lz4"
-val test_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TEST_" +n+ ".fmat.lz4"
+val n = 1000
+// val train_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TRAIN_" +n+ ".fmat.lz4"
+// val test_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TEST_" +n+ ".fmat.lz4"
+
+val train_data_dir = "/users/xinleipan/git/New_MH_Test/data/FINAL_MNIST8M_TRAIN_" + n + ".fmat.lz4"
+val test_data_dir = "/users/xinleipan/git/New_MH_Test/data/FINAL_MNIST8M_TEST_" + n + ".fmat.lz4"
 
 val sigma = 1.0
 val pscale = 1.0
@@ -35,7 +38,12 @@ class LogisticRegression(n:Int, sigma:Double, pscale: Double) extends MHmodel (1
     var sigma_proposer = 0.05;
     var temp = 1.0;
     // val data:DMat = load("minist7vs1.mat","Train");
-    val data = loadFMat(train_data_dir)
+    var data_loaded = loadFMat(train_data_dir);
+    data_loaded(0 until data_loaded.dims(0)-1, ?) = data_loaded(0 until data_loaded.dims(0)-1, ?)/255.0;
+    var labels = data_loaded(data_loaded.dims(0) -1, ?);
+    labels(find(labels==7)) = -1;
+    data_loaded(data_loaded.dims(0)-1,?) = labels;
+    val data = data_loaded;
    
     def initfn():Mat = {
         val parameter_dim = data.dims(0) - 1;
@@ -99,37 +107,39 @@ val t1 = toc;
 // ----------------------------------------- //
 // ----- TEST #2: KORATTIKARA ("kora") ----- //
 // ----------------------------------------- //
-val (samples_kora, mb_size_kora, ll_train_kora) = cutMHTest_dosimm(mod=nn, test=cutMHtest, size=batchsize, nsamps=nsamps, acc=0.05);
-val t2 = toc - t1;
+// val (samples_kora, mb_size_kora, ll_train_kora) = cutMHTest_dosimm(mod=nn, test=cutMHtest, size=batchsize, nsamps=nsamps, acc=0.05);
+// val t2 = toc - t1;
 
 // -------------------------------------- //
 // ----- TEST #3: BARDENET ("bard") ----- //
 // -------------------------------------- //
-val (samples_bard, mb_size_bard, ll_train_bard, bc1c2_list) = adaptiveMH_dosimm(mod=nn, test=adaptiveMHtest, size=batchsize, nsamps=nsamps, acc=0.05);
-val t3 = toc - t2;
+// val (samples_bard, mb_size_bard, ll_train_bard, bc1c2_list) = adaptiveMH_dosimm(mod=nn, test=adaptiveMHtest, size=batchsize, nsamps=nsamps, acc=0.05);
+// val t3 = toc - t2;
 
 
 // val testdata:DMat = load("minist7vs1.mat","Test");
-val testdata = loadFMat(test_data_dir)
-val X = testdata(0 until testdata.dims(0)-1, ?)
-val Y = testdata(testdata.dims(0)-1, ?)
+val testdata = loadFMat(test_data_dir);
+val X = testdata(0 until testdata.dims(0)-1, ?)/255.0;
+var Y = testdata(testdata.dims(0)-1, ?);
+Y(find(Y==7)) = -1;
+
 
 // We will report on accuracy and (test) ll in the paper.
 val (accuracy_ours, ll_test_ours) = eval_cost(X, Y, samples_ours);
-val (accuracy_kora, ll_test_kora) = eval_cost(X, Y, samples_kora);
-val (accuracy_bard, ll_test_bard) = eval_cost(X, Y, samples_bard);
+// val (accuracy_kora, ll_test_kora) = eval_cost(X, Y, samples_kora);
+// val (accuracy_bard, ll_test_bard) = eval_cost(X, Y, samples_bard);
 
 // Cumulative sizes, for showing efficiency.
 val cum_size_ours = cumsum(DMat(mb_size_ours));
-val cum_size_kora = cumsum(DMat(mb_size_kora));
-val cum_size_bard = cumsum(DMat(mb_size_bard));
+// val cum_size_kora = cumsum(DMat(mb_size_kora));
+// val cum_size_bard = cumsum(DMat(mb_size_bard));
 
 // Might be useful later.
-val times = t1 \ t2 \ t3
-print(times)
+// val times = t1 \ t2 \ t3
+// print(times)
 
 // Save all this for analysis later in jupyter notebook.
-saveAs("logisticdata.mat", samples_ours, "samples_ours", 
+/* saveAs("logisticdata.mat", samples_ours, "samples_ours", 
                            samples_kora, "samples_kora",
                            samples_bard, "samples_bard",
                            cum_size_ours, "cum_size_ours",
@@ -147,3 +157,4 @@ saveAs("logisticdata.mat", samples_ours, "samples_ours",
                            accuracy_ours, "accuracy_ours", 
                            accuracy_kora, "accuracy_kora", 
                            accuracy_bard, "accuracy_bard");
+*/
