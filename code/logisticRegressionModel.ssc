@@ -6,9 +6,24 @@
  * TODO don't forget to adjust model parameters in case we change 'n'.
  */
 
-// TODO Have my data directories here (but again, this has to be in a better spot).
-val train_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TRAIN_10000.fmat.lz4"
-val test_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TEST_10000.fmat.lz4"
+// -------------------- //
+// IMPORTANT PARAMETERS //
+// -------------------- //
+
+// Daniel: this should be 5000 but I may change if I'm experimenting.
+val nsamps = 5000 
+
+// This was 12007 for regular MNIST. **If changing, this automatically changes the data directories!**
+val n = 10000 
+val train_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TRAIN_" +n+ ".fmat.lz4"
+val test_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TEST_" +n+ ".fmat.lz4"
+
+val sigma = 1.0
+val pscale = 1.0
+val batchsize = 100
+val sigma_proposer = 0.05;
+val temperature = 1000.0 // Was 1000.0 for regular MNIST experiment.
+
 
 
 :load simulator.ssc
@@ -57,18 +72,12 @@ def eval_cost(X:DMat, Y:DMat, theta:DMat): (DMat, DMat) = {
 };
 
 
-// define model parameters
-val nsamps = 5000 // Daniel: this should be 5000 but I may change if I'm experimenting.
-val n = 10000 // Daniel, October 7 2016: this previously was 12007.
-val sigma = 1.0
-val pscale = 1.0
-val batchsize = 100
-val sigma_proposer = 0.05;
+// Define the Logistic Regression Model.
 val nn = new LogisticRegression(n=n, sigma=sigma, pscale=pscale);
-nn.temp = 1000.0; // Was 1000.0 for the original 12k dataset.
+nn.temp = temperature;
 nn.sigma_proposer = sigma_proposer;
 
-// define test parameters
+// Create the differnet tests we will be using.
 val newtest = new NewTest;
 newtest.explin = false;
 val oldtest = new OldTest;
@@ -105,10 +114,12 @@ val testdata = loadFMat(test_data_dir)
 val X = testdata(0 until testdata.dims(0)-1, ?)
 val Y = testdata(testdata.dims(0)-1, ?)
 
+// We will report on accuracy and (test) ll in the paper.
 val (accuracy_ours, ll_test_ours) = eval_cost(X, Y, samples_ours);
 val (accuracy_kora, ll_test_kora) = eval_cost(X, Y, samples_kora);
 val (accuracy_bard, ll_test_bard) = eval_cost(X, Y, samples_bard);
 
+// Cumulative sizes, for showing efficiency.
 val cum_size_ours = cumsum(DMat(mb_size_ours));
 val cum_size_kora = cumsum(DMat(mb_size_kora));
 val cum_size_bard = cumsum(DMat(mb_size_bard));
@@ -117,15 +128,16 @@ val cum_size_bard = cumsum(DMat(mb_size_bard));
 val times = t1 \ t2 \ t3
 print(times)
 
+// Save all this for analysis later in jupyter notebook.
 saveAs("logisticdata.mat", samples_ours, "samples_ours", 
                            samples_kora, "samples_kora",
                            samples_bard, "samples_bard",
                            cum_size_ours, "cum_size_ours",
                            cum_size_kora, "cum_size_kora", 
                            cum_size_bard, "cum_size_bard",
-			   mb_size_ours, "mb_size_ours",
-			   mb_size_kora, "mb_size_kora",
-			   mb_size_bard, "mb_size_bard",
+                           DMat(mb_size_ours), "mb_size_ours",
+                           DMat(mb_size_kora), "mb_size_kora",
+                           DMat(mb_size_bard), "mb_size_bard",
                            ll_train_ours, "ll_train_ours", 
                            ll_train_kora, "ll_train_kora", 
                            ll_train_bard, "ll_train_bard", 
