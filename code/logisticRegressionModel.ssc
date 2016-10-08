@@ -7,8 +7,8 @@
  */
 
 // TODO Have my data directories here (but again, this has to be in a better spot).
-val train_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TRAIN_1000.fmat.lz4"
-val test_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TEST_1000.fmat.lz4"
+val train_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TRAIN_10000.fmat.lz4"
+val test_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TEST_10000.fmat.lz4"
 
 
 :load simulator.ssc
@@ -58,14 +58,14 @@ def eval_cost(X:DMat, Y:DMat, theta:DMat): (DMat, DMat) = {
 
 
 // define model parameters
-val nsamps = 5000
-val n = 1000 // Daniel, October 7 2016: this previously was 12007.
+val nsamps = 5000 // Daniel: this should be 5000 but I may change if I'm experimenting.
+val n = 10000 // Daniel, October 7 2016: this previously was 12007.
 val sigma = 1.0
 val pscale = 1.0
 val batchsize = 100
 val sigma_proposer = 0.05;
 val nn = new LogisticRegression(n=n, sigma=sigma, pscale=pscale);
-nn.temp = 1000.0;
+nn.temp = 1000.0; // Was 1000.0 for the original 12k dataset.
 nn.sigma_proposer = sigma_proposer;
 
 // define test parameters
@@ -84,27 +84,27 @@ cutMHtest.eps = 0.005;
 // ----- TEST #1: OUR METHOD ("ours") ----- //
 // ---------------------------------------- //
 tic;
-val (samples_ours, mb_sizes_ours, ll_train_ours) = dosimm(mod=nn, test=newtest, size=batchsize, nsamps=nsamps, acc=0.05);
+val (samples_ours, mb_size_ours, ll_train_ours) = dosimm(mod=nn, test=newtest, size=batchsize, nsamps=nsamps, acc=0.05);
 val t1 = toc;
 
 // ----------------------------------------- //
 // ----- TEST #2: KORATTIKARA ("kora") ----- //
 // ----------------------------------------- //
-val (samples_kora, mb_sizes_kora, ll_train_kora) = cutMHTest_dosimm(mod=nn, test=cutMHtest, size=batchsize, nsamps=nsamps, acc=0.05);
+val (samples_kora, mb_size_kora, ll_train_kora) = cutMHTest_dosimm(mod=nn, test=cutMHtest, size=batchsize, nsamps=nsamps, acc=0.05);
 val t2 = toc - t1;
 
 // -------------------------------------- //
 // ----- TEST #3: BARDENET ("bard") ----- //
 // -------------------------------------- //
-val (samples_bard, mb_sizes_bard, ll_train_bard, bc1c2_list) = adaptiveMH_dosimm(mod=nn, test=adaptiveMHtest, size=batchsize, nsamps=nsamps, acc=0.05);
+val (samples_bard, mb_size_bard, ll_train_bard, bc1c2_list) = adaptiveMH_dosimm(mod=nn, test=adaptiveMHtest, size=batchsize, nsamps=nsamps, acc=0.05);
 val t3 = toc - t2;
 
 
 // val testdata:DMat = load("minist7vs1.mat","Test");
 val testdata = loadFMat(test_data_dir)
-
 val X = testdata(0 until testdata.dims(0)-1, ?)
 val Y = testdata(testdata.dims(0)-1, ?)
+
 val (accuracy_ours, ll_test_ours) = eval_cost(X, Y, samples_ours);
 val (accuracy_kora, ll_test_kora) = eval_cost(X, Y, samples_kora);
 val (accuracy_bard, ll_test_bard) = eval_cost(X, Y, samples_bard);
@@ -114,7 +114,7 @@ val cum_size_kora = cumsum(DMat(mb_size_kora));
 val cum_size_bard = cumsum(DMat(mb_size_bard));
 
 // Might be useful later.
-times = t1 \ t2 \ t3
+val times = t1 \ t2 \ t3
 print(times)
 
 saveAs("logisticdata.mat", samples_ours, "samples_ours", 

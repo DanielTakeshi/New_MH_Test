@@ -165,6 +165,6 @@ def final_processing(frac_train:Double, max_i_val:Int) = {
 //combine_combos_v2
 
 val frac_train = 0.9
-val max_i = 1000
+val max_i = 10000
 final_processing(frac_train, max_i)
 
