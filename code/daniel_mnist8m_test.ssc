@@ -1,0 +1,126 @@
+/**
+ * (c) October 2016 by Daniel Seita
+ * A script to help get the MNIST8M data into a format usable for the fast MH test. Due to RAM
+ * constraints, it's not a simple script we run immediately. What I do is:
+ *
+ * I run this from my home directory on bitter: ./bidmach daniel_mnist8m_test.ssc
+ *
+ * But I run this about four times for the first section of the code (i.e., I run it and change the
+ * range of i I use). Then after that I can run the second and third parts. Though to be safe, I run
+ * the second part with the rest commented out, then the third part with the rest commented out.
+ */
+
+val dir = "/data/MNIST8M/parts/"
+val output_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/"
+
+/*
+ * This is the FIRST thing I ran once I figured out how John organized the MNIST8M data. There are
+ * 81 files (numbered 0 through 80). I did this loop by first running it with i from 0 to 20, then
+ * 21 to 40, then 41 to 60, etc. I think if you run this all at once you run out of RAM.  After
+ * running this, there should be 162 files in the output directory. The "ones" matrices should be
+ * roughly 4.5MB, the "sevens" should be roughly 5.7MB.
+ * 
+ * TODO turn this into a method like I did for the combo matrix ...
+ */
+
+// //for (i <- 0 to 20) {
+// //for (i <- 21 to 40) {
+// //for (i <- 41 to 60) {
+// for (i <- 61 to 80) {
+// 
+//     // Load data one by one and debug for matrix sizes.
+//     val cati:IMat = loadIMat(dir + "cat%02d.imat.lz4" format i)
+//     val data = loadFMat(dir + "data%02d.fmat.lz4" format i)
+//     println("i="+i)
+//     println("cati.dims = " + cati.dims)
+//     println("data.dims = " + data.dims) // Should be (784,100000)
+// 
+//     // Find the indices that correspond to 1s and 7s.
+//     val mask_1_inds = find(cati == 1)
+//     val mask_7_inds = find(cati == 7)
+// 
+//     // Now extract 1s and 7s from the data matrices.
+//     val data_ones   = data(?,mask_1_inds)
+//     val data_sevens = data(?,mask_7_inds)
+// 
+//     // Next, save matrices of 1s and 7s separately (combine later).
+//     saveFMat(output_dir + "data_ones_%02d.fmat.lz4" format i,   data_ones)
+//     saveFMat(output_dir + "data_sevens_%02d.fmat.lz4" format i, data_sevens)
+// }
+
+
+/*
+ * This is the SECOND part I ran after the first one (see code above). This will concatenate all the
+ * ones and sevens together. ALSO it will add in the last row of 1s and 7s in the appropriate spot,
+ * the last row.  Unfortunately you need to have lots of RAM to run this ... so run these
+ * separately.
+ */
+
+def generate_combo_matrix(mat_num_name:Int, min_i:Int, max_i:Int) {
+    val a = loadFMat(output_dir + "data_ones_%02d.fmat.lz4" format min_i)
+    val b = loadFMat(output_dir + "data_sevens_%02d.fmat.lz4" format min_i)
+
+    var output = a on ones(1,a.ncols)
+    output = output \ (b on (7*ones(1,b.ncols)))
+    
+    for (i <- min_i to max_i) {
+        println("i="+i)
+    
+        val c = loadFMat(output_dir + "data_ones_%02d.fmat.lz4" format i)
+        val d = loadFMat(output_dir + "data_sevens_%02d.fmat.lz4" format i)
+    
+        output = output \ (c on ones(1,c.ncols))
+        output = output \ (d on (7*ones(1,d.ncols)))
+    }
+    println("size of final matrix is " + size(output))
+    saveFMat(output_dir + "combo_%02d.fmat.lz4" format mat_num_name, output)
+}
+
+// Again, call one at a time!
+//generate_combo_matrix(0, 0, 10)
+//generate_combo_matrix(1, 11, 20)
+//generate_combo_matrix(2, 21, 30)
+//generate_combo_matrix(3, 31, 40)
+//generate_combo_matrix(4, 41, 50)
+//generate_combo_matrix(5, 51, 60)
+//generate_combo_matrix(6, 61, 70)
+//generate_combo_matrix(7, 71, 80)
+
+
+/*
+ * Third part ... now we have to combine and shuffle these.
+ */
+
+// IN PROGRESS!
+
+
+// ------------------------------- //
+// Some old stuff. Don't run this! //
+// ------------------------------- //
+
+/*
+ * for (i <- 70 to 75) {
+ *     println("i="+i)
+ * 
+ *     val cati:IMat = loadIMat(dir + "cat%02d.imat.lz4" format i)
+ *     println(cati.dims)
+ * 
+ *     val catsi:IMat = loadIMat(dir + "cats%02d.imat.lz4" format i)
+ *     println(catsi.dims)
+ * 
+ *     println("max(abs(cati-cats)) = " + maxi(maxi(cati-catsi)))
+ *     println("min(abs(cati-cats)) = " + mini(mini(cati-catsi)))
+ * 
+ *     val catsf = loadFMat(dir + "cats%02d.fmat.lz4" format i)
+ *     println(catsf.dims)
+ * 
+ *     val data = loadFMat(dir + "data%02d.fmat.lz4" format i)
+ *     println(data.dims)
+ * 
+ *     val alls = loadFMat(dir + "alls%02d.fmat.lz4" format i)
+ *     println(alls.dims)
+ * 
+ *     val preds = loadIMat(dir + "preds%02d.imat.lz4" format i)
+ *     println(preds.dims)
+ * }
+ */
