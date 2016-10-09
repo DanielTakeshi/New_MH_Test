@@ -580,22 +580,6 @@ $\epsilon$ relative to the full batch version.
 
 \section{Computing the Correction Distribution}\label{sec:correction}
 
-%\begin{figure}[t]
-% \centering
-%\includegraphics[width=1\textwidth]{mh_convolution_diagram_v2}
-%    \caption{
-%   Three examples of $X_{\rm norm}$ and $X_{\rm corr}$ distributions that
-%    convolve to form the standard logistic distribution. These were obtained
-%    based on our original linear programming formulation, as discussed in
-%    Section~\ref{sec:correction}. We use three standard deviation values of
-%    $X_{\rm norm}$. The two red curves convolve to form the logistic, etc. The
-%    $y$-axis is capped at 0.5 for readability. This figure must be viewed in
-%    color.
-%    }
-%    \label{fig:deconvolution}
-%\vspace{-10pt}
-%\end{figure}
-
 Our proposed test in Equation~(\ref{eq:criteria}) requires knowing the
 distribution of the correction variable $X_{\rm corr}$ such that $X_{\rm norm} +
 X_{\rm corr} = X_{\rm log}$, where $X_{\rm norm} \sim \mathcal{N}(0,\sigma^2)$
@@ -621,11 +605,11 @@ In continuous form, the optimization problem is therefore
     \small{C_\sigma^* = \argmin_{C\sigma} \; \sup_{x \in [-2V,2V]}\left|\int_{-V}^{V}\Phi_{\sigma}(x-y) C_{\sigma}(y)dy - S(x)\right|}
 \end{equation}
 To get $C_\sigma^*$ in a computable form, we discretize $X$ and $Y$ into $4N+1$
-and $2N+1$ values respectively. If $i \in \{-2N, \ldots, 2N\}$ and $j \in \{-N,
-\ldots, N\}$, then we can write $X_i = i(V/N)$ and $Y_j = j(V/N)$, and the
-condition in Equation~(\ref{eq:conv1}) can be re-expressed as:
+and $2N+1$ values respectively. If $i \in \{-2N, \ldots, 2N\}=\mathcal{I}$ and
+$j \in \{-N, \ldots, N\}$, then we can write $X_i = i(V/N)$ and $Y_j = j(V/N)$,
+and the condition in Equation~(\ref{eq:conv1}) can be re-expressed as:
 \begin{equation}\label{eq:conv2}
-    \scriptsize{C_\sigma^* = \argmin_{C_\sigma} \max_{i \in \{-2N,\ldots,2N\}}\left|\sum_{j = -N}^{N}\Phi_{\sigma}(X_i-Y_j) C_{\sigma}(Y_j) - S(X_i)\right|.}
+    C_\sigma^* = \argmin_{C_\sigma} \max_{i \in \mathcal{I}}\left|\sum_{j = -N}^{N}\Phi_{\sigma}(X_i-Y_j) C_{\sigma}(Y_j) - S(X_i)\right|.
 \end{equation}
 To make the problem easier to understand, we can define a matrix $M$ and vectors
 $u$ and $v$ such that $M_{ij} = \Phi_{\sigma}(X_i-Y_j)$, $u_j =
@@ -639,8 +623,6 @@ Equation~(\ref{eq:conv2}) is equivalent to minimizing the $L_{\infty}$ norm:
 We have the additional constraint that $u_j > 0$ for all $j$, since $u$
 represents a density. We first explored optimizing this problem with linear
 programming to find a $u$ minimizing $\|Mu - v\|_\infty$ subject to $u \ge 0$.
-%Figure~\ref{fig:deconvolution} shows three examples of $X_{\rm norm}$ and
-%$X_{\rm corr}$ densities that sum to $X_{\rm log}$ from this process.
 
 This was tractable up to a few hundred dimensions for $u$.  However, the
 discretization error is bounded by the curvature of the underlying functions
@@ -775,7 +757,7 @@ Let $X_1,\ldots,X_n$ be a set of zero-mean, independent, identically-distributed
 random variables with sample mean $\bar{X}$ and sample variance $s^2_X$
 where:
 \begin{equation}
-    \bar{X} = \frac{1}{n}\sum_{i=1}^nX_i \qquad {\rm and} \qquad s_X = \frac{1}{n}\left(\sum_{i=1}^n(X_i-\bar{X}^2\right)^{\frac{1}{2}}.
+    \bar{X} = \frac{1}{n}\sum_{i=1}^nX_i, \quad s_X = \frac{1}{n}\left(\sum_{i=1}^n(X_i-\bar{X}^2\right)^{\frac{1}{2}}.
 \end{equation}
 This implies $t=\bar{X}/s_X$ has an approximate Student's distribution
 which approaches a normal distribution in the limit. Then
@@ -787,7 +769,10 @@ which approaches a normal distribution in the limit. Then
 \begin{proof}
 The following bound is given immediately after Corollary 2 from~\citet{explicit-clt05}:
 \begin{equation}\label{eq:clt-boundsx}
-\scriptsize{-6.4E|X|^3-2E|X| \leq    \sup_x|{\rm Pr}(t<x) - \Phi(x)|{\sqrt{n}} \leq 1.36E|X|^3}
+\begin{split}
+-6.4E|X|^3-2E|X| &\leq \sup_x|{\rm Pr}(t<x)-\Phi(x)|{\sqrt{n}} \\
+&\leq 1.36E|X|^3.
+\end{split}
 \end{equation}
 This bound applies to $x\geq 0$. Applying the bound to $-x$ when $x<0$
 and combining with $x>0$, we obtain the weaker but unqualified bound
@@ -872,15 +857,16 @@ We first observe that
 \begin{equation}\label{eq:pdf_difference}
     P'(z) - Q'(z) = \int_{-\infty}^{+\infty}(P(z-x)-Q(z-x))R(x) dx,
 \end{equation}
-and since $\sup_x|P(x)-Q(x)|\leq \epsilon$ it follows that for all $z$:
+and since $\sup_x|P(x)-Q(x)|\leq \epsilon$ it follows that $\forall z$:
 \begin{equation}
 \begin{split}
-\tiny{-\epsilon} & = \tiny{\int_{-\infty}^{+\infty} -\epsilon R(x) dx } \\
-& \tiny{\leq \int_{-\infty}^{+\infty}(P(z-x)-Q(z-x))R(x) dx }\\
-& \tiny{\leq \int_{-\infty}^{+\infty}\epsilon R(x) dx = \epsilon}\\
+-\epsilon &= \tiny{\int_{-\infty}^{+\infty} -\epsilon R(x) dx } \\
+&\leq \int_{-\infty}^{+\infty}(P(z-x)-Q(z-x))R(x) dx \\
+&\leq \int_{-\infty}^{+\infty}\epsilon R(x) dx = \epsilon.
 \end{split}
 \end{equation}
 \end{proof}
+\vspace{-10pt}
 
 %% {\color{blue} Daniel: Hold on, the following Corollary seems to add $X_{\rm norm}$
 %% to both random variables we are comparing (and \emph{then} $X_{\rm corr}$). But
@@ -895,7 +881,8 @@ and since $\sup_x|P(x)-Q(x)|\leq \epsilon$ it follows that for all $z$:
 %% to apply Lemma~\ref{lem:cdf_bounds} twice; we just need to do it once because we
 %% are only adding $X_{\rm corr}$, not $X_{\rm norm}$.}
 
-Relating Lemma~\ref{lem:cdf_bounds} to our acceptance test, we observe that:
+Relating Lemma~\ref{lem:cdf_bounds} to our acceptance test, we have the
+following Corollary:
 
 \begin{corollary}\label{cor:bounds_preserved}
 If $\sup_y|{\rm Pr}(\Delta^* < y) - \Phi(\frac{y-\Delta}{s_{\Delta^*}})|
@@ -1356,14 +1343,8 @@ can include them in the supplementary material file.
 \appendix
 
 \begin{center}
-{\Large Outline of Appendix}
+{\Large Supplementary Material}
 \end{center}
-
-In this appendix, we describe the following topics:
-
-\begin{itemize}[noitemsep]
-    \item The proof of Lemma~\ref{lem:worst_case}.
-\end{itemize}
 
 \section{Proof of Lemma~\ref{lem:worst_case}}\label{app:worst_case_proof}
 
@@ -1514,121 +1495,5 @@ without requiring more samples.
 
 The samples $\theta$, $\theta'$ and $u$ are drawn independently and so the
 probability of the conjunction of these events is $c = p_0 p_1 p_2 = 0.0085$.
-
-
-
-%% \section{Gaussian Mixture Experiment Details}\label{app:gaussian}
-
-%% In this section, we provide more details on Section~\ref{ssec:gaussians}.  Our
-%% parameter is a 2-D vector
-%% $\theta = \langle \theta_1, \theta_2 \rangle$, where
-%% \begin{equation}
-%%     \theta_1 \sim \mathcal{N}(0, \sigma_1^2) \quad \mbox{ and } \quad \theta_2 \sim \mathcal{N}(0, \sigma_2^2)
-%% \end{equation}
-%% and where $\mathcal{N}$ indicates the normal distribution (more generally, the
-%% multivariate normal). We consider the above as our prior.
-%% Following~\cite{langevin_2011}, we set $\sigma_1^2 = 10$ and $\sigma_2^2=1$, so
-%% the covariance matrix of $\theta$ is $\Sigma = {\rm diag}(10,1)$. Therefore, the
-%% log prior probability we endow on $\theta$ is
-%% \begin{equation}
-%%     \log p(\theta) = \log \left(\frac{1}{2\pi\sqrt{10}}\right) - \frac{1}{2}\theta^T\Sigma^{-1}\theta.
-%% \end{equation}
-%% To generate the data, we use the following Gaussian mixture with tied means:
-%% \begin{equation}\label{eq:x_points}
-%%     x_i \sim \frac{1}{2}\mathcal{N}(\theta_1, \sigma_x^2) + \frac{1}{2}\mathcal{N}(\theta_1+\theta_2, \sigma_x^2)
-%% \end{equation}
-%% where, again following~\cite{langevin_2011}, we set $\sigma_x^2 = 2$ and we draw
-%% the data with $\theta_1=0$ and $\theta_2=1$ fixed (though these values are
-%% arbitrary, and different choices would yield different posterior shapes).
-%% This means the log likelihood of a single data instance is
-%% \begin{equation}\label{eq:log_ll_single_instance}
-%%     \log p(x_i \mid \theta) = \log \frac{1}{4\sqrt{\pi}} +
-%%     \log\left(\exp\left(-\frac{1}{4}(x_i - \theta_1)^2\right) + \exp\left(-\frac{1}{4}(x_i -
-%%     (\theta_1+\theta_2))^2\right)\right)
-%% \end{equation}
-%% The problem statement is as follows: given some number of conditionally
-%% independent data points $x_1, x_2, \ldots, x_N$ generated according
-%% to~(\ref{eq:x_points}), determine the posterior distribution of $\theta$:
-%% \begin{equation}\label{eq:log_post}
-%%     \log p(\theta \mid x_1,\ldots,x_N) = \log p(\theta) + \sum_{i=1}^N\log p(x_i \mid \theta).
-%% \end{equation}
-%% Alternatively, depending on the application, we may opt to instead pick a point
-%% estimate\footnote{We do this for the logistic regression experiment, described
-%% in Section~\ref{ssec:logistic}.} of $\theta$, such as the MAP estimate. (If $N$
-%% is extremely large, it will cause the posterior to peak sharply at its modes,
-%% reducing distribution estimates to point estimates.)
-
-%% One technique we use to make our test more applicable is to add a temperature to
-%% the posterior. In general, we will add $T > 1$ so that the posterior is
-%% $p(\theta)(\prod_{i=1}^N p(x_i\mid \theta))^{1/T}$, resulting in the log
-%% posterior of 
-%% \begin{equation}\label{eq:log_prior_temp}
-%%     \log p(\theta \mid x_1,\ldots,x_N) \approx \log p(\theta) + \frac{1}{T}\sum_{i=1}^N\log p(x_i \mid \theta).
-%% \end{equation}
-%% which has the extra $1/T$ to decrease the scale factor, so the variance scales
-%% as $1/T^2$.
-
-% Daniel: I decided that I don't like this figure anymore.
-% \begin{figure}[t]
-%   \centering
-%   \includegraphics[width=1\linewidth]{contour_v1}
-%   \caption{The posterior distribution, from 50 to 100k samples, with temperature set at 1.}
-%   \label{fig:contour1}
-% \end{figure}
-
-%% \begin{figure}[t]
-%%   \centering
-%%   \includegraphics[width=1\linewidth]{contour_v2}
-%%   \caption{The posterior distribution, with $N=10000$ and temperature $T$ varying.}
-%%   \label{fig:contour2}
-%% \end{figure}
-
-%% To gain intuition on the shape of the posterior, Figure~\ref{fig:contour2} shows
-%% simulated contour plots of the posterior based on $N=10000$ data points, and
-%% temperature varying.  The (non-tempered) posterior is a multimodal distribution
-%% with modes at $(0,1)$ and $(1,-1)$. A larger $T$ implies a flatter posterior,
-%% which can be useful for parameter exploration so that the samples do not get
-%% trapped in a mode.
-
-% Daniel: This was some stuff from the Logistic Regression appendix, but we no
-% longer need that.
-
-%% In the logistic regression experiment of Section~\ref{ssec:logistic}, the
-%% feature vector for an image consists of its pixel values, normalized between 0
-%% and 1. For simplicity, we consider the binary classification case, so we only
-%% use digits one ($y = 1$) and seven ($y = -1$).  The probability of the $i^{\rm
-%% th}$ output $y_i \in \{-1,+1\}$ with the input vector $x_i$ is
-%% \begin{equation}\label{eq:logistic_probability}
-%% p(y_i \mid x_i) = \frac{1}{1+\exp (-y_i \theta^T x_i)},
-%% \end{equation}
-%% where $\theta$ is the 784-length parameter vector.
-
-
-
-
-% Daniel: here are example LaTeX codes for figures and tables if we want to use them.
-%\begin{figure}[h]
-%  \centering
-%  \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
-%  \caption{Sample figure caption.}
-%\end{figure}
-%\begin{table}[t]
-%  \caption{Sample table title}
-%  \label{sample-table}
-%  \centering
-%  \begin{tabular}{lll}
-%    \toprule
-%    \multicolumn{2}{c}{Part}                   \\
-%    \cmidrule{1-2}
-%    Name     & Description     & Size ($\mu$m) \\
-%    \midrule
-%    Dendrite & Input terminal  & $\sim$100     \\
-%    Axon     & Output terminal & $\sim$10      \\
-%    Soma     & Cell body       & up to $10^6$  \\
-%    \bottomrule
-%  \end{tabular}
-%\end{table}
-%\usepackage[pdftex]{graphicx} ...
-%\includegraphics[width=0.8\linewidth]{myfile.pdf}
 
 \end{document}
