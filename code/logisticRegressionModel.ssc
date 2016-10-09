@@ -18,12 +18,15 @@
 // -------------------------------- //
 
 // Daniel: this should be 5000 but I may change if I'm experimenting.
-val nsamps = 5000 
+val nsamps = 3000 
+
+// IMPORTANT! Options: "ours", "kora", or "bard".
+val test_to_use = "bard"
 
 // This was 12007 for regular MNIST. **If changing, this automatically changes the data
 // directories!** As well as the output matrix that we save.
-val k = 50000
-val n = 40000     // The number of training points, should be 80% of k . (k = training + testing)
+val k = 20000
+val n = (0.8*k).toInt     // The number of training points, should be 80% of k . (k = training + testing)
 val train_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TRAIN_" +k+ ".fmat.lz4"
 val test_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TEST_" +k+ ".fmat.lz4"
 
@@ -31,7 +34,7 @@ val sigma = 1.0
 val pscale = 1.0
 val batchsize = 100
 val sigma_proposer = 0.05;
-val temperature = 500.0 // Was 1000.0 for previous MNIST experiment.
+val temperature = 200.0 // Was 1000.0 for previous MNIST experiment.
 
 // Let's load the test data.
 val testdata = loadFMat(test_data_dir);
@@ -173,5 +176,5 @@ nn.sigma_proposer = sigma_proposer;
 // -------------------------- //
 // CHOOSE WHICH METHOD TO RUN //
 // -------------------------- //
-run_experiment("kora", nn) // Options: "ours", "kora", or "bard".
+run_experiment(test_to_use, nn) 
 
