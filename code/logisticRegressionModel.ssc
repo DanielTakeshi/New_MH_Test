@@ -1,59 +1,88 @@
+:load simulator.ssc
+:load cutMHTest.ssc
+:load adaptiveMHTest.ssc
+
 /**
  * Code for running Logistic Regression results.
  *
  * TODO Documentation in progress
  * TODO There needs to be a better way to input the data than what we have now.
  * TODO don't forget to adjust model parameters in case we change 'n'.
+ * NOTE ON USAGE: Go to the bottom of the script to choose which method you want to run. You can
+ * only run one of the three at a time (this helps to save memory) but the data should be the same
+ * as they are pre-generated ahead of time.
  */
 
-// -------------------- //
-// IMPORTANT PARAMETERS //
-// -------------------- //
+// -------------------------------- //
+// PARAMETERS and PRE-LOADING STUFF //
+// -------------------------------- //
 
 // Daniel: this should be 5000 but I may change if I'm experimenting.
-val nsamps = 3000 
+val nsamps = 5000 
 
-// This was 12007 for regular MNIST. **If changing, this automatically changes the data directories!**
-val k = 10000
+// This was 12007 for regular MNIST. **If changing, this automatically changes the data
+// directories!** As well as the output matrix that we save.
+val k = 50000
+val n = 40000     // The number of training points, should be 80% of k . (k = training + testing)
 val train_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TRAIN_" +k+ ".fmat.lz4"
 val test_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TEST_" +k+ ".fmat.lz4"
-// THEN ... have n be the number of TRAINING data points.
-val n = 9000
-
 
 val sigma = 1.0
 val pscale = 1.0
 val batchsize = 100
 val sigma_proposer = 0.05;
-val temperature = 100.0 // Was 1000.0 for regular MNIST experiment.
+val temperature = 500.0 // Was 1000.0 for previous MNIST experiment.
 
+// Let's load the test data.
+val testdata = loadFMat(test_data_dir);
+val X = testdata(0 until testdata.dims(0)-1, ?)/255.0;
+var Y = testdata(testdata.dims(0)-1, ?);
+Y(find(Y==7)) = -1;
 
-:load simulator.ssc
-:load cutMHTest.ssc
-:load adaptiveMHTest.ssc
+// Create the different tests we will be using.
+val newtest = new NewTest;
+newtest.explin = false;
+val oldtest = new OldTest;
+oldtest.explin = false;
+val cutMHtest = new cutMHTest;
+val adaptiveMHtest = new adaptiveMHTest;
+cutMHtest.N = n;
+adaptiveMHtest.N = n;
+cutMHtest.eps = 0.005;
 
+/**
+ * TODO document!
+ */
 class LogisticRegression(n:Int, sigma:Double, pscale: Double) extends MHmodel (1, n, sigma, pscale) {
 	
     var sigma_proposer = 0.05;
     var temp = 1.0;
-    // val data:DMat = load("minist7vs1.mat","Train");
     var data_loaded = loadFMat(train_data_dir);
     data_loaded(0 until data_loaded.dims(0)-1, ?) = data_loaded(0 until data_loaded.dims(0)-1, ?)/255.0;
     var labels = data_loaded(data_loaded.dims(0)-1, ?);
     labels(find(labels==7)) = -1;
     data_loaded(data_loaded.dims(0)-1,?) = labels;
     val data = data_loaded;
-   
+
+    /**
+     * TODO document!
+     */
     def initfn():Mat = {
         val parameter_dim = data.dims(0) - 1;
         val theta = drand(parameter_dim,1);
         theta;
     };
-    
+
+    /**
+     * TODO document!
+     */
     def proposalfn(theta:Mat):Mat = {
         theta + dnormrnd(0, sigma_proposer, theta.dims(0), 1);
     };
     
+    /**
+     * TODO document!
+     */
     def evalfn(batch:Mat, theta:Mat):Mat = {
         val X = batch(0 until batch.dims(0)-1, ?)
         val Y = batch(batch.dims(0)-1,?)
@@ -65,6 +94,9 @@ class LogisticRegression(n:Int, sigma:Double, pscale: Double) extends MHmodel (1
     };
 }
 	
+/**
+ * TODO document!
+ */
 def eval_cost(X:DMat, Y:DMat, theta:DMat): (DMat, DMat) = {
 	val z = Y *@ (theta.t * X);
 	val sig = 1.0/ (1.0 + exp(-1.0 * z));
@@ -78,77 +110,68 @@ def eval_cost(X:DMat, Y:DMat, theta:DMat): (DMat, DMat) = {
 	return (accuracy, ll);
 };
 
+/**
+ * This will run exactly one of the three experiments. Don't use all of them, because that runs out
+ * of memory (i.e., RAM) on bitter.
+ *
+ * @param exp_type The String which represents which test. Options: "ours", "kora", and "bard".
+ * @param nn The LogisticRegression model we are using.
+ */
+def run_experiment(exp_type:String, nn:LogisticRegression) = {
 
-// Define the Logistic Regression Model.
+    // TEST #1: OUR METHOD ("ours")
+    if (exp_type == "ours") {
+        val (samples, mb_size, ll_train) = dosimm(mod=nn, test=newtest, size=batchsize, nsamps=nsamps, acc=0.05);
+        val (accuracy, ll_test) = eval_cost(X, Y, samples);
+        val cum_size = cumsum(DMat(mb_size));
+
+        saveAs("logistic_results_" +exp_type+ "_" +k+ ".mat", samples,       "samples_ours", 
+                                                              cum_size,      "cum_size_ours",
+                                                              DMat(mb_size), "mb_size_ours",
+                                                              ll_train,      "ll_train_ours", 
+                                                              ll_test,       "ll_test_ours", 
+                                                              accuracy,      "accuracy_ours");
+    }
+    // TEST #2: KORATTIKARA ("kora")
+    else if (exp_type == "kora") {
+        val (samples, mb_size, ll_train) = cutMHTest_dosimm(mod=nn, test=cutMHtest, size=batchsize, nsamps=nsamps, acc=0.05);
+        val (accuracy, ll_test) = eval_cost(X, Y, samples);
+        val cum_size = cumsum(DMat(mb_size));
+
+        saveAs("logistic_results_" +exp_type+ "_" +k+ ".mat", samples,       "samples_kora", 
+                                                              cum_size,      "cum_size_kora",
+                                                              DMat(mb_size), "mb_size_kora",
+                                                              ll_train,      "ll_train_kora", 
+                                                              ll_test,       "ll_test_kora", 
+                                                              accuracy,      "accuracy_kora");
+    }
+    // TEST #3: BARDENET ("bard")
+    else if (exp_type == "bard") {
+        val (samples, mb_size, ll_train, bc1c2_list) = adaptiveMH_dosimm(mod=nn, test=adaptiveMHtest, size=batchsize, nsamps=nsamps, acc=0.05);
+        val (accuracy, ll_test) = eval_cost(X, Y, samples);
+        val cum_size = cumsum(DMat(mb_size));
+
+        saveAs("logistic_results_" +exp_type+ "_" +k+ ".mat", samples,       "samples_bard", 
+                                                              cum_size,      "cum_size_bard",
+                                                              DMat(mb_size), "mb_size_bard",
+                                                              ll_train,      "ll_train_bard", 
+                                                              ll_test,       "ll_test_bard", 
+                                                              accuracy,      "accuracy_bard");
+    }
+    else {
+        println("Error, type=" +exp_type+ " not a valid type.")
+        sys.exit
+    }
+}
+
+
+// Define the Logistic Regression Model (we have to do it here after the class definition).
 val nn = new LogisticRegression(n=n, sigma=sigma, pscale=pscale);
 nn.temp = temperature;
 nn.sigma_proposer = sigma_proposer;
 
-// Create the differnet tests we will be using.
-val newtest = new NewTest;
-newtest.explin = false;
-val oldtest = new OldTest;
-oldtest.explin = false;
-val cutMHtest = new cutMHTest;
-val adaptiveMHtest = new adaptiveMHTest;
-cutMHtest.N = n;
-adaptiveMHtest.N = n;
-cutMHtest.eps = 0.005;
+// -------------------------- //
+// CHOOSE WHICH METHOD TO RUN //
+// -------------------------- //
+run_experiment("kora", nn) // Options: "ours", "kora", or "bard".
 
-
-// ---------------------------------------- //
-// ----- TEST #1: OUR METHOD ("ours") ----- //
-// ---------------------------------------- //
-tic;
-val (samples_ours, mb_size_ours, ll_train_ours) = dosimm(mod=nn, test=newtest, size=batchsize, nsamps=nsamps, acc=0.05);
-val t1 = toc;
-
-// ----------------------------------------- //
-// ----- TEST #2: KORATTIKARA ("kora") ----- //
-// ----------------------------------------- //
-val (samples_kora, mb_size_kora, ll_train_kora) = cutMHTest_dosimm(mod=nn, test=cutMHtest, size=batchsize, nsamps=nsamps, acc=0.05);
-val t2 = toc - t1;
-
-// -------------------------------------- //
-// ----- TEST #3: BARDENET ("bard") ----- //
-// -------------------------------------- //
-val (samples_bard, mb_size_bard, ll_train_bard, bc1c2_list) = adaptiveMH_dosimm(mod=nn, test=adaptiveMHtest, size=batchsize, nsamps=nsamps, acc=0.05);
-val t3 = toc - t2;
-
-
-// val testdata:DMat = load("minist7vs1.mat","Test");
-val testdata = loadFMat(test_data_dir);
-val X = testdata(0 until testdata.dims(0)-1, ?)/255.0;
-var Y = testdata(testdata.dims(0)-1, ?);
-Y(find(Y==7)) = -1;
-
-
-// We will report on accuracy and (test) ll in the paper.
-val (accuracy_ours, ll_test_ours) = eval_cost(X, Y, samples_ours);
-val (accuracy_kora, ll_test_kora) = eval_cost(X, Y, samples_kora);
-val (accuracy_bard, ll_test_bard) = eval_cost(X, Y, samples_bard);
-
-// Cumulative sizes, for showing efficiency.
-val cum_size_ours = cumsum(DMat(mb_size_ours));
-val cum_size_kora = cumsum(DMat(mb_size_kora));
-val cum_size_bard = cumsum(DMat(mb_size_bard));
-
-// Save all this for analysis later in jupyter notebook.
-saveAs("logisticdata.mat", samples_ours, "samples_ours", 
-                           samples_kora, "samples_kora",
-                           samples_bard, "samples_bard",
-                           cum_size_ours, "cum_size_ours",
-                           cum_size_kora, "cum_size_kora", 
-                           cum_size_bard, "cum_size_bard",
-                           DMat(mb_size_ours), "mb_size_ours",
-                           DMat(mb_size_kora), "mb_size_kora",
-                           DMat(mb_size_bard), "mb_size_bard",
-                           ll_train_ours, "ll_train_ours", 
-                           ll_train_kora, "ll_train_kora", 
-                           ll_train_bard, "ll_train_bard", 
-                           ll_test_ours, "ll_test_ours", 
-                           ll_test_kora, "ll_test_kora", 
-                           ll_test_bard, "ll_test_bard", 
-                           accuracy_ours, "accuracy_ours", 
-                           accuracy_kora, "accuracy_kora", 
-                           accuracy_bard, "accuracy_bard");
