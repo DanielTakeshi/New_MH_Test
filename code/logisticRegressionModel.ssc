@@ -11,20 +11,21 @@
 // -------------------- //
 
 // Daniel: this should be 5000 but I may change if I'm experimenting.
-val nsamps = 5000 
+val nsamps = 3000 
 
 // This was 12007 for regular MNIST. **If changing, this automatically changes the data directories!**
-val n = 1000
-val train_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TRAIN_" +n+ ".fmat.lz4"
-val test_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TEST_" +n+ ".fmat.lz4"
+val k = 10000
+val train_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TRAIN_" +k+ ".fmat.lz4"
+val test_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TEST_" +k+ ".fmat.lz4"
+// THEN ... have n be the number of TRAINING data points.
+val n = 9000
 
 
 val sigma = 1.0
 val pscale = 1.0
 val batchsize = 100
 val sigma_proposer = 0.05;
-val temperature = 1000.0 // Was 1000.0 for regular MNIST experiment.
-
+val temperature = 100.0 // Was 1000.0 for regular MNIST experiment.
 
 
 :load simulator.ssc
@@ -38,7 +39,7 @@ class LogisticRegression(n:Int, sigma:Double, pscale: Double) extends MHmodel (1
     // val data:DMat = load("minist7vs1.mat","Train");
     var data_loaded = loadFMat(train_data_dir);
     data_loaded(0 until data_loaded.dims(0)-1, ?) = data_loaded(0 until data_loaded.dims(0)-1, ?)/255.0;
-    var labels = data_loaded(data_loaded.dims(0) -1, ?);
+    var labels = data_loaded(data_loaded.dims(0)-1, ?);
     labels(find(labels==7)) = -1;
     data_loaded(data_loaded.dims(0)-1,?) = labels;
     val data = data_loaded;
@@ -131,10 +132,6 @@ val (accuracy_bard, ll_test_bard) = eval_cost(X, Y, samples_bard);
 val cum_size_ours = cumsum(DMat(mb_size_ours));
 val cum_size_kora = cumsum(DMat(mb_size_kora));
 val cum_size_bard = cumsum(DMat(mb_size_bard));
-
-// Might be useful later.
-val times = t1 \ t2 \ t3
-print(times)
 
 // Save all this for analysis later in jupyter notebook.
 saveAs("logisticdata.mat", samples_ours, "samples_ours", 

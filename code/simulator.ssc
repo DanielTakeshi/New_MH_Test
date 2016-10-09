@@ -162,19 +162,24 @@ def dosimm(mod:MHmodel, test:MHtestType, size:Int, nsamps:Int, acc:Double):(DMat
     val lls = dzeros(1, nsamps);
     var here = 0;
     var i = 0;
+
+    println("")
+    tic;
     while (i < nsamps) {
-    	// if (i % (nsamps/100) == 0){
-    	//	println("test iteration = %d" format(i));
-    	// }
-	val ttheta = mod.proposalfn(theta);
-	val (there, nth, ll) = dostep(mod, test, mod.data, size, here, theta, ttheta, acc);
-	sizes(i) = if (there > here) (there - here) else (there - here + mod.data.ncols);
-	lls(i) = ll;
-	here = there;
-	theta = nth;
-	samples(?, i) = DMat(theta);
-	i += 1;
+    	if (i % 100 == 0){
+            val t = toc;
+    	    println("test iteration = %d, elapsed time = %f" format(i, t));
+    	}
+	    val ttheta = mod.proposalfn(theta);
+	    val (there, nth, ll) = dostep(mod, test, mod.data, size, here, theta, ttheta, acc);
+	    sizes(i) = if (there > here) (there - here) else (there - here + mod.data.ncols);
+	    lls(i) = ll;
+	    here = there;
+	    theta = nth;
+	    samples(?, i) = DMat(theta);
+	    i += 1;
     }
+    println("")
     (samples, sizes, lls);
 };
 

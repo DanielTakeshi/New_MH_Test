@@ -15,15 +15,16 @@ import BIDMach.causal.IPTW
 1 CUDA device found, CUDA version 7.0
 
 Loading logisticRegressionModel.ssc...
-nsamps: Int = 5000
-n: Int = 10000
+nsamps: Int = 3000
+k: Int = 10000
 train_data_dir: String = /home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TRAIN_10000.fmat.lz4
 test_data_dir: String = /home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TEST_10000.fmat.lz4
+n: Int = 9000
 sigma: Double = 1.0
 pscale: Double = 1.0
 batchsize: Int = 100
 sigma_proposer: Double = 0.05
-temperature: Double = 1000.0
+temperature: Double = 100.0
 Loading simulator.ssc...
 n2lsigma: Double = 0.9
 nn2l: Int = 2000
@@ -84,137 +85,97 @@ adaptiveMH_dostep: (mod: MHmodel, test: adaptiveMHTest, data: BIDMat.Mat, size: 
 adaptiveMH_dosimm: (mod: MHmodel, test: adaptiveMHTest, size: Int, nsamps: Int, acc: Double)(BIDMat.DMat, BIDMat.LMat, BIDMat.DMat, BIDMat.DMat)
 defined class LogisticRegression
 eval_cost: (X: BIDMat.DMat, Y: BIDMat.DMat, theta: BIDMat.DMat)(BIDMat.DMat, BIDMat.DMat)
-nn: LogisticRegression = LogisticRegression@38baa1c0
-nn.temp: Double = 1000.0
+nn: LogisticRegression = LogisticRegression@504ece1b
+nn.temp: Double = 100.0
 nn.sigma_proposer: Double = 0.05
-newtest: NewTest = NewTest@2a769a55
+newtest: NewTest = NewTest@3605334
 newtest.explin: Boolean = false
-oldtest: OldTest = OldTest@4e10891c
+oldtest: OldTest = OldTest@40f4821d
 oldtest.explin: Boolean = false
-cutMHtest: cutMHTest = cutMHTest@354ed93
-adaptiveMHtest: adaptiveMHTest = adaptiveMHTest@2efa9e11
-cutMHtest.N: Int = 10000
-adaptiveMHtest.N: Int = 10000
+cutMHtest: cutMHTest = cutMHTest@85b05bf
+adaptiveMHtest: adaptiveMHTest = adaptiveMHTest@dfee802
+cutMHtest.N: Int = 9000
+adaptiveMHtest.N: Int = 9000
 cutMHtest.eps: Double = 0.005
 samples_ours: BIDMat.DMat =
-  0.61442  0.62033  0.63370  0.61714  0.50776  0.45172  0.45172  0.45172  0.52778  0.52778  0.53755  0.53755  0.53755  0.53755  0.53755  0.53755  0.53755  0.53755  0.51363  0.49904  0.48245  0.47673...
-  0.71409  0.73966  0.83319  0.87299  0.86519  0.89359  0.89359  0.89359  0.90851  0.90851  0.91154  0.91154  0.91154  0.91154  0.91154  0.91154  0.91154  0.91154  0.99907  0.93907  0.95202  0.93208...
-  0.83212  0.77510  0.76398  0.77469  0.71782  0.71862  0.71862  0.71862  0.76478  0.76478  0.80725  0.80725  0.80725  0.80725  0.80725  0.80725  0.80725  0.80725  0.83683  0.82198  0.89195  0.92897...
-       ..       ..       ..       ..       ..       ..       ..       ..       ..       ..       ..       ..       ..       ..       ..       ..       ..       .. ...t1: Float = 9.272
+  0.61442  0.63001  0.63001  0.63001  0.63001  0.63001  0.60617  0.60617  0.60617  0.63909  0.68102  0.80100  0.80100  0.84975  0.84975  0.84975  0.84975  0.84975  0.90181  0.90181  0.90181  0.91096...
+  0.71409  0.68563  0.68563  0.68563  0.68563  0.68563  0.68458  0.68458  0.68458  0.74611  0.82535  0.77165  0.77165  0.78910  0.78910  0.78910  0.78910  0.78910  0.78350  0.78350  0.78350  0.74905...
+  0.83212  0.85952  0.85952  0.85952  0.85952  0.85952  0.83761  0.83761  0.83761  0.82987  0.86265  0.86739  0.86739  0.94533  0.94533  0.94533  0.94533  0.94533  0.87268  0.87268  0.87268  0.85745...
+       ..       ..       ..       ..       ..       ..       ..       ..       ..       ..       ..       ..       ..       ..       ..       ..       ..       .. ...t1: Float = 6.39
 
 cut mh test iteration = 0, elapsed time = 0.000000 secs
-cut mh test iteration = 100, elapsed time = 0.065000 secs
-cut mh test iteration = 200, elapsed time = 0.130000 secs
-cut mh test iteration = 300, elapsed time = 0.194000 secs
-cut mh test iteration = 400, elapsed time = 0.258000 secs
-cut mh test iteration = 500, elapsed time = 0.321000 secs
-cut mh test iteration = 600, elapsed time = 0.399000 secs
-cut mh test iteration = 700, elapsed time = 0.484000 secs
-cut mh test iteration = 800, elapsed time = 0.548000 secs
-cut mh test iteration = 900, elapsed time = 0.611000 secs
-cut mh test iteration = 1000, elapsed time = 0.674000 secs
-cut mh test iteration = 1100, elapsed time = 0.738000 secs
-cut mh test iteration = 1200, elapsed time = 0.802000 secs
-cut mh test iteration = 1300, elapsed time = 0.866000 secs
-cut mh test iteration = 1400, elapsed time = 0.929000 secs
-cut mh test iteration = 1500, elapsed time = 0.993000 secs
-cut mh test iteration = 1600, elapsed time = 1.056000 secs
-cut mh test iteration = 1700, elapsed time = 1.119000 secs
-cut mh test iteration = 1800, elapsed time = 1.183000 secs
-cut mh test iteration = 1900, elapsed time = 1.246000 secs
-cut mh test iteration = 2000, elapsed time = 1.317000 secs
-cut mh test iteration = 2100, elapsed time = 1.380000 secs
-cut mh test iteration = 2200, elapsed time = 1.443000 secs
-cut mh test iteration = 2300, elapsed time = 1.507000 secs
-cut mh test iteration = 2400, elapsed time = 1.570000 secs
-cut mh test iteration = 2500, elapsed time = 1.632000 secs
-cut mh test iteration = 2600, elapsed time = 1.695000 secs
-cut mh test iteration = 2700, elapsed time = 1.757000 secs
-cut mh test iteration = 2800, elapsed time = 1.819000 secs
-cut mh test iteration = 2900, elapsed time = 1.882000 secs
-cut mh test iteration = 3000, elapsed time = 1.944000 secs
-cut mh test iteration = 3100, elapsed time = 11.391000 secs
-cut mh test iteration = 3200, elapsed time = 18.107000 secs
-cut mh test iteration = 3300, elapsed time = 18.156000 secs
-cut mh test iteration = 3400, elapsed time = 18.205000 secs
-cut mh test iteration = 3500, elapsed time = 18.254000 secs
-cut mh test iteration = 3600, elapsed time = 18.302000 secs
-cut mh test iteration = 3700, elapsed time = 18.350000 secs
-cut mh test iteration = 3800, elapsed time = 18.398001 secs
-cut mh test iteration = 3900, elapsed time = 18.447001 secs
-cut mh test iteration = 4000, elapsed time = 18.495001 secs
-cut mh test iteration = 4100, elapsed time = 18.544001 secs
-cut mh test iteration = 4200, elapsed time = 22.608999 secs
-cut mh test iteration = 4300, elapsed time = 26.670000 secs
-cut mh test iteration = 4400, elapsed time = 34.853001 secs
-cut mh test iteration = 4500, elapsed time = 43.091999 secs
-cut mh test iteration = 4600, elapsed time = 47.201000 secs
-cut mh test iteration = 4700, elapsed time = 55.299000 secs
-cut mh test iteration = 4800, elapsed time = 63.358002 secs
-cut mh test iteration = 4900, elapsed time = 83.139000 secs
+cut mh test iteration = 100, elapsed time = 13.885000 secs
+cut mh test iteration = 200, elapsed time = 29.288000 secs
+cut mh test iteration = 300, elapsed time = 40.026001 secs
+cut mh test iteration = 400, elapsed time = 47.632999 secs
+cut mh test iteration = 500, elapsed time = 60.859001 secs
+cut mh test iteration = 600, elapsed time = 84.730003 secs
+cut mh test iteration = 700, elapsed time = 106.775002 secs
+cut mh test iteration = 800, elapsed time = 128.641006 secs
+cut mh test iteration = 900, elapsed time = 166.205994 secs
+cut mh test iteration = 1000, elapsed time = 210.419998 secs
+cut mh test iteration = 1100, elapsed time = 247.516998 secs
+cut mh test iteration = 1200, elapsed time = 285.643005 secs
+cut mh test iteration = 1300, elapsed time = 320.843994 secs
+cut mh test iteration = 1400, elapsed time = 361.554993 secs
+cut mh test iteration = 1500, elapsed time = 382.131989 secs
+cut mh test iteration = 1600, elapsed time = 419.622009 secs
+cut mh test iteration = 1700, elapsed time = 451.988007 secs
+cut mh test iteration = 1800, elapsed time = 490.790009 secs
+cut mh test iteration = 1900, elapsed time = 518.132996 secs
+cut mh test iteration = 2000, elapsed time = 543.559021 secs
+cut mh test iteration = 2100, elapsed time = 569.637024 secs
+cut mh test iteration = 2200, elapsed time = 587.737000 secs
+cut mh test iteration = 2300, elapsed time = 611.580994 secs
+cut mh test iteration = 2400, elapsed time = 643.265015 secs
+cut mh test iteration = 2500, elapsed time = 660.903992 secs
+cut mh test iteration = 2600, elapsed time = 692.232971 secs
+cut mh test iteration = 2700, elapsed time = 734.184021 secs
+cut mh test iteration = 2800, elapsed time = 761.393982 secs
+cut mh test iteration = 2900, elapsed time = 787.361023 secs
 
 samples_kora: BIDMat.DMat =
-   0.52384   0.55652   0.45973   0.51994   0.49704   0.51419   0.49529   0.51232   0.49619   0.49967   0.49737   0.46077   0.47886   0.48048   0.43250   0.46195   0.38809   0.40739   0.42914...
-   0.32533   0.33647   0.37552   0.43115   0.38983   0.37297   0.39377   0.43563   0.31592   0.34837   0.28382   0.26668   0.28335   0.32145   0.38563   0.33791   0.37766   0.33941   0.34842...
-   0.26213   0.27006   0.30908   0.30991   0.28772   0.43673   0.30820   0.29873   0.24112   0.22110   0.19653   0.12295   0.13384   0.12464  0.074650  0.093562   0.14944   0.13991   0.13732...
-        ..        ..        ..        ..        ..        ..        ..        ..        ..        ..        ..        ..        ..        ..        ..        ..        ..        ..       ...t2: Float = 114.069
+   0.46646   0.46646   0.46646   0.46646   0.42123   0.42349   0.34970   0.34970   0.34970   0.34970   0.28119   0.28119   0.29583   0.29583   0.29583   0.33167   0.33167   0.35625   0.35625...
+  0.044424  0.044424  0.044424  0.044424  0.046719  0.053866  0.062827  0.062827  0.062827  0.062827  0.062647  0.062647   0.10364   0.10364   0.10364  0.072443  0.072443   0.15299   0.15299...
+   0.78219   0.78219   0.78219   0.78219   0.72328   0.73222   0.73967   0.73967   0.73967   0.73967   0.65263   0.65263   0.63849   0.63849   0.63849   0.65217   0.65217   0.66058   0.66058...
+        ..        ..        ..        ..        ..        ..        ..        ..        ..        ..        ..        ..        ..        ..        ..        ..        ..        ..       ...t2: Float = 806.00696
 
 adaptive mh test iteration = 0, time = 0.000000 secs
-adaptive mh test iteration = 100, time = 6.034000 secs
-adaptive mh test iteration = 200, time = 11.828000 secs
-adaptive mh test iteration = 300, time = 17.643999 secs
-adaptive mh test iteration = 400, time = 23.452000 secs
-adaptive mh test iteration = 500, time = 29.281000 secs
-adaptive mh test iteration = 600, time = 35.109001 secs
-adaptive mh test iteration = 700, time = 90.322998 secs
-adaptive mh test iteration = 800, time = 118.174004 secs
-adaptive mh test iteration = 900, time = 135.794998 secs
-adaptive mh test iteration = 1000, time = 213.792007 secs
-adaptive mh test iteration = 1100, time = 302.225006 secs
-adaptive mh test iteration = 1200, time = 314.837006 secs
-adaptive mh test iteration = 1300, time = 320.622986 secs
-adaptive mh test iteration = 1400, time = 326.415985 secs
-adaptive mh test iteration = 1500, time = 332.191010 secs
-adaptive mh test iteration = 1600, time = 337.989014 secs
-adaptive mh test iteration = 1700, time = 388.036987 secs
-adaptive mh test iteration = 1800, time = 475.290985 secs
-adaptive mh test iteration = 1900, time = 566.408997 secs
-adaptive mh test iteration = 2000, time = 651.283997 secs
-adaptive mh test iteration = 2100, time = 714.867004 secs
-adaptive mh test iteration = 2200, time = 796.085022 secs
-adaptive mh test iteration = 2300, time = 871.716003 secs
-adaptive mh test iteration = 2400, time = 923.710022 secs
-adaptive mh test iteration = 2500, time = 1015.367981 secs
-adaptive mh test iteration = 2600, time = 1083.639038 secs
-adaptive mh test iteration = 2700, time = 1157.166016 secs
-adaptive mh test iteration = 2800, time = 1245.635010 secs
-adaptive mh test iteration = 2900, time = 1326.025024 secs
-adaptive mh test iteration = 3000, time = 1348.380005 secs
-adaptive mh test iteration = 3100, time = 1380.916016 secs
-adaptive mh test iteration = 3200, time = 1417.348022 secs
-adaptive mh test iteration = 3300, time = 1428.597046 secs
-adaptive mh test iteration = 3400, time = 1461.688965 secs
-adaptive mh test iteration = 3500, time = 1474.661011 secs
-adaptive mh test iteration = 3600, time = 1492.784058 secs
-adaptive mh test iteration = 3700, time = 1561.844971 secs
-adaptive mh test iteration = 3800, time = 1649.307007 secs
-adaptive mh test iteration = 3900, time = 1695.620972 secs
-adaptive mh test iteration = 4000, time = 1729.182007 secs
-adaptive mh test iteration = 4100, time = 1735.010010 secs
-adaptive mh test iteration = 4200, time = 1740.833984 secs
-adaptive mh test iteration = 4300, time = 1746.681030 secs
-adaptive mh test iteration = 4400, time = 1810.229004 secs
-adaptive mh test iteration = 4500, time = 1894.681030 secs
-adaptive mh test iteration = 4600, time = 1930.301025 secs
-adaptive mh test iteration = 4700, time = 1946.860962 secs
-adaptive mh test iteration = 4800, time = 1960.243042 secs
-adaptive mh test iteration = 4900, time = 1975.014038 secs
+adaptive mh test iteration = 100, time = 44.286999 secs
+adaptive mh test iteration = 200, time = 88.523003 secs
+adaptive mh test iteration = 300, time = 134.395996 secs
+adaptive mh test iteration = 400, time = 179.069000 secs
+adaptive mh test iteration = 500, time = 242.985001 secs
+adaptive mh test iteration = 600, time = 315.354004 secs
+adaptive mh test iteration = 700, time = 399.863007 secs
+adaptive mh test iteration = 800, time = 480.592010 secs
+adaptive mh test iteration = 900, time = 560.318970 secs
+adaptive mh test iteration = 1000, time = 639.226013 secs
+adaptive mh test iteration = 1100, time = 717.872986 secs
+adaptive mh test iteration = 1200, time = 796.054016 secs
+adaptive mh test iteration = 1300, time = 876.956970 secs
+adaptive mh test iteration = 1400, time = 959.612000 secs
+adaptive mh test iteration = 1500, time = 1042.462036 secs
+adaptive mh test iteration = 1600, time = 1121.980957 secs
+adaptive mh test iteration = 1700, time = 1201.282959 secs
+adaptive mh test iteration = 1800, time = 1278.630005 secs
+adaptive mh test iteration = 1900, time = 1356.380005 secs
+adaptive mh test iteration = 2000, time = 1434.625000 secs
+adaptive mh test iteration = 2100, time = 1512.151001 secs
+adaptive mh test iteration = 2200, time = 1592.668945 secs
+adaptive mh test iteration = 2300, time = 1672.595947 secs
+adaptive mh test iteration = 2400, time = 1759.014038 secs
+adaptive mh test iteration = 2500, time = 1837.344971 secs
+adaptive mh test iteration = 2600, time = 1916.404053 secs
+adaptive mh test iteration = 2700, time = 1996.876953 secs
+adaptive mh test iteration = 2800, time = 2074.347900 secs
+adaptive mh test iteration = 2900, time = 2154.507080 secs
 
 samples_bard: BIDMat.DMat =
-   -0.036857  -0.0028523   -0.029384    0.014037   -0.032534   0.0026523  -0.0018723   0.0036896    0.052994   -0.044013   -0.041433   0.0039735    0.084471     0.13623     0.13731     0.12741...
-     0.40197     0.38408     0.29388     0.28882     0.23191     0.16874     0.16057     0.18903     0.19526     0.22058     0.19297     0.15456     0.17115     0.12878    0.048131   0.0058298...
-     0.66196     0.61345     0.57339     0.56323     0.58778     0.57640     0.57489     0.54798     0.57852     0.59651     0.51495     0.56439     0.49970     0.53517     0.50419     0.39863...
-          ..          ..          ..          ..          ..          ..          ..          ..          ..          ..          ..          ..          ..          ..          .. ...t3: Float = 1889.2831
+  0.87121  0.87031  0.87031  0.87031  0.84437  0.89441  0.89441  0.89441  0.87263  0.87263  0.88148  0.87039  0.91571  0.91571  0.91571  0.91761  0.91761  0.91761  0.88794  0.90883  0.90883  0.97184...
+  0.80543  0.85934  0.85934  0.85934  0.81709  0.80924  0.80924  0.80924  0.84843  0.84843  0.85559  0.77088  0.74638  0.74638  0.74638  0.68118  0.68118  0.68118  0.67815  0.65450  0.65450  0.77020...
+  0.38181  0.41497  0.41497  0.41497  0.46361  0.51458  0.51458  0.51458  0.50620  0.50620  0.39106  0.37509  0.39046  0.39046  0.39046  0.39361  0.39361  0.39361  0.38870  0.40126  0.40126  0.46846...
+       ..       ..       ..       ..       ..       ..       ..       ..       ..       ..       ..       ..       ..       ..       ..       ..       ..       .. ...t3: Float = 1430.7911
 testdata: BIDMat.FMat =
    0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0...
    0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0...
@@ -223,43 +184,42 @@ testdata: BIDMat.FMat =
    0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0...
    0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0...
    0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0...
-  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  .....Y: BIDMat.FMat = 1,7,7,7,7,7,1,1,7,7,7,7,7,7,1,7,1,1,1,1,7,1,1,7,1,1,1,7,7,1,1,1,1,7,7,7,1,7,7,7,7,1,1,7,1,1,1,1,1,1,7,7,7,7,1,7,7,1,1,1,7,1,7,7,1,1,1,7,1,1,1,7,7,1,7,1,7,1,7,7,7,7,7,1,1,1,1,7,1,1,7,1,1,7,1,1,7,7,1,7,1,7,1,7,7,1,7,7,7,1,7,7,7,1,1,7,7,1,7,7,7,7,7,1,1,1,1,7,7,1,1,7,1,7,7,7,7,1,7,7,7,7,1,1,1,7,7,1,7,7,1,7,1,7,7,7,7,1,1,1,1,7,7,7,7,1,7,1,7,7,1,7,1,1,7,1,1,1,7,7,7,7,1,1,1,1,7,1,7,1,1,1,1,1,7,1,1,7,1,1,7,7,1,7,7,7,1,7,1,7,1,1,1,7,1,7,1,1,1,1,1,1,1,7,7,1,7,1,1,1,7,7,7,1,1,7,1,1,7,1,1,1,7,1,1,1,1,1,1,7,1,7,7,7,1,1,1,7,7,7,1,1,1,1,1,7,1,7,7,7,1,7,1,7,1,1,1,7,7,1,7,1,7,7,7,1,1,1,7,1,1,7,1,1,7,1,1,1,1,7,7,7,1,1,1,7,1,1,1,7,1,1,1,1,7,7,7,1,7,1,7,1,7,1,7,7,1,7,7,7,1,1,7,1,1,7,7,7,7,7,7,1,1,7,7,1,7,1,7,1,7,1,1,1,7,1,1,7,1,1,1,1,7,1,1,1,1,7,7,7,1,7,1,7,7,1,7,7,7,7,1,1,7,1,1,1,1,1,7,7,...accuracy_ours: BIDMat.DMat =
-   1
-   1
-   1
-  ..
+  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  .....Y: BIDMat.FMat = 1,7,7,7,7,7,1,1,7,7,7,7,7,7,1,7,1,1,1,1,7,1,1,7,1,1,1,7,7,1,1,1,1,7,7,7,1,7,7,7,7,1,1,7,1,1,1,1,1,1,7,7,7,7,1,7,7,1,1,1,7,1,7,7,1,1,1,7,1,1,1,7,7,1,7,1,7,1,7,7,7,7,7,1,1,1,1,7,1,1,7,1,1,7,1,1,7,7,1,7,1,7,1,7,7,1,7,7,7,1,7,7,7,1,1,7,7,1,7,7,7,7,7,1,1,1,1,7,7,1,1,7,1,7,7,7,7,1,7,7,7,7,1,1,1,7,7,1,7,7,1,7,1,7,7,7,7,1,1,1,1,7,7,7,7,1,7,1,7,7,1,7,1,1,7,1,1,1,7,7,7,7,1,1,1,1,7,1,7,1,1,1,1,1,7,1,1,7,1,1,7,7,1,7,7,7,1,7,1,7,1,1,1,7,1,7,1,1,1,1,1,1,1,7,7,1,7,1,1,1,7,7,7,1,1,7,1,1,7,1,1,1,7,1,1,1,1,1,1,7,1,7,7,7,1,1,1,7,7,7,1,1,1,1,1,7,1,7,7,7,1,7,1,7,1,1,1,7,7,1,7,1,7,7,7,1,1,1,7,1,1,7,1,1,7,1,1,1,1,7,7,7,1,1,1,7,1,1,1,7,1,1,1,1,7,7,7,1,7,1,7,1,7,1,7,7,1,7,7,7,1,1,7,1,1,7,7,7,7,7,7,1,1,7,7,1,7,1,7,1,7,1,1,1,7,1,1,7,1,1,1,1,7,1,1,1,1,7,7,7,1,7,1,7,7,1,7,7,7,7,1,1,7,1,1,1,1,1,7,7,...res26: BIDMat.FMat = 1,-1,-1,-1,-1,-1,1,1,-1,-1,-1,-1,-1,-1,1,-1,1,1,1,1,-1,1,1,-1,1,1,1,-1,-1,1,1,1,1,-1,-1,-1,1,-1,-1,-1,-1,1,1,-1,1,1,1,1,1,1,-1,-1,-1,-1,1,-1,-1,1,1,1,-1,1,-1,-1,1,1,1,-1,1,1,1,-1,-1,1,-1,1,-1,1,-1,-1,-1,-1,-1,1,1,1,1,-1,1,1,-1,1,1,-1,1,1,-1,-1,1,-1,1,-1,1,-1,-1,1,-1,-1,-1,1,-1,-1,-1,1,1,-1,-1,1,-1,-1,-1,-1,-1,1,1,1,1,-1,-1,1,1,-1,1,-1,-1,-1,-1,1,-1,-1,-1,-1,1,1,1,-1,-1,1,-1,-1,1,-1,1,-1,-1,-1,-1,1,1,1,1,-1,-1,-1,-1,1,-1,1,-1,-1,1,-1,1,1,-1,1,1,1,-1,-1,-1,-1,1,1,1,1,-1,1,-1,1,1,1,1,1,-1,1,1,-1,1,1,-1,-1,1,-1,-1,-1,1,-1,1,-1,1,1,1,-1,1,-1,1,1,1,1,1,1,1,-1,-1,1,-1,1,1,1,-1,-1,-1,1,1,-1,1,1,-1,1,1,1,-1,1,1,1,1,1,1,-1,1,-1,-1,-1,1,1,1,-1,-1,-1,1,1,1,1,1,-1,1,-1,-1,-1,1,-1,1,-1,1,1,1,-1,-1,1,-1,1,-1,-1,-1,1,1,1,-1,1,1,-1,1,1,-1,1,1,1,1,-1,-1,-1,1,1,1,-1,1,1,1,-1,1,1,1,1,-...accuracy_ours: BIDMat.DMat =
+  0.49500
+  0.49500
+  0.49500
+       ..
 
 ll_test_ours: BIDMat.DMat =
-   0
-   0
-   0
-  ..
+  -22.806
+  -22.708
+  -22.708
+       ..
 accuracy_kora: BIDMat.DMat =
-   1
-   1
-   1
-  ..
+  0.49500
+  0.49500
+  0.49500
+       ..
 
 ll_test_kora: BIDMat.DMat =
-   0
-   0
-   0
-  ..
+  -22.815
+  -22.815
+  -22.815
+       ..
 accuracy_bard: BIDMat.DMat =
-   1
-   1
-   1
-  ..
+  0.49500
+  0.49500
+  0.49500
+       ..
 
 ll_test_bard: BIDMat.DMat =
-   0
-   0
-   0
-  ..
-cum_size_ours: BIDMat.DMat = 100,200,300,400,500,600,700,800,900,1000,1100,1200,1300,1400,1500,1600,1700,1800,1900,2000,2100,2200,2300,2400,2500,2600,2700,2800,2900,3000,3100,3200,3300,3400,3500,3600,3700,3800,3900,4000,4100,4200,4300,4400,4500,4600,4700,4800,4900,5000,5100,5200,5300,5400,5500,5600,5700,5800,5900,6000,6100,6200,6300,6400,6500,6600,6700,6800,6900,7000,7100,7200,7300,7400,7500,7600,7700,7800,7900,8000,8100,8200,8300,8400,8500,8600,8700,8800,8900,9000,9100,9200,9300,9400,9500,9600,9700,9800,9900,10000,10100,10200,10300,10400,10500,10600,10700,10800,10900,11000,11100,11200,11300,11400,11500,11600,11700,11800,11900,12000,12100,12200,12300,12400,12500,12600,12700,12800,12900,13000,13100,13200,13300,13400,13500,13600,13700,13800,13900,14000,14100,14200,14300,14400,14500,14600,...cum_size_kora: BIDMat.DMat = 100,200,300,400,500,600,700,800,900,1000,1100,1200,1300,1400,1500,1600,1700,1800,1900,2000,2100,2200,2300,2400,2500,2600,2700,2800,2900,3000,3100,3200,3300,3400,3500,3600,3700,3800,3900,4000,4100,4200,4300,4400,4500,4600,4700,4800,4900,5000,5100,5200,5300,5400,5500,5600,5700,5800,5900,6000,6100,6200,6300,6400,6500,6600,6700,6800,6900,7000,7100,7200,7300,7400,7500,7600,7700,7800,7900,8000,8100,8200,8300,8400,8500,8600,8700,8800,8900,9000,9100,9200,9300,9400,9500,9600,9700,9800,9900,10000,10100,10200,10300,10400,10500,10600,10700,10800,10900,11000,11100,11200,11300,11400,11500,11600,11700,11800,11900,12000,12100,12200,12300,12400,12500,12600,12700,12800,12900,13000,13100,13200,13300,13400,13500,13600,13700,13800,13900,14000,14100,14200,14300,14400,14500,14600,...cum_size_bard: BIDMat.DMat = 100,200,300,400,500,600,700,800,900,1000,1100,1200,1300,1400,1500,1600,1700,1800,1900,2000,2100,2200,2300,2400,2500,2600,2700,2800,2900,3000,3100,3200,3300,3400,3500,3600,3700,3800,3900,4000,4100,4200,4300,4400,4500,4600,4700,4800,4900,5000,5100,5200,5300,5400,5500,5600,5700,5800,5900,6000,6100,6200,6300,6400,6500,6600,6700,6800,6900,7000,7100,7200,7300,7400,7500,7600,7700,7800,7900,8000,8100,8200,8300,8400,8500,8600,8700,8800,8900,9000,9100,9200,9300,9400,9500,9600,9700,9800,9900,10000,10100,10200,10300,10400,10500,10600,10700,10800,10900,11000,11100,11200,11300,11400,11500,11600,11700,11800,11900,12000,12100,12200,12300,12400,12500,12600,12700,12800,12900,13000,13100,13200,13300,13400,13500,13600,13700,13800,13900,14000,14100,14200,14300,14400,14500,14600,...times: BIDMat.FMat = 9.2720,114.07,1889.3
-9.2720,114.07,1889.3
+  -24.213
+  -24.130
+  -24.130
+       ..
+cum_size_ours: BIDMat.DMat = 200,400,500,800,900,1000,1500,1700,2000,2200,2600,3000,3400,3500,3600,3700,4400,5000,5700,5800,5900,6100,6500,6700,6900,7500,7600,7800,7900,8000,8200,8700,8800,8900,9300,9500,9600,10000,10200,10400,10700,10800,11000,11400,12000,12100,12200,12400,12600,12700,13400,13500,14100,14200,14700,14900,15000,15100,15200,15300,15600,15700,15800,16300,16800,17000,17100,17400,17700,18100,18300,18400,18600,18700,18800,18900,19000,19200,19400,19600,19700,19900,20200,20400,20900,21000,21200,21500,21700,21800,22200,22500,22600,22700,22800,22900,23000,23500,23900,24400,24500,24700,25400,25600,26000,26400,26900,27000,27600,28300,28400,29100,29600,29800,30300,30400,30700,30900,31100,31300,31900,32600,33200,33300,33700,34400,34700,34800,34900,35000,35100,35500,35900,36300,36400,...cum_size_kora: BIDMat.DMat = 8400,8500,8900,15200,15800,15900,16000,16100,16200,16300,16400,16700,16800,17000,17100,17200,17300,17400,17800,17900,18200,18300,18400,18500,18600,18700,21500,21600,21800,21900,22000,22200,22300,22400,22500,22600,24600,24700,24800,27900,28000,28100,28200,28400,28500,28600,28700,28800,28900,29000,29100,29200,29300,29400,29500,29600,29700,29800,29900,30000,30100,30200,30300,30400,30600,30900,31000,31300,31400,31900,32000,32100,32200,32300,32400,32500,32600,38000,38100,38200,38300,39800,39900,40000,40100,40200,40300,40400,40800,40900,41000,50000,59000,60800,62700,62800,64900,65000,65100,65200,65300,65400,66300,67600,67700,69100,69200,69900,70000,70100,70200,70300,70400,70700,70800,79800,79900,80000,80100,80200,80800,81000,82000,83600,83700,83800,83900,84000,857...cum_size_bard: BIDMat.DMat = 1713,2855,3616,4377,4884,6597,15272,16033,18603,27278,29848,30990,33560,34321,36034,37176,39746,42316,43458,46028,48598,49105,50247,51389,51727,60402,62115,67898,73681,74188,74695,76408,78978,79739,80500,80838,81345,82106,82867,84580,85087,86800,89370,91083,91590,92732,93874,94212,95925,98495,100208,101350,103063,104205,104712,107282,108043,108550,109057,111627,112769,115339,124014,124775,125113,126255,127016,127777,128919,134702,135463,144138,146708,147215,147976,148737,150450,151211,151972,152733,153494,154636,155143,155650,156411,165086,165424,166185,168755,169262,170023,172593,174306,175067,178922,179429,180571,181332,190007,191149,191656,192798,193940,196510,205185,205946,207659,216334,217095,217602,218363,219124,220266,224121,225834,226595,227102,22881...
 Welcome to Scala version 2.11.2 (Java HotSpot(TM) 64-Bit Server VM, Java 1.7.0_80).
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> sys.exit
+scala> 

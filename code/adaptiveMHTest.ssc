@@ -106,7 +106,7 @@ def adaptiveMH_dosimm(mod:MHmodel, test:adaptiveMHTest, size:Int, nsamps:Int, ac
     while (i < nsamps) {
     	if (i % 100 == 0){
             val t = toc
-    		println("adaptive mh test iteration = %d, time = %f secs" format(i, t));
+    		println("adaptive mh test iteration = %d, elapsed time = %f secs" format(i, t));
     	}
 		val ttheta = mod.proposalfn(theta);
 		val (there, nth, ll, bc1c2) = adaptiveMH_dostep(mod, test, mod.data, size, here, theta, ttheta, acc);
