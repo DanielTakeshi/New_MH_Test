@@ -106,55 +106,44 @@ framexleftmargin=20pt}
   the first time that small expected minibatch sizes are possible. 
 \end{abstract}
 
-\section{Introduction}\label{sec:introduction}
-Markov chain Monte Carlo (MCMC) sampling is a powerful method for
-computation on intractable distributions. We are interested primarily
-in large dataset applications, where the goal is to sample a posterior
-distribution $p(\theta \mid x_1, \ldots, x_N)$ of parameter $\theta$,
-and where the number of data instances $N$ is large.  The
-Metropolis-Hastings method (M-H) generates sample candidates from a
-proposal distribution $q$ which is in general different from the
-target distribution $p$, and decides whether to accept or reject them
-based on an acceptance test. The acceptance test is usually a
-Metropolis test~\citep{Metropolis1953, hastings70}. Conventional
-Metropolis-Hastings requires all $N$ data instances to generate one
-posterior sample.
+\section{INTRODUCTION}\label{sec:introduction}
 
-Many state-of-the-art machine learning methods, and deep learning in
-particular, are based on minibatch updates (such as SGD) to a model.
-Minibatch updates produce many improvements to the model for each pass
-over the dataset, and have high sample efficiency. %They also map very
-% well onto hardware such as GPUs. 
-In contrast, M-H requires calculations over the full dataset to produce a new sample.  Recent
-results from~\citet{cutting_mh_2014} and ~\citet{icml2014c1_bardenet14} perform
-approximate (bounded error) acceptance tests using subsets
-(minibatches) of the full dataset. The tests depend on minibatch
-statistics, and on the value of an additional uniform random variable
-$u$. The amount of data consumed for each test varies significantly
-from one minibatch to the next, and depends on the current sample, the
-proposed sample, and on the random variable $u$. By
-contrast,~\citet{conf/uai/MaclaurinA14,TallData15} perform exact
-tests but require a lower bound on parameter distribution across its
-domain.  The amount of data reduction depends on the accuracy of this
-bound, and such bounds are only available for relatively simple
-distributions. %By contrast our approach is a ``black box'' and requires
-%only statistics gathered from the minibatches as they are used. 
+Markov chain Monte Carlo (MCMC) sampling is a powerful method for computation on
+intractable distributions. We are interested in large dataset applications,
+where the goal is to sample a posterior distribution $p(\theta \mid x_1, \ldots,
+x_N)$ of parameter $\theta$ for large $N$.  The Metropolis-Hastings method (M-H)
+generates sample candidates from a proposal distribution $q$ which is in general
+different from the target distribution $p$, and decides whether to accept or
+reject based on an acceptance test. The acceptance test is usually a Metropolis
+test~\citep{Metropolis1953, hastings70}.
+
+Many state-of-the-art machine learning methods, and deep learning in particular,
+are based on minibatch updates (such as SGD) to a model.  Minibatch updates
+produce many improvements to the model for each pass over the dataset, and have
+high sample efficiency.  In contrast, conventional M-H requires calculations
+over the full dataset to produce a new sample.  Recent results
+from~\citet{cutting_mh_2014} and~\citet{icml2014c1_bardenet14} perform
+approximate (bounded error) acceptance tests using subsets of the full dataset.
+The tests depend on minibatch statistics, and on the value of an additional
+uniform random variable $u$. The amount of data consumed for each test varies
+significantly from one minibatch to the next, and depends on the current sample,
+the proposed sample, and on the random variable $u$. By
+contrast,~\citet{conf/uai/MaclaurinA14,TallData15} perform exact tests but
+require a lower bound on parameter distribution across its domain.  The amount
+of data reduction depends on the accuracy of this bound, and such bounds are
+only available for relatively simple distributions.
+
+
 Here we derive a new test which incorporates the variability in minibatch
-statistics as {\em a natural part of the test}. Because of this, the amount of
-data required for each test is fixed with high probability and in expected
-value. 
-
-We use a Barker test function~\citep{Barker65} rather than a Metropolis
-test, which makes our test naturally error tolerant. The idea of using
-a noise-tolerant %test using
-Barker's test function was suggested but
-not explored empirically in~\citet{TallData15} section 6.3. But the
-asymptotic test statistic CDF and the Barker function are different,
-which leads to fixed errors for the approach
-in~\citet{TallData15}. Here we show that the difference between the
-distributions can be corrected with an additive random variable. This
-leads to a test which is fast, and whose error can be made arbitrarily
-small.
+statistics as {\em a natural part of the test} and requires less data per
+iteration than prior work. We use a Barker test function~\citep{Barker65}, which
+makes our test naturally error tolerant. The idea of using a noise-tolerant
+Barker's test function was suggested but not explored empirically
+in~\citet{TallData15} section 6.3. But the asymptotic test statistic CDF and the
+Barker function are different, which leads to fixed errors for the approach
+in~\citet{TallData15}. Here, we show that the difference between the
+distributions can be corrected with an additive random variable. This leads to a
+test which is fast, and whose error can be made arbitrarily small.
 
 Our test is applicable when the variance (over data samples) of the log
 acceptance probability is small enough (less than 1). It's not clear at first why
@@ -165,61 +154,51 @@ of data for the test, the variance goes up. We have to reduce variance in one
 of several ways. Either:
 
 \begin{itemize}[noitemsep]
-\item Increase the temperature of the target distribution. Log likelihoods
-  scale as $1/T$, and so the variance of the likelihood ratio will
-  vary as $1/T^2$. Our model is no longer well-specified (we are doing inference
-  at a temperature different from that assumed during data generation), but
-  higher temperature can be advantageous for parameter exploration.
-\item For continuous probability distributions, reduce the proposal
-  step size and variance (for stochastic proposals) compared to an optimal
-  proposal. The variance of the log acceptance probability scales as the
-  square of proposal step size. 
-\item Increase the minibatch size when needed for certain
-  minibatches. Log acceptance variance scales as $1/k$ vs the
-  minibatch size $k$. Our test is adaptive like earlier works, but
-  unlike them, the distribution of minibatch size is Gaussian, not
-  long-tailed.  Increased minibatch size also reduces the error rate
-  for the test.
+    \item Increase the temperature of the target distribution. Log likelihoods
+    scale as $1/T$, and so the variance of the likelihood ratio will vary as
+    $1/T^2$. Our model is no longer well-specified (we are doing inference at a
+    temperature different from that assumed during data generation), but higher
+    temperature can be advantageous for parameter exploration.
+
+    \item For continuous probability distributions, reduce the proposal step
+    size and variance (for stochastic proposals) compared to an optimal
+    proposal. The variance of the log acceptance probability scales as the
+    square of proposal step size. 
+
+    \item Increase the minibatch size when needed for certain minibatches. Log
+    acceptance variance scales as $1/k$ vs the minibatch size $k$. Our test is
+    adaptive like earlier works, but unlike them, the distribution of minibatch
+    size is Gaussian, not long-tailed.  Increased minibatch size also reduces
+    the error rate for the test.
 \end{itemize}
 
-It's worth discussing at this point the typical goals of
-M-H sampling on very large datasets.  By the Bernstein-von Mises
-Theorem, the posterior distribution of the parameter $\theta$ for a
-Bayesian inference task is asymptotically normal, and has variance
-that scales inversely with the number of data samples $N$. %This mode
-%is extremely sharp for large datasets, which may contain millions or
-%billions of samples. 
-Simply sampling from this distribution is one
-application, but an efficient proposal distribution~\citep{OptimalScaling01} has similar variance to the target
-distribution and will diffuse to it extremely slowly from an
-initialization value which is (likely to be) many standard deviations
-away. If there are any other strong modes, it is very likely for the
-sampler to find one of them and become trapped in it when run at the
-normal distribution temperature ($T=1$). A common solution is to anneal
-the sampler, running first at high temperature (scaling log
-likelihoods by $1/T$) which flattens the likelihood landscape.  This in
-turn reduces the variance of the log acceptance probability and allows
-our acceptance test to be applied.
+It is worth discussing at this point the typical goals of M-H sampling on large
+datasets.  By the Bernstein-von Mises Theorem, the posterior distribution for a
+Bayesian inference task is asymptotically normal, and has variance that scales
+inversely with the $N$ data samples. Simply sampling from this distribution is
+one application, but an efficient proposal~\citep{OptimalScaling01} has similar
+variance to the target distribution and will diffuse to it extremely slowly from
+an initialization value which is (likely to be) many standard deviations away.
+If there are any other strong modes, it is very likely for the sampler to find
+one of them and become trapped in it when run at the normal distribution
+temperature ($T=1$). A common solution is to anneal the sampler, running first
+at high temperature (scaling log likelihoods by $1/T$) which flattens the
+likelihood landscape.  This in turn reduces the variance of the log acceptance
+probability and allows our acceptance test to be applied.
 
-A second question concerns step size. Once we have fixed temperature,
-our variance constraint implies that we have to trade-off proposal
-step size $s$ and batch size $b$ ($b \propto p^2$), i.e. we can make
-many small steps, or one large step, with a given batch of data. One
-of the primary drivers of this work is our belief in the value of
-small steps. For applications to neural networks or other models where
-the posterior is multimodal, posterior inference is arguably a search
-process. Covering the search space densely with small steps is much
-more valuable than few sparse steps toward the nearest optimum. In
-this mode, Metropolis-Hastings can be used in similar fashion to
-Stochastic Gradient Descent. The goal in SGD is to make gradual
-progress to a posterior mode with each step, taking small steps so
-that the cumulative displacement has progressively lower variance. %A
-%substantial part of the computational work of MCMC on massive datasets
-%will be similarly in reaching a stationary distribution, which really
-%means finding a deep posterior mode. 
-Taking noisy small steps will nevertheless make steady progress to 
-a posterior mode since their bias is in that direction. We demonstrate 
-this behavior in our logistic regression experiments. 
+A second question concerns step size. Once we have fixed temperature, our
+variance constraint implies that we have to trade-off proposal step size $s$ and
+batch size $b$ ($b \propto p^2$), i.e. we can make many small steps, or one
+large step, with a given batch of data. One of the primary drivers of this work
+is our belief in the value of small steps. For applications to neural networks
+or other models where the posterior is multimodal, posterior inference is
+arguably a search process. Covering the search space densely with small steps is
+much more valuable than few sparse steps toward the nearest optimum. In this
+mode, Metropolis-Hastings can be used in similar fashion to Stochastic Gradient
+Descent. The goal in SGD is to make gradual progress to a posterior mode with
+each step, taking small steps so that the cumulative displacement has
+progressively lower variance. We demonstrate this behavior in our logistic
+regression experiments. 
 
 The contributions of this paper are as follows:
 
@@ -239,7 +218,7 @@ The contributions of this paper are as follows:
 
 
 
-\section{Preliminaries and Related Work}\label{sec:related_work}
+\section{PRELIMINARIES}\label{sec:related_work}
 
 In the Metropolis-Hastings method~\citep{gilks1996markov,brooks2011handbook}, a
 difficult-to-compute probability distribution $p(\theta)$ is sampled using a
@@ -404,26 +383,22 @@ been applied to Bayesian estimation on minibatches of data. This simplified
 dynamics uses local proposals and avoids MH tests by using small proposal steps
 whose acceptance approaches 1 in the limit. However, the constraint on proposal
 step size is severe, and the state space exploration reduces to a random walk.
-Full minibatch HMC for minibatches was recently described in~\citet{sghmc_2014}
-which allows momentum-augmented proposals with larger step sizes. However, step
-sizes are still limited by the need to run accurately without MH tests.  By providing
-an M-H test with similar cost to standard gradient steps, our
-work opens the door to applying those methods with much more aggressive step
-sizes without loss of accuracy. 
-%{\color{blue}
-%Daniel: do we ever demonstrate this? I guess another issue is that this implies
-%we can use larger step sizes, but earlier we \emph{also} argue that we need
-%\emph{small} step sizes (to reduce variance).}
+Full minibatch HMC for minibatches was described in~\citet{sghmc_2014} which
+allows momentum-augmented proposals with larger step sizes. However, step sizes
+are still limited by the need to run accurately without MH tests.  By providing
+an M-H test with similar cost to standard gradient steps, our work opens the
+door to applying those methods with much more aggressive step sizes without loss
+of accuracy. 
 
 
 
 
-\section{A New Metropolis-Hastings Acceptance Test}\label{sec:our_algorithm}
+\section{A NEW MH ACCEPTANCE TEST}\label{sec:our_algorithm}
 
 \subsection{Log-Likelihood Ratios}\label{ssec:log_likelihood_ratios}
 
-For our new M-H test, we denote the exact approximate log likelihood ratios
-as $\Delta$ and $\Delta^*$.  First, $\Delta$ is defined as
+For our new M-H test, we denote the exact and approximate log likelihood ratios
+as $\Delta$ and $\Delta^*$, respectively. First, $\Delta$ is defined as
 \begin{equation}\label{eq:delta1}
     \Delta(\theta,\theta')  =
     \log \frac{p_0(\theta')\prod_{i=1}^N p(x_i \mid \theta')q(\theta \mid
@@ -449,8 +424,6 @@ A minibatch estimator of $\Delta$, denoted as $\Delta^*$, is
 Note that $\Delta$ and $\Delta^*$ are evaluated on the full dataset and a
 minibatch of size $b$ respectively. The scaling term $N/b$ ensures that
 $\Delta^*(\theta,\theta')$ is an unbiased estimator of $\Delta(\theta,\theta')$.
-%{\color{blue} Daniel: a brief question repeated from earlier, should we mention
-%sampling with and/or without replacement here?}
 
 The key to our test is a smooth acceptance function.  We consider functions
 other than the classical Metropolis test that satisfy the detailed balance (see
@@ -480,8 +453,6 @@ efficient than the Metropolis test when used on the full dataset, we will see
 that its smoothness allows it to naturally tolerate substantial variance in its
 input argument. This in turn will lead to a much more efficient test on subsets
 of data.
-%{\color{blue} Daniel: aside from the experiments, where do we show it
-%``naturally tolerates substantial variance'' in the input?} 
 
 Assume we begin with the current sample $\theta$ and a candidate sample
 $\theta'$, and that $V \sim \mathcal{U}(0,1)$ is a uniform random variable. We
@@ -550,11 +521,11 @@ adding a random variable $X_{\rm corr}$ and then accept $\theta'$ if the result
 is positive (and reject otherwise).
 
 If $\mathcal{\bar{N}}(0, \sigma^2(\Delta^*))$ is exactly $\mathcal{N}(0,
-\sigma^2(\Delta^*))$, the above test is exact as well, and as we show in
+\sigma^2(\Delta^*))$, the above test is exact, and as we show in
 Section~\ref{sec:analysis}, if there is a maximum error $\epsilon$ between the
 CDF of $\mathcal{\bar{N}}(0, \sigma^2(\Delta^*))$ and the CDF of $\mathcal{N}(0,
-\sigma^2(\Delta^*))$, then the acceptance test has an error of at most
-$\epsilon$ relative to the full batch version.
+\sigma^2(\Delta^*))$, then our test has an error of at most $\epsilon$ relative
+to the full batch version.
 
 %% {\color{blue} Daniel: this subsection is improved from earlier. My main concern
 %% now is that $X_{\rm norm}$ is described as being both approximately Gaussian
@@ -567,7 +538,7 @@ $\epsilon$ relative to the full batch version.
 
 
 
-\section{Computing the Correction Distribution}\label{sec:correction}
+\section{COMPUTING THE CORRECTION DISTRIBUTION}\label{sec:correction}
 
 Our proposed test in Equation~(\ref{eq:criteria}) requires knowing the
 distribution of the correction variable $X_{\rm corr}$ such that $X_{\rm norm} +
@@ -587,28 +558,30 @@ the following optimization problem:
 \end{equation}
 where $*$ denotes convolution.
 
-For computation of $C_\sigma$, we assume that its input $Y$ and
-another variable $X$ lie in the intervals $[-V,V]$ and $[-2V,2V]$, respectively.
-In continuous form, the optimization problem is therefore
-\begin{equation}\label{eq:conv1}
-    \small{C_\sigma^* = \argmin_{C\sigma} \; \sup_{x \in [-2V,2V]}\left|\int_{-V}^{V}\Phi_{\sigma}(x-y) C_{\sigma}(y)dy - S(x)\right|}
-\end{equation}
+For computation of $C_\sigma$, we assume that its input $Y$ and another variable
+$X$ lie in the intervals $[-V,V]$ and $[-2V,2V]$, respectively.  In continuous
+form, the optimization problem is to find the $C_\sigma^*$ solving
+\[
+%\begin{equation}\label{eq:conv1}
+    \argmin_{C\sigma} \sup_{x \in [-2V,2V]}\left|\int_{-V}^{V}\Phi_{\sigma}(x-y) C_{\sigma}(y)dy - S(x)\right|.
+%\end{equation}
+\]
 To get $C_\sigma^*$ in a computable form, we discretize $X$ and $Y$ into $4N+1$
 and $2N+1$ values respectively. If $i \in \{-2N, \ldots, 2N\}=\mathcal{I}$ and
 $j \in \{-N, \ldots, N\}$, then we can write $X_i = i(V/N)$ and $Y_j = j(V/N)$,
-and the condition in Equation~(\ref{eq:conv1}) can be re-expressed as:
-\begin{equation}\label{eq:conv2}
+and the objective can be re-expressed as:
+\[
+%\begin{equation}\label{eq:conv2}
     C_\sigma^* = \argmin_{C_\sigma} \max_{i \in \mathcal{I}}\left|\sum_{j = -N}^{N}\Phi_{\sigma}(X_i-Y_j) C_{\sigma}(Y_j) - S(X_i)\right|.
-\end{equation}
-To make the problem easier to understand, we can define a matrix $M$ and vectors
-$u$ and $v$ such that $M_{ij} = \Phi_{\sigma}(X_i-Y_j)$, $u_j =
-C_{\sigma}(Y_j)$, and $v_i = S(X_i)$, where the indices $i$ and $j$ are
-appropriately translated to be non-negative indices for $M, u,$ and $v$. Thus,
-Equation~(\ref{eq:conv2}) is equivalent to minimizing the $L_{\infty}$ norm:
+%\end{equation}
+\]
+We now define a matrix $M$ and vectors $u$ and $v$ such that $M_{ij} =
+\Phi_{\sigma}(X_i-Y_j)$, $u_j = C_{\sigma}(Y_j)$, and $v_i = S(X_i)$, where the
+indices $i$ and $j$ are appropriately translated to be non-negative indices for
+$M, u,$ and $v$. Thus, the problem is now to minimize the $L_{\infty}$ norm:
 \begin{equation}\label{eq:optimization_l1}
     u^* = \argmin_{u} \|Mu-v\|_{\infty}.
 \end{equation}
-
 We have the additional constraint that $u_j > 0$ for all $j$, since $u$
 represents a density. We first explored optimizing this problem with linear
 programming to find a $u$ minimizing $\|Mu - v\|_\infty$ subject to $u \ge 0$.
@@ -624,19 +597,10 @@ higher resolution and lower error, we switched to a least squares solution:
 \begin{equation}\label{eq:optimization_l2}
     u^* = \argmin_u\; \|Mu-v\|_2^2 + \lambda \|u\|_2^2,
 \end{equation}
-where we add the standard regularization factor $\lambda$ for stability in high
-dimensions. The solution is well-known from the normal equations: $u^* = (M^TM +
-\lambda I)^{-1}M^Tv$, and in practice, it yields an acceptable $L_{\infty}$ norm for
+where we add the standard regularization factor $\lambda$. The solution is
+well-known from the normal equations: $u^* = (M^TM + \lambda I)^{-1}M^Tv$, and
+in practice, it yields an acceptable $L_{\infty}$ norm for
 Equation~(\ref{eq:optimization_l1}).
-
-With this approach, there is no guarantee that $u^* \geq 0$. However, we have
-some flexibility in the choice of $\sigma$ in Equation~(\ref{eq:conv1}).
-As we decrease the variance of $X_{\rm norm}$, the variance of $X_{\rm corr}$
-grows by the same amount and is in fact the result of convolution with a
-Gaussian whose variance is the difference.  Thus as $\sigma$ decreases,
-$C_\sigma(X)$ grows and approaches the derivative of a logistic function at
-$\sigma = 0$. It retains some very weak negative values for $\sigma > 0$ but
-removal of those values leads to very small error.
 
 \SetKwInOut{Input}{Input}
 \SetKwInOut{Output}{Output}
@@ -644,7 +608,7 @@ removal of those values leads to very small error.
 \Input{Number of samples $T$, minibatch size $m$, error bound $\delta$, pre-computed correction $C_1(X)$ distribution, initial sample $\theta_1$.}
 \Output{A chain of $T$ samples $\{\theta_1, \ldots, \theta_T\}$ from $p(\theta)$\;}
 \For{$t=\{1, \ldots, T\}$}{
-    Propose a candidate $\theta'$\ from proposal distribution $q(\theta'\mid\theta_t)$\;
+    Propose a candidate $\theta'$\ from proposal $q(\theta'\mid\theta_t)$\;
     Draw a minibatch of $m$ points $x_i$, compute $\Delta^*(\theta_t,\theta')$ and sample variance $s^2_{\Delta^*}$\;
     Estimate moments $E|\Lambda_i-\Lambda|$ and $E|\Lambda_i-\Lambda|^3$ from the sample, and error $\epsilon$ from Equation~(\ref{eq:clt-bounds3})\;
     \While {$s^2_{\Delta^*} \ge 1$ {\bf or} $\epsilon > \delta$}{
@@ -669,20 +633,25 @@ removal of those values leads to very small error.
     \label{tab:xcorr}
     \centering
     \begin{tabular}{l l l l}
-   % \toprule
-    ${\bf N}$ & ${\bf \sigma}$ & ${\bf \lambda}$ & ${\bf L_{\infty}}$ {\bf error}  \\
-    \hline \\
+    ${\bf N}$ & ${\bf \sigma}$ & ${\bf \lambda}$ & ${\bf L_{\infty}}$ {\bf error} \\
+    \hline
     4000 & 0.9 & 1 & 1.0e-4  \\
     4000 & 0.8 & 0.03 & 5.0e-6 \\
-    %\bottomrule
     \end{tabular}
 \end{table}
 
-As can be seen from Table~\ref{tab:xcorr}, the errors between $X_{\rm
-norm}+X_{\rm corr}$ and $X_{\rm log}$ can be made very small, approaching single
-floating precision (about $10^{-7}$). 
+With this approach, there is no guarantee that $u^* \geq 0$. However, we have
+some flexibility in the choice of $\sigma$ in Equation~(\ref{eq:overall_corr_problem}).
+As we decrease the variance of $X_{\rm norm}$, the variance of $X_{\rm corr}$
+grows by the same amount and is in fact the result of convolution with a
+Gaussian whose variance is the difference.  Thus as $\sigma$ decreases,
+$C_\sigma(X)$ grows and approaches the derivative of a logistic function at
+$\sigma = 0$. It retains some very weak negative values for $\sigma > 0$ but
+removal of those values leads to very small error. Table~\ref{tab:xcorr} shows
+that the errors between $X_{\rm norm}+X_{\rm corr}$ and $X_{\rm log}$ can be
+made very small, approaching single floating precision (about $10^{-7}$). 
 
-The complete procedure is given in Algorithm~\ref{alg:our_algorithm}. A few points:
+Algorithm~\ref{alg:our_algorithm} describes our procedure. A few points:
 
 \begin{itemize}[noitemsep]
     \item It uses an adaptive step size so as to use the smallest possible
@@ -701,20 +670,20 @@ The complete procedure is given in Algorithm~\ref{alg:our_algorithm}. A few poin
 
 
 
-\section{Analysis}\label{sec:analysis}
+\section{ANALYSIS}\label{sec:analysis}
 
 We now derive error bounds for our M-H test, and for the approximate target
-distribution that it generates. From Table~\ref{tab:xcorr}, we know that
-it is possible to generate the correction samples $X_{\rm corr}$ with a CDF
-error approaching single-precision floating point error. We therefore treat the
-$X_{\rm corr}$ variable as a sample from the exact correction distribution and
-we will not analyze its errors.
+distribution that it generates. From Table~\ref{tab:xcorr}, we know that it is
+possible to generate the correction samples $X_{\rm corr}$ with a CDF error
+approaching single-precision floating point error. We therefore treat $X_{\rm
+corr}$ as a sample from the exact correction distribution and we will not
+analyze its errors.
 
 In the most similar prior works,~\citet{cutting_mh_2014} uses asymptotic
-arguments based on the Central Limit Theorem to argue that its approximate
-acceptance test error tends to zero as batch size increases. But no quantitative
-bounds are given. In~\citet{icml2014c1_bardenet14}, explicit bounds are given,
-but they depend on bounding
+arguments based on the CLT to argue that its approximate acceptance test error
+tends to zero as batch size increases, but no quantitative bounds are given.
+In~\citet{icml2014c1_bardenet14}, explicit bounds are given, but they depend on
+bounding:
 \begin{equation}\label{eq:bad_bound}
     C_{\theta, \theta'} = \max_{1\leq i\leq N}|\log p(x_i\mid\theta') - \log p(x_i\mid\theta)|.
 \end{equation}
@@ -757,12 +726,16 @@ which approaches a normal distribution in the limit. Then
 
 \begin{proof}
 The following bound is given immediately after Corollary 2 from~\citet{explicit-clt05}:
-\begin{equation}\label{eq:clt-boundsx}
-\begin{split}
+%% \begin{equation}\label{eq:clt-boundsx}
+%% \begin{split}
+%% -6.4E|X|^3-2E|X| &\leq \sup_x|{\rm Pr}(t<x)-\Phi(x)|{\sqrt{n}} \\
+%% &\leq 1.36E|X|^3.
+%% \end{split}
+%% \end{equation}
+\begin{align*}
 -6.4E|X|^3-2E|X| &\leq \sup_x|{\rm Pr}(t<x)-\Phi(x)|{\sqrt{n}} \\
 &\leq 1.36E|X|^3.
-\end{split}
-\end{equation}
+\end{align*}
 This bound applies to $x\geq 0$. Applying the bound to $-x$ when $x<0$
 and combining with $x>0$, we obtain the weaker but unqualified bound
 in Equation~(\ref{eq:clt-bounds}).
@@ -797,10 +770,7 @@ term:
 \begin{equation}\label{eq:x-hat}
     \bar{X} = \Delta^*(\theta,\theta') - \Delta(\theta,\theta'),
 \end{equation}
-so that $s_X = s_{\Delta^*}$.
-%{\color{blue} Daniel: This time it
-%  makes sense to use $\sigma(\hat{X})$ instead of $\sigma(X)$.}
-This results in the following Corollary:
+so that $s_X = s_{\Delta^*}$. This results in the following:
 
 \begin{corollary}\label{cor:our_bound_delta_prime}
 We can now substitute into Equation~(\ref{eq:clt-bounds2}) and displace by the mean, giving:
@@ -849,7 +819,7 @@ We first observe that
 and since $\sup_x|P(x)-Q(x)|\leq \epsilon$ it follows that $\forall z$:
 \begin{equation}
 \begin{split}
--\epsilon &= \tiny{\int_{-\infty}^{+\infty} -\epsilon R(x) dx } \\
+-\epsilon &= \int_{-\infty}^{+\infty} -\epsilon R(x) dx \\
 &\leq \int_{-\infty}^{+\infty}(P(z-x)-Q(z-x))R(x) dx \\
 &\leq \int_{-\infty}^{+\infty}\epsilon R(x) dx = \epsilon.
 \end{split}
@@ -899,7 +869,7 @@ and $Q$:
     \quad {\rm and}\quad Q'(y) & = \Phi\left({y-\Delta}\right)
 \end{split}
 \end{equation}
-Now we convolve with the distribution of $X_{\rm corr}$ which gives:
+Now we convolve with the distribution of $X_{\rm corr}$:
 \begin{equation}
 \begin{split}
     P''(y) & = {\rm Pr}(\Delta^*+X_{\rm nc}+X_{\rm corr} < y) \\
@@ -1020,7 +990,7 @@ table. We leave further analysis and experiments with $g(x,y)$ as future work.
 
 
 
-\section{Experiments}\label{sec:experiments}
+\section{EXPERIMENTS}\label{sec:experiments}
 
 We conduct two sets of experiments to explore the benefits of our minibatch MH
 test and to benchmark it with previous work. In Section~\ref{ssec:gaussians}, we
@@ -1077,9 +1047,10 @@ in~\citet{icml2014c1_bardenet14} are $p = 2$ and $\delta = 0.01$.  All methods
 diag}(0.15, 0.15)$.  Since the proposer generates a random walk, all shaping of
 distribution of the samples is due to the MH test. All methods are run 5000
 times to collect 5000 samples.
+
 \begin{figure*}[t]
     \centering
-    \includegraphics[width=\linewidth]{GaussianMixtureResult/posterior_of_gaussian.png}
+    \includegraphics[width=0.9\linewidth]{GaussianMixtureResult/posterior_of_gaussian.png}
     \caption{
     The log posterior contours and scatter plots of sampled $\theta$ values
     using different methods. 
@@ -1088,7 +1059,7 @@ times to collect 5000 samples.
 \end{figure*}
 \begin{figure*}[t]
     \centering
-    \includegraphics[width=\linewidth]{minibatch_size_gaussian.png}
+    \includegraphics[width=0.9\linewidth]{minibatch_size_gaussian.png}
     \caption{
     Counts of minibatch sizes that the three methods used in the experiment of
     Section~\ref{ssec:gaussians}. To make comparisons easier, the axes have the
@@ -1179,19 +1150,17 @@ minibatches.
 %% so small compared to the second and I'm fairly certain they should cross
 %% in the illustrated range. It would be better to include both curves on
 %% the same plot. 
+
 \begin{table}[t]
     \caption{Gaussian Mixture Model Statistics}
     \label{tab:poissons}
     \centering
     \resizebox{.45\textwidth}{!}{% <------ Don't forget this %
     \begin{tabular}{l l l l}
-    %\toprule
     {\bf Metric} & {\bf Ours} & {\bf Korat.'14} & {\bf Barde.'14} \\
-    %\midrule
-    \hline \\
+    \hline
     Equation~\ref{eq:log_prob_poissons} & -1430.0 & -1578.9 & -1232.7 \\
     Chi-Squared & 3313.9 & 3647.7 & 2444.1 \\
-    % \bottomrule
     \end{tabular}% <------ Don't forget this %
    }
 \end{table}
@@ -1201,7 +1170,7 @@ minibatches.
 
 \begin{figure*}[t]
 	\centering
-	\includegraphics[width=\linewidth]{logistic_performance.png}
+	\includegraphics[width=0.9\linewidth]{logistic_performance.png}
 	\caption{
     Logistic regression performance (accuracy/log likelihood) based on
     cumulative data usage.
@@ -1210,7 +1179,7 @@ minibatches.
 \end{figure*}
 \begin{figure*}[t]
 	\centering
-	\includegraphics[width=\linewidth]{minibatch_size_logistic.png}
+	\includegraphics[width=0.9\linewidth]{minibatch_size_logistic.png}
 	\caption{
     Counts of minibatch sizes that the three methods used in the MNIST logistic
     regression experiment from Section~\ref{ssec:logistic}. It is analogous to
@@ -1251,7 +1220,7 @@ methods.
 
 
 
-\section{Conclusions}\label{sec:conclusion}
+\section{CONCLUSIONS}\label{sec:conclusion}
 
 In this paper, we have derived a new MH test for minibatch MCMC methods. We
 demonstrated how a simple deconvolution process allows us to use a minibatch
@@ -1319,7 +1288,7 @@ can include them in the supplementary material file.
 \fi
 
 
-%\newpage
+\newpage
 \subsubsection*{References}
 % Daniel: Sorry, I don't know why this is needed to get rid of the annoying
 % spaces below the "References" text.
@@ -1328,7 +1297,6 @@ can include them in the supplementary material file.
 \bibliographystyle{abbrvnat}
 \setcitestyle{authoryear,open={[},close={]}}
 \bibliography{aistats2017}
-\normalsize
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
