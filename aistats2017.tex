@@ -282,7 +282,7 @@ later.}
 \begin{equation}
 \begin{split} 
 \Lambda(\theta,\theta') & = \sum_{i=1}^N \log\left(\frac{p(x_i|\theta')}{p(x_i|\theta)}\right) \\  
-{\rm and} \quad \psi(u,\theta,\theta') &= \log\left(u\frac{q(\theta'|\theta)p_0(\theta)}{q(\theta|\theta')p_0(\theta')}\right) \\
+{\rm and} \quad \psi(u,\theta,\theta') &= \log\left(u\frac{q(\theta'|\theta)p_0(\theta)}{q(\theta|\theta')p_0(\theta')}\right).
 \end{split}
 \end{equation}
 To reduce computational effort, an unbiased estimate of $\Lambda(\theta,\theta')$
@@ -290,17 +290,17 @@ based on a minibatch can be used:
 \begin{equation}
 \Lambda^*(\theta,\theta') = \frac{N}{b}\sum_{i=1}^b \log\left(\frac{p(x_i|\theta')}{p(x_i|\theta)}\right)  
 \end{equation}
-Finally, it will be convenient for our analysis to define the individual
-components that contribute to the sums above:
-\begin{equation}\label{eq:individual_terms}
-\Lambda_i(\theta,\theta') = N \log\left(\frac{p(x_i|\theta')}{p(x_i|\theta)}\right)  
-\end{equation}
-%Thus, $\Lambda(\theta,\theta')$ is the mean of $\Lambda_i(\theta,\theta')$ over
-%the entire dataset, and $\Lambda^*(\theta,\theta')$ is the mean of
-%$\Lambda_i(\theta,\theta')$ over its minibatch. 
+Finally, it will be convenient for our analysis to define
+$\Lambda_i(\theta,\theta') = N\log(\frac{p(x_i|\theta')}{p(x_i|\theta)})$.
+%% \begin{equation}\label{eq:individual_terms}
+%% \Lambda_i(\theta,\theta') = N \log\left(\frac{p(x_i|\theta')}{p(x_i|\theta)}\right)  
+%% \end{equation}
+Thus, $\Lambda(\theta,\theta')$ is the mean of $\Lambda_i(\theta,\theta')$ over
+the entire dataset, and $\Lambda^*(\theta,\theta')$ is the mean of
+$\Lambda_i(\theta,\theta')$ over its minibatch. 
 
 Since minibatches contains randomly selected samples $x_i$, the values
-$\Lambda_i$ are independent, identically distributed (iid) random
+$\Lambda_i$ are i.i.d. random
 variables\footnote{The analysis assumes sampling with replacement
 although implementations on typical large datasets will approximate
 this by sampling without replacement.}.
@@ -318,7 +318,8 @@ were no worst-case bounds given on the average number of samples
 needed per iteration, which we explore in the following section.
 
 \subsection{A Worst-Case Gaussian Example}\label{ssec:gaussian_example}
-Consider a Gaussian model where $x_1,\ldots,x_N \simiid \mathcal{N}(\theta,1)$
+
+Consider a Gaussian model where $x_1,\ldots,x_N$ are i.i.d. $\mathcal{N}(\theta,1)$
 with a known variance $\sigma^2=1$, true mean $\theta=0.5$, and a uniform prior
 on $\theta$. The log likelihood ratio is
 \begin{equation}\label{eq:lemma_ll_ratio}
@@ -410,7 +411,7 @@ independent of the data $x$ as:
 \begin{equation}\label{eq:delta2}
 \begin{split}
     \Delta(\theta,\theta') &= \sum_{i=1}^N\log\frac{p(x_i\mid\theta')}{p(x_i\mid\theta)} - \psi(1,\theta,\theta') \\
-    & = \Lambda(\theta,\theta') - \psi(1,\theta,\theta'). \\
+    & = \Lambda(\theta,\theta') - \psi(1,\theta,\theta').
 \end{split}
 \end{equation}
 A minibatch estimator of $\Delta$, denoted as $\Delta^*$, is
@@ -509,9 +510,8 @@ corr}$ is a zero-mean ``correction'' variable with density $C_{\sigma}(X)$.  The
 two variables are added (i.e., their distributions convolve) to form $X_{\rm
 log}$.  This decomposition requires an appropriate $X_{\rm corr}$ distribution.
 We show in Section~\ref{sec:correction} that it is possible to use deconvolution
-to derive a highly accurate representation of $C_{\sigma}(X)$.
-
-Using $X_{\rm corr}$ samples from $C_{\sigma}(X)$, the acceptance test is now
+to derive a highly accurate representation of $C_{\sigma}(X)$.  Using $X_{\rm
+corr}$ samples from $C_{\sigma}(X)$, the acceptance test is now
 \begin{equation}\label{eq:criteria}
     \Delta + X_{\rm log} = (\Delta + X_{\rm norm}) + X_{\rm corr} = \Delta^* + X_{\rm corr} >0.
 \end{equation}
