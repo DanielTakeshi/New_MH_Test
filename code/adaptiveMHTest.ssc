@@ -5,10 +5,10 @@ def std(A:DMat):Double = {
 }
 
 class adaptiveMHTest {
-	var N = 100000;
+	var N = 100000;     // Daniel: this gets overriden by our other scripts but we should improve design later
 	var p = 2.0;
 	var delta = 0.01;
-	var gamma = 1.5;
+	var gamma = 2.00;   // Daniel: important tuning parameter. We had 1.5, the paper used 2.0.
 	def testfn(diff_in:Mat, psi: Double, b: Double, c :Double) : (Boolean, Boolean) = {
 		// diff is the overall Lambda value without average
 		var diff = diff_in / (N * 1.0);
@@ -40,6 +40,10 @@ def getbatch(data:Mat, here:Int, size:Int):Mat = {
 };    
 
 
+/**
+ * Daniel: at some point we should document this because it's hard for me to quickly get up to speed
+ * on what these methods mean by reading this.
+ */
 def adaptiveMH_dostep(mod:MHmodel, test:adaptiveMHTest, data:Mat, size:Int, here:Int, theta:Mat, ttheta:Mat, acc:Double):(Int, Mat, Double, Mat) = {
     var step = size;
     var done = false;
@@ -55,9 +59,11 @@ def adaptiveMH_dostep(mod:MHmodel, test:adaptiveMHTest, data:Mat, size:Int, here
     test.N = data.ncols;
     val psi = 1.0/test.N * ln(rand(1,1)).dv;
 
+    println("inside adaptiveMH_dostep, size=" +size+ ", now starting while loop...")
     while(!done) {
     	val temp_step = b.toInt;
-    	step = temp_step ;
+    	step = temp_step;
+        println("calling getbatch with step="+step)
     	val batch = getbatch(mod.data, here, step);
     	ll = mod.evalfn(batch, theta);
     	val diff = mod.evalfn(batch, ttheta) - ll;
@@ -75,10 +81,7 @@ def adaptiveMH_dostep(mod:MHmodel, test:adaptiveMHTest, data:Mat, size:Int, here
     	val c = c1 + c2;
 
         bc1c2 = bc1c2 \ (b on c1 on c2);
-
-
     	b = min(test.N, ceil(test.gamma*t*1.0).v.toInt).v;
-
     	val (moved, takestep) = test.testfn(diff, psi, b, c);
     	done = moved;
 
@@ -88,6 +91,7 @@ def adaptiveMH_dostep(mod:MHmodel, test:adaptiveMHTest, data:Mat, size:Int, here
 		}
 		istep += 1;
    	}
+    println("finished with adaptiveMH_dostep, \'there\'="+there+".")
     (there, ntheta, mean(ll).dv/(test.N * 1.0), bc1c2);
 };
 
@@ -104,7 +108,7 @@ def adaptiveMH_dosimm(mod:MHmodel, test:adaptiveMHTest, size:Int, nsamps:Int, ac
     tic;
     println("")
     while (i < nsamps) {
-    	if (i % 100 == 0){
+    	if (i % 1 == 0){
             val t = toc
     		println("adaptive mh test iteration = %d, elapsed time = %f secs" format(i, t));
     	}

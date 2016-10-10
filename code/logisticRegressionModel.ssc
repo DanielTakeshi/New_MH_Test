@@ -3,28 +3,34 @@
 :load adaptiveMHTest.ssc
 
 /**
- * Code for running Logistic Regression results.
+ * Code for running Logistic Regression results. Documentation in progress (sorry).
  *
- * TODO Documentation in progress
- * TODO There needs to be a better way to input the data than what we have now.
- * TODO don't forget to adjust model parameters in case we change 'n'.
- * NOTE ON USAGE: Go to the bottom of the script to choose which method you want to run. You can
- * only run one of the three at a time (this helps to save memory) but the data should be the same
- * as they are pre-generated ahead of time.
+ * NOTE ON USAGE: this will run *one* of the three methods: ours, kora (Korattikara), and bard
+ * (Bardenet). It used to run all three at once but I was getting out of memory errors when I did
+ * that for larger datasets. The datasets here are fixed ahead of time in 'train_data_dir' and
+ * 'test_data_dir' so the methods are going to be using the same data.
+ * 
+ * Fix the values in the parameters (listed at the start of this script) and run it using:
+ *
+ * [path_to_bidmach]./bidmach logisticRegressionModel.ssc | tee output.txt
+ *
+ * The output.txt should ideally be named something informative. Note that this script *needs the
+ * other .ssc methods and other files* that are in this 'code' directory.
  */
 
 // -------------------------------- //
 // PARAMETERS and PRE-LOADING STUFF //
 // -------------------------------- //
 
-// IMPORTANT STUFF! CHECK THESE EVERY TIME YOU RUN SOMETHING!
-val nsamps = 3000           // We used to stay with 5000 before.
-val test_to_use = "kora"    // Options: "ours", "kora", or "bard".
-val k = 20000               // This will change data directories automatically.
-val n = (0.8*k).toInt       // The number of training points, should be 80% of k . (k = training + testing)
-val temperature = k/100.0   // Was 1000.0 for previous MNIST experiment. I think this is OK.
+// IMPORTANT STUFF! AT LEAST CHECK THESE EVERY TIME YOU RUN SOMETHING!
+val nsamps = 3000           // The number of \theta values to sample (i.e., number of iterations).
+val test_to_use = "bard"    // Three options: "ours", "kora", or "bard". Use one of these.
+val k = 50000               // k = (#training)+(#testing) points. This will change the output data names.
+val temperature = k/100.0   // This was 1000.0 for the previous MNIST (not 8M) experiment.
+val n = (0.8*k).toInt       // The number of training points, should be 80% of k.
 
 // LESS IMPORTANT STUFF now (don't have to tweak these values):
+// EDIT: Actually, the 'cutMHtest.eps' value below is important ...
 val train_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TRAIN_" +k+ ".fmat.lz4"
 val test_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TEST_" +k+ ".fmat.lz4"
 
@@ -48,7 +54,7 @@ val cutMHtest = new cutMHTest;
 val adaptiveMHtest = new adaptiveMHTest;
 cutMHtest.N = n;
 adaptiveMHtest.N = n;
-cutMHtest.eps = 1.0;
+cutMHtest.eps = 1.0; // IMPORTANT!
 
 /**
  * TODO document!
