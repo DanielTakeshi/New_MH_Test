@@ -222,13 +222,19 @@ a posterior mode since their bias is in that direction. We demonstrate
 this behavior in our logistic regression experiments. 
 
 The contributions of this paper are as follows:
+
 \begin{itemize}[noitemsep]
-\item We develop a new, more efficient (in samples per test) minibatch acceptance test with quantifiable error bounds. The test
-  uses a novel additive correction variable to implement a Barker test based on minibatch mean and variance. 
-%\item We analyze the test for accuracy and speed.
-\item We compared performance of our new test and prior approaches on several datasets. We demonstrate the test is several orders
-  of magnitude more efficient than prior work measured as data consumed per test, and that it does not suffer
-  from long-tailed minibatch sizes (up to the dataset size). 
+    \item We develop a new, more efficient (in samples per test) minibatch
+    acceptance test with quantifiable error bounds. The test uses a novel
+    additive correction variable to implement a Barker test based on minibatch
+    mean and variance. 
+
+    %\item We analyze the test for accuracy and speed.
+
+    \item We compare performance of our new test and prior approaches on several
+    datasets. We demonstrate the test is several orders of magnitude more
+    efficient than prior work measured as data consumed per test, and that it
+    does not suffer from long-tailed minibatch sizes (up to the dataset size). 
 \end{itemize}
 
 
@@ -249,8 +255,8 @@ $\alpha(\theta_t,\theta')$, we accept $\theta'$ and set $\theta_{t+1} =
 \theta'$, otherwise set $\theta_{t+1}=\theta_t$.  The test is often implemented
 with an auxiliary random variable $u \sim \mathcal{U}(0,1)$ with a comparison
 $u<\alpha(\theta_t,\theta')$; here, $\mathcal{U}(a,b)$ denotes the uniform
-distribution on the interval $[a,b]$.  For notational simplicity, we drop the
-subscript $t$ for the current sample $\theta_t$ and denote it as $\theta$. 
+distribution on the interval $[a,b]$.  For simplicity, we drop the subscript $t$
+for the current sample $\theta_t$ and denote it as $\theta$. 
 
 The acceptance test guarantees detailed balance, which means
 $p(\theta)p(\theta'\mid\theta) = p(\theta')p(\theta \mid\theta')$,
@@ -280,19 +286,20 @@ should be accepted based on an approximate version of
 the test $u < \alpha(\theta,\theta')$. If the approximate test cannot make a
 decision with sufficient confidence, then the minibatch size is increased and
 the test repeats. This process continues until a decision. The bounds depend on
-either a asymptotic Central Limit Theorem~\citep{cutting_mh_2014} or a
+either an asymptotic Central Limit Theorem~\citep{cutting_mh_2014} or a
 concentration bound~\citep{icml2014c1_bardenet14}. The latter requires direct
 bounds on the log likelihood ratio, which for general distributions requires
 knowing $p(x_i \mid \theta)$ and $p(x_i \mid \theta')$ for all $N$ samples. In
 addition, both methods suffer the drawback of resolving small log likelihood
 ratio differences between the minibatch and full batch versions.  In the worst
-case, all $N$ data points may be needed, and we soon show that this worst case
-can occur about $\Omega(N)$ times during the performance of $N$ tests.
+case, all $N$ data points may be needed, as we show in
+Section~\ref{ssec:gaussian_example}.
 
-Following~\citet{icml2014c1_bardenet14}, we write the test $u <
-\alpha(\theta,\theta')$ in the equivalent form $\Lambda(\theta,\theta') >
-\psi(u,\theta,\theta')$, where\footnote{Our definitions differ from those in
-\citet{icml2014c1_bardenet14} by a factor of $N$ to simplify our analysis later.}
+Following~\citet{icml2014c1_bardenet14}, we write the test
+$u<\alpha(\theta,\theta')$ in the equivalent form $\Lambda(\theta,\theta') >
+\psi(u,\theta,\theta')$, where\footnote{Our definitions differ from those
+in~\citet{icml2014c1_bardenet14} by a factor of $N$ to simplify our analysis
+later.}
 \begin{equation}
 \begin{split} 
 \Lambda(\theta,\theta') & = \sum_{i=1}^N \log\left(\frac{p(x_i|\theta')}{p(x_i|\theta)}\right) \\  
@@ -329,21 +336,14 @@ in~\citet{icml2014c1_bardenet14} a concentration bound was used. In
 both cases, the resulting tests were shown to give useful reductions
 in number of samples required over using the full dataset, but there
 were no worst-case bounds given on the average number of samples
-needed per iteration.
-
-We next show that for a simple distribution, the lower bound of average
-number of data instances consumed for one iteration of~\citet{cutting_mh_2014}
-and~\citet{icml2014c1_bardenet14} is $\Omega(N)$, where $N$ is the number of data
-points.
+needed per iteration, which we explore in the following section.
 
 \subsection{A Worst-Case Gaussian Example}\label{ssec:gaussian_example}
 Consider a Gaussian model where $x_1,\ldots,x_N \simiid \mathcal{N}(\theta,1)$
 with a known variance $\sigma^2=1$, true mean $\theta=0.5$, and a uniform prior
 on $\theta$. The log likelihood ratio is
 \begin{equation}\label{eq:lemma_ll_ratio}
-\resizebox{\linewidth}{!}{% 
-$\Lambda^*(\theta,\theta') =  \frac{N}{b}\sum_{i=1}^b \log\frac{p(x_i|\theta')}{p(x_i|\theta)} = N(\theta'-\theta)\left(\frac{1}{b}\sum_{i=1}^b x_i-\theta-\frac{\theta'-\theta}{2}\right)$
-}%
+    \Lambda^*(\theta,\theta') = N(\theta'-\theta)\left(\frac{1}{b}\sum_{i=1}^b x_i-\theta-\frac{\theta'-\theta}{2}\right)
 \end{equation}
 which is normally distributed over selection of the Normal samples $x_i$.  Since
 the $x_i$ have unit variance, their mean has variance $1/b$, and the variance of
@@ -664,7 +664,7 @@ removal of those values leads to very small error.
 \label{alg:our_algorithm}
 \end{algorithm}
 
-\begin{table}[h]
+\begin{table}[t]
     \caption{Error in $X_{\rm norm}+X_{\rm corr}$ versus $X_{\rm log}$}
     \label{tab:xcorr}
     \centering
@@ -684,7 +684,7 @@ floating precision (about $10^{-7}$).
 
 The complete procedure is given in Algorithm~\ref{alg:our_algorithm}. A few points:
 
-\begin{itemize}
+\begin{itemize}[noitemsep]
     \item It uses an adaptive step size so as to use the smallest possible
     average minibatch size. Unlike previous work however (and as we show in
     Section~\ref{sec:experiments}) the size distribution is short-tailed.
@@ -1077,7 +1077,7 @@ in~\citet{icml2014c1_bardenet14} are $p = 2$ and $\delta = 0.01$.  All methods
 diag}(0.15, 0.15)$.  Since the proposer generates a random walk, all shaping of
 distribution of the samples is due to the MH test. All methods are run 5000
 times to collect 5000 samples.
-\begin{figure}
+\begin{figure*}[t]
     \centering
     \includegraphics[width=\linewidth]{GaussianMixtureResult/posterior_of_gaussian.png}
     \caption{
@@ -1085,8 +1085,8 @@ times to collect 5000 samples.
     using different methods. 
     }
     \label{fig:gauss_mix_1}
-%\end{figure*}
-%\begin{figure*}[t!]
+\end{figure*}
+\begin{figure*}[t]
     \centering
     \includegraphics[width=\linewidth]{minibatch_size_gaussian.png}
     \caption{
@@ -1095,7 +1095,7 @@ times to collect 5000 samples.
     same range (using a log-log scale).
     }
     \label{fig:gauss_mix_2}
-\end{figure}
+\end{figure*}
 
 Figure~\ref{fig:gauss_mix_1} shows scatter plots of the resulting $\theta$
 samples for the three methods, with darker regions indicating a greater density
@@ -1179,26 +1179,27 @@ minibatches.
 %% so small compared to the second and I'm fairly certain they should cross
 %% in the illustrated range. It would be better to include both curves on
 %% the same plot. 
-\begin{table}[h]
+\begin{table}[t]
     \caption{Gaussian Mixture Model Statistics}
     \label{tab:poissons}
     \centering
-    \resizebox{.5\textwidth}{!}{% <------ Don't forget this %
+    \resizebox{.45\textwidth}{!}{% <------ Don't forget this %
     \begin{tabular}{l l l l}
     %\toprule
-    {\bf Model} & {\bf Our Method} & {\bf Korattikara 2014} & {\bf Bardenet 2014} \\
+    {\bf Metric} & {\bf Ours} & {\bf Korat.'14} & {\bf Barde.'14} \\
     %\midrule
     \hline \\
-    Poisson Value (Eq.~\ref{eq:log_prob_poissons}) & -1430.0 & -1578.9 & -1232.7 \\
-    Chi-Squared Test Statistic & 3313.9 & 3647.7 & 2444.1 \\
-   % \bottomrule
+    Equation~\ref{eq:log_prob_poissons} & -1430.0 & -1578.9 & -1232.7 \\
+    Chi-Squared & 3313.9 & 3647.7 & 2444.1 \\
+    % \bottomrule
     \end{tabular}% <------ Don't forget this %
    }
 \end{table}
 
 
 \subsection{Logistic Regression}\label{ssec:logistic}
-\begin{figure}
+
+\begin{figure*}[t]
 	\centering
 	\includegraphics[width=\linewidth]{logistic_performance.png}
 	\caption{
@@ -1206,8 +1207,8 @@ minibatches.
     cumulative data usage.
     }
 	\label{fig:logistic_performance}
-%\end{figure*}
-%\begin{figure*}[t!]
+\end{figure*}
+\begin{figure*}[t]
 	\centering
 	\includegraphics[width=\linewidth]{minibatch_size_logistic.png}
 	\caption{
@@ -1216,7 +1217,7 @@ minibatches.
     Figure~\ref{fig:gauss_mix_2}.
     }
 	\label{fig:logistic_minibatch}
-\end{figure}
+\end{figure*}
 
 We next use logistic regression for the binary classification of 1s versus 7s in
 the MNIST dataset~\citep{lecun-mnisthandwrittendigit-2010}. The data has 12007
