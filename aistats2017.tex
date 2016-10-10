@@ -164,7 +164,7 @@ proposals~\citep{OptimalScaling01} on a full dataset. When we reduce the amount
 of data for the test, the variance goes up. We have to reduce variance in one
 of several ways. Either:
 
-\begin{itemize}
+\begin{itemize}[noitemsep]
 \item Increase the temperature of the target distribution. Log likelihoods
   scale as $1/T$, and so the variance of the likelihood ratio will
   vary as $1/T^2$. Our model is no longer well-specified (we are doing inference
@@ -222,7 +222,7 @@ a posterior mode since their bias is in that direction. We demonstrate
 this behavior in our logistic regression experiments. 
 
 The contributions of this paper are as follows:
-\begin{itemize}
+\begin{itemize}[noitemsep]
 \item We develop a new, more efficient (in samples per test) minibatch acceptance test with quantifiable error bounds. The test
   uses a novel additive correction variable to implement a Barker test based on minibatch mean and variance. 
 %\item We analyze the test for accuracy and speed.
