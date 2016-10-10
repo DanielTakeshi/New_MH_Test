@@ -18,14 +18,11 @@
 // -------------------------------- //
 
 // IMPORTANT STUFF! CHECK THESE EVERY TIME YOU RUN SOMETHING!
-val nsamps = 3000               // We used to stay with 5000 before.
-val temperature = 200.0         // Was 1000.0 for previous MNIST experiment.
-val test_to_use = "kora"        // Options: "ours", "kora", or "bard".
-
-// This was 12007 for regular MNIST. **If changing, this automatically changes the data
-// directories!** As well as the output matrix that we save.
-val k = 20000
-val n = (0.8*k).toInt     // The number of training points, should be 80% of k . (k = training + testing)
+val nsamps = 3000           // We used to stay with 5000 before.
+val test_to_use = "kora"    // Options: "ours", "kora", or "bard".
+val k = 20000               // This will change data directories automatically.
+val n = (0.8*k).toInt       // The number of training points, should be 80% of k . (k = training + testing)
+val temperature = k/100.0   // Was 1000.0 for previous MNIST experiment. I think this is OK.
 
 // LESS IMPORTANT STUFF now (don't have to tweak these values):
 val train_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TRAIN_" +k+ ".fmat.lz4"
@@ -51,7 +48,7 @@ val cutMHtest = new cutMHTest;
 val adaptiveMHtest = new adaptiveMHTest;
 cutMHtest.N = n;
 adaptiveMHtest.N = n;
-cutMHtest.eps = 0.005;
+cutMHtest.eps = 1.0;
 
 /**
  * TODO document!
