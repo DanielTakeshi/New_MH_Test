@@ -123,9 +123,9 @@ posterior sample.
 Many state-of-the-art machine learning methods, and deep learning in
 particular, are based on minibatch updates (such as SGD) to a model.
 Minibatch updates produce many improvements to the model for each pass
-over the dataset, and have high sample efficiency. They also map very
-well onto hardware such as GPUs. In contrast, M-H requires
-calculations over the full dataset to produce a new sample.  Recent
+over the dataset, and have high sample efficiency. %They also map very
+% well onto hardware such as GPUs. 
+In contrast, M-H requires calculations over the full dataset to produce a new sample.  Recent
 results from~\citet{cutting_mh_2014} and ~\citet{icml2014c1_bardenet14} perform
 approximate (bounded error) acceptance tests using subsets
 (minibatches) of the full dataset. The tests depend on minibatch
@@ -137,17 +137,17 @@ contrast,~\citet{conf/uai/MaclaurinA14,TallData15} perform exact
 tests but require a lower bound on parameter distribution across its
 domain.  The amount of data reduction depends on the accuracy of this
 bound, and such bounds are only available for relatively simple
-distributions. By contrast our approach is a ``black box'' and requires
-only statistics gathered from the minibatches as they are used. 
-
+distributions. %By contrast our approach is a ``black box'' and requires
+%only statistics gathered from the minibatches as they are used. 
 Here we derive a new test which incorporates the variability in minibatch
 statistics as {\em a natural part of the test}. Because of this, the amount of
 data required for each test is fixed with high probability and in expected
-value.
+value. 
 
 We use a Barker test function~\citep{Barker65} rather than a Metropolis
 test, which makes our test naturally error tolerant. The idea of using
-a noise-tolerant test using Barker's test function was suggested but
+a noise-tolerant %test using
+Barker's test function was suggested but
 not explored empirically in~\citet{TallData15} section 6.3. But the
 asymptotic test statistic CDF and the Barker function are different,
 which leads to fixed errors for the approach
@@ -165,34 +165,31 @@ of data for the test, the variance goes up. We have to reduce variance in one
 of several ways. Either:
 
 \begin{itemize}
-  
 \item Increase the temperature of the target distribution. Log likelihoods
   scale as $1/T$, and so the variance of the likelihood ratio will
   vary as $1/T^2$. Our model is no longer well-specified (we are doing inference
   at a temperature different from that assumed during data generation), but
   higher temperature can be advantageous for parameter exploration.
-
 \item For continuous probability distributions, reduce the proposal
   step size and variance (for stochastic proposals) compared to an optimal
   proposal. The variance of the log acceptance probability scales as the
   square of proposal step size. 
-
 \item Increase the minibatch size when needed for certain
   minibatches. Log acceptance variance scales as $1/k$ vs the
   minibatch size $k$. Our test is adaptive like earlier works, but
   unlike them, the distribution of minibatch size is Gaussian, not
   long-tailed.  Increased minibatch size also reduces the error rate
   for the test.
-
 \end{itemize}
 
 It's worth discussing at this point the typical goals of
 M-H sampling on very large datasets.  By the Bernstein-von Mises
 Theorem, the posterior distribution of the parameter $\theta$ for a
 Bayesian inference task is asymptotically normal, and has variance
-that scales inversely with the number of data samples $N$. This mode
-is extremely sharp for large datasets, which may contain millions or
-billions of samples. Simply sampling from this distribution is one
+that scales inversely with the number of data samples $N$. %This mode
+%is extremely sharp for large datasets, which may contain millions or
+%billions of samples. 
+Simply sampling from this distribution is one
 application, but an efficient proposal distribution~\citep{OptimalScaling01} has similar variance to the target
 distribution and will diffuse to it extremely slowly from an
 initialization value which is (likely to be) many standard deviations
@@ -216,20 +213,19 @@ more valuable than few sparse steps toward the nearest optimum. In
 this mode, Metropolis-Hastings can be used in similar fashion to
 Stochastic Gradient Descent. The goal in SGD is to make gradual
 progress to a posterior mode with each step, taking small steps so
-that the cumulative displacement has progressively lower variance. A
-substantial part of the computational work of MCMC on massive datasets
-will be similarly in reaching a stationary distribution, which really
-means finding a deep posterior mode. Taking noisy small steps will
-nevertheless make steady progress to a posterior mode since their bias
-is in that direction. We demonstrate this behavior in our logistic regression
-experiments.
+that the cumulative displacement has progressively lower variance. %A
+%substantial part of the computational work of MCMC on massive datasets
+%will be similarly in reaching a stationary distribution, which really
+%means finding a deep posterior mode. 
+Taking noisy small steps will nevertheless make steady progress to 
+a posterior mode since their bias is in that direction. We demonstrate 
+this behavior in our logistic regression experiments. 
 
 The contributions of this paper are as follows:
-
 \begin{itemize}
 \item We develop a new, more efficient (in samples per test) minibatch acceptance test with quantifiable error bounds. The test
   uses a novel additive correction variable to implement a Barker test based on minibatch mean and variance. 
-\item We analyze the test for accuracy and speed.
+%\item We analyze the test for accuracy and speed.
 \item We compared performance of our new test and prior approaches on several datasets. We demonstrate the test is several orders
   of magnitude more efficient than prior work measured as data consumed per test, and that it does not suffer
   from long-tailed minibatch sizes (up to the dataset size). 
@@ -261,15 +257,12 @@ $p(\theta)p(\theta'\mid\theta) = p(\theta')p(\theta \mid\theta')$,
 where $p(\theta'\mid\theta)$ is the probability of a transition from state
 $\theta$ to $\theta'$. Here $p(\theta'\mid\theta) =
 q(\theta'\mid\theta)\alpha(\theta,\theta')$ so the detailed balance equation
-becomes
+becomes 
 \begin{equation}\label{eq:detailed_balance2}
     p(\theta)q(\theta'\mid\theta)\alpha(\theta,\theta') = p(\theta')q(\theta\mid\theta')\alpha(\theta',\theta)
 \end{equation}
 This condition, together with ergodicity, guarantees that the Markov chain has a
-unique stationary distribution $\pi(\theta) = p(\theta)$.
-
-For Bayesian inference, we would like to sample from a parameter distribution
-for $\theta$ based on some observed data, so the target distribution is
+unique stationary distribution $\pi(\theta) = p(\theta)$. For Bayesian inference, we would like to sample from a parameter distribution for $\theta$ based on some observed data, so the target distribution is
 $p(\theta \mid x_1, \ldots, x_N)$. The acceptance probability is now:
 \begin{equation}\label{eq:acceptance_probability}
     \alpha(\theta,\theta') = 
@@ -282,8 +275,8 @@ of the observations. Computing samples this way requires the use of all $N$
 training data points, but this is very expensive for large datasets. To address
 this challenge,~\citet{cutting_mh_2014,icml2014c1_bardenet14} perform approximate
 Metropolis-Hasting tests using sequential hypothesis testing. During each
-iteration, they start with a small minibatch of data and test the hypothesis
-that the sample $\theta'$ should be accepted based on an approximate version of
+iteration, they start with a small minibatch of data and test whether the sample $\theta'$ 
+should be accepted based on an approximate version of
 the test $u < \alpha(\theta,\theta')$. If the approximate test cannot make a
 decision with sufficient confidence, then the minibatch size is increased and
 the test repeats. This process continues until a decision. The bounds depend on
@@ -301,11 +294,9 @@ Following~\citet{icml2014c1_bardenet14}, we write the test $u <
 \psi(u,\theta,\theta')$, where\footnote{Our definitions differ from those in
 \citet{icml2014c1_bardenet14} by a factor of $N$ to simplify our analysis later.}
 \begin{equation}
-\begin{split}
-\Lambda(\theta,\theta') & = \sum_{i=1}^N \log\left(\frac{p(x_i|\theta')}{p(x_i|\theta)}\right)  
-\hspace{0.2in} \\
-{\rm and} \hspace{0.2in}
-\psi(u,\theta,\theta') & = \log\left(u\frac{q(\theta'|\theta)p_0(\theta)}{q(\theta|\theta')p_0(\theta')}\right)
+\begin{split} 
+\Lambda(\theta,\theta') & = \sum_{i=1}^N \log\left(\frac{p(x_i|\theta')}{p(x_i|\theta)}\right) \\  
+{\rm and} \quad \psi(u,\theta,\theta') &= \log\left(u\frac{q(\theta'|\theta)p_0(\theta)}{q(\theta|\theta')p_0(\theta')}\right) \\
 \end{split}
 \end{equation}
 To reduce computational effort, an unbiased estimate of $\Lambda(\theta,\theta')$
@@ -318,9 +309,9 @@ components that contribute to the sums above:
 \begin{equation}\label{eq:individual_terms}
 \Lambda_i(\theta,\theta') = N \log\left(\frac{p(x_i|\theta')}{p(x_i|\theta)}\right)  
 \end{equation}
-Thus, $\Lambda(\theta,\theta')$ is the mean of $\Lambda_i(\theta,\theta')$ over
-the entire dataset, and $\Lambda^*(\theta,\theta')$ is the mean of
-$\Lambda_i(\theta,\theta')$ over its minibatch. 
+%Thus, $\Lambda(\theta,\theta')$ is the mean of $\Lambda_i(\theta,\theta')$ over
+%the entire dataset, and $\Lambda^*(\theta,\theta')$ is the mean of
+%$\Lambda_i(\theta,\theta')$ over its minibatch. 
 
 Since minibatches contains randomly selected samples $x_i$, the values
 $\Lambda_i$ are independent, identically distributed (iid) random
@@ -350,10 +341,9 @@ Consider a Gaussian model where $x_1,\ldots,x_N \simiid \mathcal{N}(\theta,1)$
 with a known variance $\sigma^2=1$, true mean $\theta=0.5$, and a uniform prior
 on $\theta$. The log likelihood ratio is
 \begin{equation}\label{eq:lemma_ll_ratio}
-\begin{split}
-\Lambda^*(\theta,\theta') & =  \frac{N}{b}\sum_{i=1}^b \log\frac{p(x_i|\theta')}{p(x_i|\theta)} \\
-& = N(\theta'-\theta)\left(\frac{1}{b}\sum_{i=1}^b x_i-\theta-\frac{\theta'-\theta}{2}\right) \\
-\end{split}
+\resizebox{\linewidth}{!}{% 
+$\Lambda^*(\theta,\theta') =  \frac{N}{b}\sum_{i=1}^b \log\frac{p(x_i|\theta')}{p(x_i|\theta)} = N(\theta'-\theta)\left(\frac{1}{b}\sum_{i=1}^b x_i-\theta-\frac{\theta'-\theta}{2}\right)$
+}%
 \end{equation}
 which is normally distributed over selection of the Normal samples $x_i$.  Since
 the $x_i$ have unit variance, their mean has variance $1/b$, and the variance of
@@ -380,11 +370,10 @@ worst-case scenario is specified in Lemma~\ref{lem:worst_case}.
     the joint distribution of $(\theta, \theta', u)$, the tests
     from~\cite{cutting_mh_2014,icml2014c1_bardenet14} consume all $N$ samples. 
 \end{lemma}
-
+\vspace{-1em}
 \begin{proof}
 See Appendix~\ref{app:worst_case_proof}.
 \end{proof}
-
 Similar results can be shown for other distributions and proposals by
 identifying regions in product space $(\theta,\theta',u)$ such that the
 hypothesis test needs to separate nearly-equal values.  It follows that the
