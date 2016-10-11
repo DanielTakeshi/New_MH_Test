@@ -238,17 +238,19 @@ distribution on the interval $[a,b]$.  For simplicity, we drop the subscript $t$
 for the current sample $\theta_t$ and denote it as $\theta$. 
 
 The acceptance test guarantees detailed balance, which means
-$p(\theta)p(\theta'\mid\theta) = p(\theta')p(\theta \mid\theta')$,
-where $p(\theta'\mid\theta)$ is the probability of a transition from state
-$\theta$ to $\theta'$. Here $p(\theta'\mid\theta) =
-q(\theta'\mid\theta)\alpha(\theta,\theta')$ so the detailed balance equation
-becomes 
-\begin{equation}\label{eq:detailed_balance2}
-    p(\theta)q(\theta'\mid\theta)\alpha(\theta,\theta') = p(\theta')q(\theta\mid\theta')\alpha(\theta',\theta)
-\end{equation}
+$p(\theta)p(\theta'\mid\theta) = p(\theta')p(\theta \mid\theta')$, where
+$p(\theta'\mid\theta)$ is the probability of a transition from state $\theta$ to
+$\theta'$. Here, $p(\theta'\mid\theta)=q(\theta'\mid\theta)\alpha(\theta,\theta')$.
+% Daniel: I commented this out because people should know what it means and we
+%re-state another detailed balance equation later!
+%\begin{equation}\label{eq:detailed_balance2}
+%    p(\theta)q(\theta'\mid\theta)\alpha(\theta,\theta') = p(\theta')q(\theta\mid\theta')\alpha(\theta',\theta)
+%\end{equation}
 This condition, together with ergodicity, guarantees that the Markov chain has a
-unique stationary distribution $\pi(\theta) = p(\theta)$. For Bayesian inference, we would like to sample from a parameter distribution for $\theta$ based on some observed data, so the target distribution is
-$p(\theta \mid x_1, \ldots, x_N)$. The acceptance probability is now:
+unique stationary distribution $\pi(\theta) = p(\theta)$. For Bayesian
+inference, we would like to sample from a parameter distribution for $\theta$
+based on some observed data, so the target distribution is $p(\theta \mid x_1,
+\ldots, x_N)$. The acceptance probability is now:
 \begin{equation}\label{eq:acceptance_probability}
     \alpha(\theta,\theta') = 
     \frac{p_0(\theta')\prod_{i=1}^N p(x_i \mid \theta')q(\theta \mid
@@ -275,7 +277,7 @@ case, all $N$ data points may be needed, as we show in
 Section~\ref{ssec:gaussian_example}.
 
 Following~\citet{icml2014c1_bardenet14}, we write the test
-$u<\alpha(\theta,\theta')$ in the equivalent form $\Lambda(\theta,\theta') >
+$u<\alpha(\theta,\theta')$ equivalently as $\Lambda(\theta,\theta') >
 \psi(u,\theta,\theta')$, where\footnote{Our definitions differ from those
 in~\citet{icml2014c1_bardenet14} by a factor of $N$ to simplify our analysis
 later.}
@@ -314,8 +316,7 @@ central limit argument was used to derive this gap, while
 in~\citet{icml2014c1_bardenet14} a concentration bound was used. In
 both cases, the resulting tests were shown to give useful reductions
 in number of samples required over using the full dataset, but there
-were no worst-case bounds given on the average number of samples
-needed per iteration, which we explore in the following section.
+were no worst-case bounds, which we explore in the following section.
 
 \subsection{A Worst-Case Gaussian Example}\label{ssec:gaussian_example}
 
@@ -332,9 +333,8 @@ In order to pass a hypothesis test that $\Lambda > \psi$, there needs to be a
 large enough gap (several $\sigma(\Lambda^*)$) between
 $\Lambda^*(\theta,\theta')$ and $\psi(u,\theta,\theta')$. 
 
-Our goal is to sample from the posterior $p(\theta \mid x_1,\ldots,x_N)$, which
-is a normal distribution $\mathcal{N}(\mu, 1/N)$ centered on the sample mean
-$\mu$, and with variance $1/N$. In one dimension, an efficient proposal
+The posterior is a Gaussian centered on the sample mean $\mu$, and with variance
+$1/N$ (i.e., $\mathcal{N}(\mu, 1/N)$). In one dimension, an efficient proposal
 distribution has the same variance as the target
 distribution~\citep{OptimalScaling01}, so we use the proposal
 $\mathcal{N}(\theta,1/N)$, which is implemented as
@@ -352,7 +352,7 @@ worst-case scenario is specified in Lemma~\ref{lem:worst_case}.
 \end{lemma}
 \vspace{-1em}
 \begin{proof}
-See Appendix~\ref{app:worst_case_proof}.
+See Supplementary Material, Section~\ref{app:worst_case_proof}.
 \end{proof}
 Similar results can be shown for other distributions and proposals by
 identifying regions in product space $(\theta,\theta',u)$ such that the
@@ -360,14 +360,6 @@ hypothesis test needs to separate nearly-equal values.  It follows that the
 accelerated M-H tests in~\citet{cutting_mh_2014,icml2014c1_bardenet14} require at
 least a constant fraction $\geq c$ in the amount of data consumed per test
 compared to full-dataset tests, so their speed-up is at most $1/c$.
-
-% {\color{blue} Daniel: quick question: I think we should explain why our method
-% \emph{doesn't} run into this issue. I think it is because we rely on an
-% approximation to $\Delta + X_{\rm log} > 0$ and that test does not require any
-% ``difference between an approximation and an exact version'' because it is
-% \emph{already} an exact version, assuming the approximation is enough.
-% Also, in terms of this example, if we are in the special case with using a lot
-% of data, why not force early stopping?}
 
 The problem is that these methods use tail bounds to separate $\Delta$ away
 from zero, but for certain input/random $u$ combinations, $\Delta$ can be
@@ -427,10 +419,9 @@ minibatch of size $b$ respectively. The term $N/b$ means
 $\Delta^*(\theta,\theta')$ is an unbiased estimator of $\Delta(\theta,\theta')$.
 
 The key to our test is a smooth acceptance function.  We consider functions
-other than the classical Metropolis test that satisfy the detailed balance (see
-Equation~(\ref{eq:detailed_balance2})) condition needed for accurate posterior
-estimation. A class of functions leading to detailed balance is specified as
-follows:
+other than the classical Metropolis test that satisfy the detailed balance
+condition needed for accurate posterior estimation. A class of suitable
+functions is specified as follows:
 
 \begin{lemma}\label{lem:detailed_balance}
     If $g(s)$ is any function such that $g(s) = \exp(s) g(-s)$, then the
@@ -562,45 +553,46 @@ For computation of $C_\sigma$, we assume that its input $Y$ and another variable
 $X$ lie in the intervals $[-V,V]$ and $[-2V,2V]$, respectively.  In continuous
 form, the optimization problem is to find the $C_\sigma^*$ solving
 \[
-%\begin{equation}\label{eq:conv1}
     \argmin_{C\sigma} \sup_{x \in [-2V,2V]}\left|\int_{-V}^{V}\Phi_{\sigma}(x-y) C_{\sigma}(y)dy - S(x)\right|.
-%\end{equation}
 \]
 To get $C_\sigma^*$ in a computable form, we discretize $X$ and $Y$ into $4N+1$
 and $2N+1$ values respectively. If $i \in \{-2N, \ldots, 2N\}=\mathcal{I}$ and
 $j \in \{-N, \ldots, N\}$, then we can write $X_i = i(V/N)$ and $Y_j = j(V/N)$,
 and the objective can be re-expressed as:
 \[
-%\begin{equation}\label{eq:conv2}
     C_\sigma^* = \argmin_{C_\sigma} \max_{i \in \mathcal{I}}\left|\sum_{j = -N}^{N}\Phi_{\sigma}(X_i-Y_j) C_{\sigma}(Y_j) - S(X_i)\right|.
-%\end{equation}
 \]
 We now define a matrix $M$ and vectors $u$ and $v$ such that $M_{ij} =
 \Phi_{\sigma}(X_i-Y_j)$, $u_j = C_{\sigma}(Y_j)$, and $v_i = S(X_i)$, where the
 indices $i$ and $j$ are appropriately translated to be non-negative indices for
-$M, u,$ and $v$. Thus, the problem is now to minimize the $L_{\infty}$ norm:
-\begin{equation}\label{eq:optimization_l1}
-    u^* = \argmin_{u} \|Mu-v\|_{\infty}.
-\end{equation}
-We have the additional constraint that $u_j > 0$ for all $j$, since $u$
-represents a density. We first explored optimizing this problem with linear
-programming to find a $u$ minimizing $\|Mu - v\|_\infty$ subject to $u \ge 0$.
-
-This was tractable up to a few hundred dimensions for $u$.  However, the
-discretization error is bounded by the curvature of the underlying functions
-times the squared quantization step. The curvatures are here slightly less than
-one, i.e.  the errors are of the order of $(V/N)^2$.  Here we chose $V=20$ to
-provide adequate containment of the distributions (the CDFs are extremely close
-to either zero or one outside this range). So with 200 points, we have a
-discretization error of approximately 0.01, which is relatively large.  To yield
-higher resolution and lower error, we switched to a least squares solution:
+$M, u,$ and $v$. Thus, the problem is now to minimize $\|Mu-v\|_{\infty}$ with
+the constraint that $u > 0$ since it represents a density. We approximate this
+with a least squares solution:
 \begin{equation}\label{eq:optimization_l2}
     u^* = \argmin_u\; \|Mu-v\|_2^2 + \lambda \|u\|_2^2,
 \end{equation}
 where we add the standard regularization factor $\lambda$. The solution is
 well-known from the normal equations: $u^* = (M^TM + \lambda I)^{-1}M^Tv$, and
-in practice, it yields an acceptable $L_{\infty}$ norm for
-Equation~(\ref{eq:optimization_l1}).
+in practice, it yields an acceptable $L_{\infty}$ norm.
+
+% Daniel: This was taking up too much space, and we usually don't want to spend
+% a paragraph explaining what *didn't* work, and readers will know what it means
+% to minimize the L-infinity norm, we can put it inline.
+% \begin{equation}\label{eq:optimization_l1}
+%     u^* = \argmin_{u} \|Mu-v\|_{\infty}.
+% \end{equation}
+% We have the additional constraint that $u_j > 0$ for all $j$, since $u$
+% represents a density. We first explored optimizing this problem with linear
+% programming to find a $u$ minimizing $\|Mu - v\|_\infty$ subject to $u \ge 0$.
+% 
+% This was tractable up to a few hundred dimensions for $u$.  However, the
+% discretization error is bounded by the curvature of the underlying functions
+% times the squared quantization step. The curvatures are here slightly less than
+% one, i.e.  the errors are of the order of $(V/N)^2$.  Here we chose $V=20$ to
+% provide adequate containment of the distributions (the CDFs are extremely close
+% to either zero or one outside this range). So with 200 points, we have a
+% discretization error of approximately 0.01, which is relatively large.  To yield
+% higher resolution and lower error, we switched to a least squares solution:
 
 \SetKwInOut{Input}{Input}
 \SetKwInOut{Output}{Output}
@@ -725,12 +717,6 @@ which approaches a normal distribution in the limit. Then
 
 \begin{proof}
 The following bound is given immediately after Corollary 2 from~\citet{explicit-clt05}:
-%% \begin{equation}\label{eq:clt-boundsx}
-%% \begin{split}
-%% -6.4E|X|^3-2E|X| &\leq \sup_x|{\rm Pr}(t<x)-\Phi(x)|{\sqrt{n}} \\
-%% &\leq 1.36E|X|^3.
-%% \end{split}
-%% \end{equation}
 \begin{align*}
 -6.4E|X|^3-2E|X| &\leq \sup_x|{\rm Pr}(t<x)-\Phi(x)|{\sqrt{n}} \\
 &\leq 1.36E|X|^3.
@@ -808,21 +794,8 @@ and y with density $R(y)$.  Then
 \end{lemma}
 
 \begin{proof}
-See Appendix~\ref{app:proof_cdf_bounds}.
+See Supplementary Material, Section~\ref{app:proof_cdf_bounds}.
 \end{proof}
-
-%% {\color{blue} Daniel: Hold on, the following Corollary seems to add $X_{\rm norm}$
-%% to both random variables we are comparing (and \emph{then} $X_{\rm corr}$). But
-%% didn't the previous section already justify that $\Delta^* \approx \Delta +
-%% X_{\rm norm}$? That is, I don't think we need to add another $X_{\rm norm}$; I
-%% think we just want to add $X_{\rm corr}$. Otherwise, this new test does not
-%% match what we wrote earlier.
-
-%% I think the easiest way to resolve this is to do the following: we assume that
-%% $\Delta^*$ is already $\Delta + X_{\rm noise}$. Then all we need to do is add
-%% $X_{\rm corr}$. So this is the same as what we are doing, except we do not need
-%% to apply Lemma~\ref{lem:cdf_bounds} twice; we just need to do it once because we
-%% are only adding $X_{\rm corr}$, not $X_{\rm norm}$.}
 
 From Lemma~\ref{lem:cdf_bounds}, we have the following Corollary:
 
@@ -836,35 +809,7 @@ where $S(x)$ is the standard logistic function, and $X_{\rm nc}$ and $X_{\rm cor
 \end{corollary}
 
 \begin{proof}
-We apply Lemma~\ref{lem:cdf_bounds} twice. First take:
-\begin{equation}
-\begin{split}
-    P(y) & = {\rm Pr}(\Delta^* < y) \\
-     {\rm and} \quad Q(y) & = \Phi\left(\frac{y-\Delta}{s_{\Delta^*}}\right)
-\end{split}
-\end{equation}
-and convolve with the distribution of $X_n$ which has density $\phi(X/\sigma_n)$
-where $\sigma_n^2 = 1 - s^2_{\Delta^*}$. This yields the next iteration of $P$
-and $Q$:
-\begin{equation}
-\begin{split}
-    P'(y) & = {\rm Pr}(\Delta^*+X_{\rm nc} < y) \\
-    \quad {\rm and}\quad Q'(y) & = \Phi\left({y-\Delta}\right)
-\end{split}
-\end{equation}
-Now we convolve with the distribution of $X_{\rm corr}$:
-\begin{equation}
-\begin{split}
-    P''(y) & = {\rm Pr}(\Delta^*+X_{\rm nc}+X_{\rm corr} < y) \\
-    \quad {\rm and}\quad Q''(y) & = S\left({y-\Delta}\right)
-\end{split}
-\end{equation}
-Both steps preserve the error bound $\epsilon(\theta,\theta',b)$. Finally
-$S(y-\Delta)$ is a logistic CDF centered at $\Delta$, and so $S(y-\Delta) = {\rm
-Pr}(\Delta + X_{\rm log} < y)$ for a logistic random $X_{\rm log}$. We conclude
-that the probability of acceptance for the actual test ${\rm Pr}(\Delta^*+X_{\rm
-nc}+X_{\rm corr} > 0)$ differs from the exact test ${\rm Pr}(\Delta+X_{\rm
-log} > 0)$ by at most $\epsilon$.
+See Supplementary Material, Section~\ref{app:bounds_preserved}.
 \end{proof}
 
 As our discussion in Section~\ref{sec:our_algorithm} showed, as the distribution
@@ -873,31 +818,35 @@ Corollary~\ref{cor:bounds_preserved} shows that the bounds from
 Section~\ref{ssec:delta_star_distribution} are preserved after the addition of
 the random variables we use, showing that our test should remain accurate.
 
-%% {\color{blue} Daniel: Do we want to include this new analysis? There seem to be
-%% two different ways we show the bound. The first part (above) is nice and I like
-%% it (and it seems to show all we need for Algorithm 1, doesn't it?}
+
+% Daniel: this is probably less important than other parts of the paper. Hence,
+% I put it in as \begin{comment} ... \end{comment} but we can think about
+% including it back in if it is important enough.
+
+\begin{comment}
 
 \subsection{Bounds on the Stationary Distribution}
-Bounds on the error of an M-H test imply bounds on the stationary
-distributed of the Markov chain under appropriate conditions. Such
-bounds were derived in both ~\citet{cutting_mh_2014}
-and~\citet{icml2014c1_bardenet14}. We include the result from
-~\citet{cutting_mh_2014} (Theorem 1) here: Let $d_v(P,Q)$ denote the total
-variation distance between two distributions $P$ and $Q$.  Let
-$\mathcal{T}_0$ denote the transition kernel of the exact Markov
-chain, $\mathcal{S}_0$ denote the exact posterior distribution,
-and  $\mathcal{S}_{\epsilon}$ denote the stationary distribution
-of the approximate transition kernel. 
+
+Bounds on the error of an M-H test imply bounds on the stationary distribution
+of the Markov chain under appropriate conditions. Such bounds were derived in
+both ~\citet{cutting_mh_2014} and~\citet{icml2014c1_bardenet14}. We include the
+result from~\citet{cutting_mh_2014} (Theorem 1) here: Let $d_v(P,Q)$ denote the
+total variation distance between two distributions $P$ and $Q$.  Let
+$\mathcal{T}_0$ denote the transition kernel of the exact Markov chain,
+$\mathcal{S}_0$ denote the exact posterior distribution, and
+$\mathcal{S}_{\epsilon}$ denote the stationary distribution of the approximate
+transition kernel. 
 \begin{lemma}
- If $\mathcal{T}_0$ satisfies the contraction
-  condition $d_v(P\mathcal{T}_0,\mathcal{S}_0) < \eta
-  d_v(P,\mathcal{S}_0)$ for some constant $\eta\in [0,1)$ and all
-    probability distributions $P$, then
-    \begin{equation}
+If $\mathcal{T}_0$ satisfies the contraction condition
+$d_v(P\mathcal{T}_0,\mathcal{S}_0) < \eta d_v(P,\mathcal{S}_0)$ for some
+constant $\eta\in [0,1)$ and all probability distributions $P$, then
+\begin{equation}
       d_v(S_0, S_{\epsilon}) \leq\frac{\epsilon}{1-\eta}
-    \end{equation}
+\end{equation}
 where $\epsilon$ is the bound on the error in the acceptance test. 
 \end{lemma}
+
+\end{comment}
 
 \subsection{Improved Error Bounds Based on Skew Estimation}
 In fact we can do better than $O(n^{-1/2})$ error for the quantitative CLT (showing the error decreases as
@@ -942,7 +891,7 @@ $\phi(x)=\Phi'(x)$, the correction term can be rewritten giving:
     G_n(x,y) = \Phi(x) + \frac{y}{6\sqrt{n}}(2\phi^{''}(x)+3\phi(x))
 \end{equation}
 From which we see that $G_n(x,y)$ is a linear combination of $\Phi(x)$,
-$\phi(x)$ and $\phi^{''}(x)$. This is quite fortuitous. In Algorithm 1, we
+$\phi(x)$ and $\phi^{''}(x)$. In Algorithm 1, we
 correct for the difference in $\sigma$ between $\Delta^*$ and the variance
 needed by $X_{\rm corr}$ using $X_{\rm nc}$. This same method works when we
 wish to estimate the error in $\Delta^*$ vs $G_n(x,y)$. Since all of the
@@ -1408,9 +1357,9 @@ probability of the conjunction of these events is $c = p_0 p_1 p_2 = 0.0085$.
 \section{Proof of Lemma~\ref{lem:cdf_bounds}}\label{app:proof_cdf_bounds}
 
 We first observe that
-\begin{equation}\label{eq:pdf_difference}
+\[
     P'(z) - Q'(z) = \int_{-\infty}^{+\infty}(P(z-x)-Q(z-x))R(x) dx,
-\end{equation}
+\]
 and since $\sup_x|P(x)-Q(x)|\leq \epsilon$ it follows that for all $z$:
 \begin{align*}
 -\epsilon &= \int_{-\infty}^{+\infty} -\epsilon R(x) dx \\
@@ -1418,6 +1367,40 @@ and since $\sup_x|P(x)-Q(x)|\leq \epsilon$ it follows that for all $z$:
 &\leq \int_{-\infty}^{+\infty}\epsilon R(x) dx = \epsilon,
 \end{align*}
 as desired.
+
+
+
+\section{Proof of Corollary~\ref{cor:bounds_preserved}}\label{app:bounds_preserved}
+
+We apply Lemma~\ref{lem:cdf_bounds} twice. First take:
+\begin{equation}
+\begin{split}
+    P(y) & = {\rm Pr}(\Delta^* < y) \\
+     {\rm and} \quad Q(y) & = \Phi\left(\frac{y-\Delta}{s_{\Delta^*}}\right)
+\end{split}
+\end{equation}
+and convolve with the distribution of $X_n$ which has density $\phi(X/\sigma_n)$
+where $\sigma_n^2 = 1 - s^2_{\Delta^*}$. This yields the next iteration of $P$
+and $Q$:
+\begin{equation}
+\begin{split}
+    P'(y) & = {\rm Pr}(\Delta^*+X_{\rm nc} < y) \\
+    \quad {\rm and}\quad Q'(y) & = \Phi\left({y-\Delta}\right)
+\end{split}
+\end{equation}
+Now we convolve with the distribution of $X_{\rm corr}$:
+\begin{equation}
+\begin{split}
+    P''(y) & = {\rm Pr}(\Delta^*+X_{\rm nc}+X_{\rm corr} < y) \\
+    \quad {\rm and}\quad Q''(y) & = S\left({y-\Delta}\right)
+\end{split}
+\end{equation}
+Both steps preserve the error bound $\epsilon(\theta,\theta',b)$. Finally
+$S(y-\Delta)$ is a logistic CDF centered at $\Delta$, and so $S(y-\Delta) = {\rm
+Pr}(\Delta + X_{\rm log} < y)$ for a logistic random $X_{\rm log}$. We conclude
+that the probability of acceptance for the actual test ${\rm Pr}(\Delta^*+X_{\rm
+nc}+X_{\rm corr} > 0)$ differs from the exact test ${\rm Pr}(\Delta+X_{\rm
+log} > 0)$ by at most $\epsilon$.
 
 
 \end{document}
