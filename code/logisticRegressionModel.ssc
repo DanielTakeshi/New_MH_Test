@@ -24,19 +24,20 @@
 
 // IMPORTANT STUFF! AT LEAST CHECK THESE EVERY TIME YOU RUN SOMETHING!
 val nsamps = 3000           // The number of \theta values to sample (i.e., number of iterations).
-val test_to_use = "bard"    // Three options: "ours", "kora", or "bard". Use one of these.
+val test_to_use = "kora"    // Three options: "ours", "kora", or "bard". Use one of these.
 val k = 50000               // k = (#training)+(#testing) points. This will change the output data names.
-val temperature = k/100.0   // This was 1000.0 for the previous MNIST (not 8M) experiment.
 val n = (0.8*k).toInt       // The number of training points, should be 80% of k.
+val temperature = n/100.0   // This was 1000.0 for the previous MNIST (not 8M) experiment.
+val batchsize = 5           // I'm also experimenting with changing minibatch sizes.
+val cutMHeps = 0.1          // Set this here (to keep all modifiable parameters here).
+val adapt_gamma = 2.00      // The gamma value for the adaptive MH test.
 
-// LESS IMPORTANT STUFF now (don't have to tweak these values):
-// EDIT: Actually, the 'cutMHtest.eps' value below is important ...
+// LESS IMPORTANT STUFF BELOW
 val train_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TRAIN_" +k+ ".fmat.lz4"
 val test_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TEST_" +k+ ".fmat.lz4"
 
 val sigma = 1.0
 val pscale = 1.0
-val batchsize = 100
 val sigma_proposer = 0.05;
 
 // Let's load the test data.
@@ -54,7 +55,8 @@ val cutMHtest = new cutMHTest;
 val adaptiveMHtest = new adaptiveMHTest;
 cutMHtest.N = n;
 adaptiveMHtest.N = n;
-cutMHtest.eps = 1.0; // IMPORTANT!
+adaptiveMHtest.gamma = adapt_gamma;
+cutMHtest.eps = cutMHeps
 
 /**
  * TODO document!
