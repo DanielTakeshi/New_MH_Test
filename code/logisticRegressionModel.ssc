@@ -25,32 +25,24 @@
 // IMPORTANT STUFF! AT LEAST CHECK THESE EVERY TIME YOU RUN SOMETHING!
 val nsamps = 3000           // The number of \theta values to sample (i.e., number of iterations).
 val test_to_use = "kora"    // Three options: "ours", "kora", or "bard". Use one of these.
-val k = 50000               // k = (#training)+(#testing) points. This will change the output data names.
-val n = (0.8*k).toInt       // The number of training points, should be 80% of k.
+val k = 1929350              // k = (#training)+(#testing) points. This will change the output data names.
+val n = 1736415       // The number of training points, should be 80% of k.
 val temperature = n/100.0   // This was 1000.0 for the previous MNIST (not 8M) experiment.
 val batchsize = 5           // I'm also experimenting with changing minibatch sizes.
-val cutMHeps = 0.1          // Set this here (to keep all modifiable parameters here).
+val cutMHeps = 0.05          // Set this here (to keep all modifiable parameters here).
 val adapt_gamma = 2.00      // The gamma value for the adaptive MH test.
 
 // LESS IMPORTANT STUFF BELOW
-val train_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TRAIN_" +k+ ".fmat.lz4"
-val test_data_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/FINAL_MNIST8M_TEST_" +k+ ".fmat.lz4"
+val train_data_dir = "/home/xinleipan/data/FINAL_MNIST8M_TRAIN_1736415.fmat.lz4"
+val test_data_dir = "/home/xinleipan/data/FINAL_MNIST8M_TEST_192935.fmat.lz4";
 
 val sigma = 1.0
 val pscale = 1.0
 val sigma_proposer = 0.05;
 
-// Let's load the test data.
-val testdata = loadFMat(test_data_dir);
-val X = testdata(0 until testdata.dims(0)-1, ?)/255.0;
-var Y = testdata(testdata.dims(0)-1, ?);
-Y(find(Y==7)) = -1;
-
 // Create the different tests we will be using.
 val newtest = new NewTest;
 newtest.explin = false;
-val oldtest = new OldTest;
-oldtest.explin = false;
 val cutMHtest = new cutMHTest;
 val adaptiveMHtest = new adaptiveMHTest;
 cutMHtest.N = n;
@@ -65,12 +57,7 @@ class LogisticRegression(n:Int, sigma:Double, pscale: Double) extends MHmodel (1
 	
     var sigma_proposer = 0.05;
     var temp = 1.0;
-    var data_loaded = loadFMat(train_data_dir);
-    data_loaded(0 until data_loaded.dims(0)-1, ?) = data_loaded(0 until data_loaded.dims(0)-1, ?)/255.0;
-    var labels = data_loaded(data_loaded.dims(0)-1, ?);
-    labels(find(labels==7)) = -1;
-    data_loaded(data_loaded.dims(0)-1,?) = labels;
-    val data = data_loaded;
+    val data = loadFMat(train_data_dir);
 
     /**
      * TODO document!
@@ -125,11 +112,18 @@ def eval_cost(X:DMat, Y:DMat, theta:DMat): (DMat, DMat) = {
  * @param exp_type The String which represents which test. Options: "ours", "kora", and "bard".
  * @param nn The LogisticRegression model we are using.
  */
+ 
 def run_experiment(exp_type:String, nn:LogisticRegression) = {
 
     // TEST #1: OUR METHOD ("ours")
     if (exp_type == "ours") {
+        
         val (samples, mb_size, ll_train) = dosimm(mod=nn, test=newtest, size=batchsize, nsamps=nsamps, acc=0.05);
+
+        val testdata = loadFMat(test_data_dir);
+        val X = testdata(0 until testdata.dims(0)-1, ?);
+        var Y = testdata(testdata.dims(0)-1, ?);
+
         val (accuracy, ll_test) = eval_cost(X, Y, samples);
         val cum_size = cumsum(DMat(mb_size));
 
@@ -143,6 +137,11 @@ def run_experiment(exp_type:String, nn:LogisticRegression) = {
     // TEST #2: KORATTIKARA ("kora")
     else if (exp_type == "kora") {
         val (samples, mb_size, ll_train) = cutMHTest_dosimm(mod=nn, test=cutMHtest, size=batchsize, nsamps=nsamps, acc=0.05);
+
+        val testdata = loadFMat(test_data_dir);
+        val X = testdata(0 until testdata.dims(0)-1, ?);
+        var Y = testdata(testdata.dims(0)-1, ?);
+
         val (accuracy, ll_test) = eval_cost(X, Y, samples);
         val cum_size = cumsum(DMat(mb_size));
 
@@ -156,6 +155,11 @@ def run_experiment(exp_type:String, nn:LogisticRegression) = {
     // TEST #3: BARDENET ("bard")
     else if (exp_type == "bard") {
         val (samples, mb_size, ll_train, bc1c2_list) = adaptiveMH_dosimm(mod=nn, test=adaptiveMHtest, size=batchsize, nsamps=nsamps, acc=0.05);
+
+        val testdata = loadFMat(test_data_dir);
+        val X = testdata(0 until testdata.dims(0)-1, ?);
+        var Y = testdata(testdata.dims(0)-1, ?);
+
         val (accuracy, ll_test) = eval_cost(X, Y, samples);
         val cum_size = cumsum(DMat(mb_size));
 
@@ -178,8 +182,13 @@ val nn = new LogisticRegression(n=n, sigma=sigma, pscale=pscale);
 nn.temp = temperature;
 nn.sigma_proposer = sigma_proposer;
 
+
 // -------------------------- //
 // CHOOSE WHICH METHOD TO RUN //
 // -------------------------- //
-run_experiment(test_to_use, nn) 
-
+val test_to_use = "ours"
+run_experiment(test_to_use, nn)
+val test_to_use = "kora"
+run_experiment(test_to_use, nn)  
+// val test_to_use = "bard"
+// run_experiment(test_to_use, nn) 
