@@ -423,7 +423,7 @@ A minibatch estimator of $\Delta$, denoted as $\Delta^*$, is
 \end{split}
 \end{equation}
 Note that $\Delta$ and $\Delta^*$ are evaluated on the full dataset and a
-minibatch of size $b$ respectively. The scaling term $N/b$ ensures that
+minibatch of size $b$ respectively. The term $N/b$ means
 $\Delta^*(\theta,\theta')$ is an unbiased estimator of $\Delta(\theta,\theta')$.
 
 The key to our test is a smooth acceptance function.  We consider functions
@@ -608,23 +608,22 @@ Equation~(\ref{eq:optimization_l1}).
 \Input{Number of samples $T$, minibatch size $m$, error bound $\delta$, pre-computed correction $C_1(X)$ distribution, initial sample $\theta_1$.}
 \Output{A chain of $T$ samples $\{\theta_1, \ldots, \theta_T\}$ from $p(\theta)$\;}
 \For{$t=\{1, \ldots, T\}$}{
-    Propose a candidate $\theta'$\ from proposal $q(\theta'\mid\theta_t)$\;
-    Draw a minibatch of $m$ points $x_i$, compute $\Delta^*(\theta_t,\theta')$ and sample variance $s^2_{\Delta^*}$\;
-    Estimate moments $E|\Lambda_i-\Lambda|$ and $E|\Lambda_i-\Lambda|^3$ from the sample, and error $\epsilon$ from Corollary~\ref{cor:our_bound_delta_prime}\;
+    -Propose a candidate $\theta'$\ from proposal $q(\theta'\mid\theta_t)$\;
+    -Draw a minibatch of $m$ points $x_i$, compute $\Delta^*(\theta_t,\theta')$ and sample variance $s^2_{\Delta^*}$\;
+    -Estimate moments $E|\Lambda_i-\Lambda|$ and $E|\Lambda_i-\Lambda|^3$ from the sample, and error $\epsilon$ from Corollary~\ref{cor:our_bound_delta_prime}\;
     \While {$s^2_{\Delta^*} \ge 1$ {\bf or} $\epsilon > \delta$}{
-    	Draw $m$ more samples to augment the minibatch, update $\Delta^*$, $s^2_{\Delta^*}$ and $\epsilon$ estimates\;
+    	-Draw $m$ more samples to augment the minibatch, update $\Delta^*$, $s^2_{\Delta^*}$ and $\epsilon$ estimates\;
     }
-    Draw $X_{\rm nc} \sim \mathcal{N}(0,1-s^2_{\Delta^*})$ and
-    $X_{\rm corr}$ from the correction distribution $C_1(X)$\;
+    -Draw $X_{\rm nc} \sim \mathcal{N}(0,1-s^2_{\Delta^*})$ and $X_{\rm corr}$ from the correction distribution $C_1(X)$\;
         
         \eIf{$\Delta^* + X_{\rm nc} + X_{\rm corr} > 0$}{
-            Accept the candidate, $\theta_{t+1} = \theta'$\;
+            -Accept the candidate, $\theta_{t+1} = \theta'$\;
         }{
-            Reject and re-use the old sample, $\theta_{t+1} = \theta_t$\;
+            -Reject and re-use the old sample, $\theta_{t+1} = \theta_t$\;
         }
     
 }
-\caption{A description of M-H sampling with our acceptance test.}
+\caption{Our acceptance test for MCMC.}
 \label{alg:our_algorithm}
 \end{algorithm}
 
@@ -693,22 +692,22 @@ network. In general, since a new $\theta'$ value is obtained each iteration, one
 would need to iterate through all the $p(x_i\mid \theta')$ terms, defeating the
 purpose of minibatch MCMC.
 
-In this paper, we use quantitative forms of the Central Limit Theorem which rely
-on measurable statistics from a single minibatch. Thus a sampler using our
-approach does not need to ``see'' data beyond the current minibatch. This
-supports use of the sampler on very large datasets, and in online mode where the
-dataset is presented as a stream.
+Here, we use quantitative forms of the Central Limit Theorem which rely on
+measurable statistics from a single minibatch. Thus a sampler using our approach
+does not need to see data beyond the current minibatch, and can easily be
+applied on large datasets and in online modes where the data is presented as a
+stream.
 
-For the analysis, in Section~\ref{ssec:delta_star_distribution}, we first
-present bounds on the absolute and relative error (in terms of the CDFs) of the
-distribution of $\Delta^*$ vs a Gaussian. We then show in
-Section~\ref{ssec:preserve_bounds} that these error bounds are preserved after
-the addition of other random variables, in particular $X_{\rm nc}$ and $X_{\rm
-corr}$. From this it follows that the acceptance test has the same error bound.
+In Section~\ref{ssec:delta_star_distribution}, we present bounds on the absolute
+and relative error (in terms of the CDFs) of the distribution of $\Delta^*$ vs.
+a Gaussian. We then show in Section~\ref{ssec:preserve_bounds} that these bounds
+are preserved after the addition of other random variables (e.g., $X_{\rm nc}$
+and $X_{\rm corr}$). It then follows that the acceptance test has the same error
+bound.
 
 \subsection{Bounding the Error of $\Delta^*$ from Gaussian}\label{ssec:delta_star_distribution}
 
-To start, we use the following quantitative central-limit result:
+We use the following quantitative central-limit result:
   
 \begin{lemma}\label{lem:quant_clt}
 Let $X_1,\ldots,X_n$ be a set of zero-mean, independent, identically-distributed
@@ -756,7 +755,7 @@ third absolute moments $E|X|$ and $E|X|^3$, we can bound the error of the normal
 approximation, which decays as $O(n^{-\frac{1}{2}})$. Making the change of
 variables $y = x s_X$, Equation~(\ref{eq:clt-bounds}) becomes
 \begin{equation}\label{eq:clt-bounds2}
-   \sup_y\left|{\rm Pr}(\bar{X}< y) - \Phi\left(\frac{y}{s_X}\right)\right| \leq \frac{6.4E|X|^3+2E|X|}{\sqrt{n}},
+   \sup_y\left|{\rm Pr}(\bar{X}< y) - \Phi\left(\frac{y}{s_X}\right)\right| \leq \frac{6.4E|X|^3+2E|X|}{\sqrt{n}}
 \end{equation}
 showing that the distribution of $\bar{X}$ approaches the normal distribution
 $\mathcal{N}(0,s_X)$ whose variance is $s_X$,
@@ -778,7 +777,7 @@ We can now substitute into Equation~(\ref{eq:clt-bounds2}) and displace by the m
     \sup_y\left|{\rm Pr}(\Delta^*< y) - \Phi\left(\frac{y-\Delta}{s_{\Delta^*}}\right)\right| &\leq \frac{6.4E|X|^3+2E|X|}{\sqrt{b}} \\
     &= \epsilon(\theta,\theta',b).
 \end{align*}
-\end{corollary}
+\end{corollary} %\vspace{-10pt}
 Corollary~\ref{cor:our_bound_delta_prime} shows that the distribution of
 $\Delta^*$ approximates a Normal distribution with mean $\Delta$ and variance
 $s^2_{\Delta^*}$. Furthermore, it bounds the error with \emph{estimable
@@ -825,15 +824,14 @@ See Appendix~\ref{app:proof_cdf_bounds}.
 %% to apply Lemma~\ref{lem:cdf_bounds} twice; we just need to do it once because we
 %% are only adding $X_{\rm corr}$, not $X_{\rm norm}$.}
 
-Relating Lemma~\ref{lem:cdf_bounds} to our acceptance test, we have the
-following Corollary:
+From Lemma~\ref{lem:cdf_bounds}, we have the following Corollary:
 
 \begin{corollary}\label{cor:bounds_preserved}
 If $\sup_y|{\rm Pr}(\Delta^* < y) - \Phi(\frac{y-\Delta}{s_{\Delta^*}})|
 \leq \epsilon(\theta,\theta',b)$, then
-\begin{equation}
+\[
     \sup_y|{\rm Pr}(\Delta^*+X_{\rm nc}+X_{\rm corr} < y) - S(y-\Delta)| \leq \epsilon(\theta,\theta',b)
-\end{equation}
+\]
 where $S(x)$ is the standard logistic function, and $X_{\rm nc}$ and $X_{\rm corr}$ are generated as per Algorithm 1. 
 \end{corollary}
 
@@ -1012,14 +1010,13 @@ target as shown in the far left of Figure~\ref{fig:gauss_mix_1}.
 
 We run MCMC with our MH test and benchmark with~\citet{cutting_mh_2014}
 and~\citet{icml2014c1_bardenet14}, all with initial minibatch size $m=100$.
-For~\citet{cutting_mh_2014}, we increment minibatches by 100 as recommended, and
+For~\citet{cutting_mh_2014}, we increment minibatches by 100 and
 for~\citet{icml2014c1_bardenet14}, we increase the minibatch size geometrically
-with a ratio of $\gamma = 1.5$ as recommended. These tests use different
-minibatch size updates because of their different approaches to repeated
-testing. The former uses a more aggressive repeated testing approach, explicitly
+with a ratio of $\gamma = 1.5$. These methods have different approaches to
+repeated testing: the former uses an aggressive testing approach, explicitly
 modeling correlation between tests and allowing many more tests for a given
-$\delta$.  The latter uses straightforward discounting, allocating a fraction of
-the test error $\delta$ to each minibatch test.
+$\delta$, while the latter uses discounting, allocating a fraction of the test
+error $\delta$ to each minibatch test.
 
 The tolerance for making a decision in~\citet{cutting_mh_2014} is
 $\epsilon=0.005$, and the error bound control parameters
