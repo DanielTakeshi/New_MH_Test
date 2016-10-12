@@ -686,10 +686,13 @@ bounding:
 Such bounds can be derived efficiently for models such as logistic regression,
 but it is unclear how to derive them for a complex model such as a neural
 network. In general, since a new $\theta'$ value is obtained each iteration, one
-would need to iterate through all the $p(x_i\mid \theta')$ terms, defeating the
-purpose of minibatch MCMC. In contrast, we use quantitative forms of the Central
-Limit Theorem which rely on measurable statistics from a single minibatch. Thus
-a sampler using our approach does not need to see data beyond the current
+would need to iterate through all the $p(x_i\mid \theta')$ terms\footnote{The
+sample code provided by the authors of~\citet{icml2014c1_bardenet14} in fact
+computes $C_{\theta,\theta'}$ explicitly for each sample generated, i.e. it
+traverses the entire data, thus providing no performance advantage over the
+complete test.}. In contrast, we use quantitative forms of the Central Limit
+Theorem which rely on measurable statistics from a single minibatch. Thus a
+sampler using our approach does not need to see data beyond the current
 minibatch.
 
 In Section~\ref{ssec:delta_star_distribution}, we present bounds on the absolute
@@ -718,14 +721,7 @@ which approaches a normal distribution in the limit. Then
 \end{lemma}
 
 \begin{proof}
-The following bound is given immediately after Corollary 2 from~\citet{explicit-clt05}:
-\begin{align*}
--6.4E|X|^3-2E|X| &\leq \sup_x|{\rm Pr}(t<x)-\Phi(x)|{\sqrt{n}} \\
-&\leq 1.36E|X|^3.
-\end{align*}
-This bound applies to $x\geq 0$. Applying the bound to $-x$ when $x<0$
-and combining with $x>0$, we obtain the weaker but unqualified bound
-in Equation~(\ref{eq:clt-bounds}).
+See Supplementary Material, Section~\ref{app:quant_clt}.
 \end{proof}
 
 %% {\color{blue} Daniel: the notation here was (and still is, to a lesser extent)
@@ -894,10 +890,6 @@ efficiency on logistic regression.
 We start with a simple Gaussian mixture model, borrowing an experiment
 from~\citet{langevin_2011}.  The parameter is 2-D, $\theta =
 \langle \theta_1,\theta_2 \rangle$, and the parameter/data generation process is
-%% \begin{equation}\label{eq:data_generation}
-%%     (\theta_1,\theta_2) \sim \mathcal{N}((0,0), {\rm diag}(\sigma_1^2, \sigma_2^2));\quad \quad x_i \sim
-%%     0.5 \cdot \mathcal{N}(\theta_1, \sigma_x^2) + 0.5 \cdot \mathcal{N}(\theta_1+\theta_2, \sigma_x^2).
-%% \end{equation}
 \begin{equation}\label{eq:data_generation}
 \begin{split}
     \theta &\sim \mathcal{N}(0, {\rm diag}(\sigma_1^2,\sigma_2^2)) \\
@@ -915,44 +907,35 @@ posterior, so we adjust the temperature to $T=10,000$.  Taking logs, we get the
 target as shown in the far left of Figure~\ref{fig:gauss_mix_1}.
 
 We run MCMC with our MH test and benchmark with~\citet{cutting_mh_2014}
-and~\citet{icml2014c1_bardenet14}, all with initial minibatch size $m=100$.
-For~\citet{cutting_mh_2014}, we increment minibatches by 100 and
-for~\citet{icml2014c1_bardenet14}, we increase the minibatch size geometrically
-with a ratio of $\gamma = 1.5$. These methods have different approaches to
-repeated testing: the former uses an aggressive testing approach, explicitly
-modeling correlation between tests and allowing many more tests for a given
-$\delta$, while the latter uses discounting, allocating a fraction of the test
-error $\delta$ to each minibatch test.
-
-The tolerance for making a decision in~\citet{cutting_mh_2014} is
-$\epsilon=0.005$, and the error bound control parameters
-in~\citet{icml2014c1_bardenet14} are $p = 2$ and $\delta = 0.01$.  All methods
-(including ours) use the same random walk proposer with covariance $\Sigma={\rm
-diag}(0.15, 0.15)$.  Since the proposer generates a random walk, all shaping of
-distribution of the samples is due to the MH test. All methods are run 5000
-times to collect 5000 samples.
+and~\citet{icml2014c1_bardenet14}, all with initial minibatch size $m=100$.  For
+the former, we increment minibatches by 100 and for the latter, we increase it
+geometrically with a ratio of $\gamma = 1.5$.  The tolerance for making a
+decision in~\citet{cutting_mh_2014} is $\epsilon=0.005$, and the error bound
+control parameters in~\citet{icml2014c1_bardenet14} are $p = 2$ and $\delta =
+0.01$.  All methods (including ours) use the same random walk proposer with
+covariance $\Sigma={\rm diag}(0.15, 0.15)$.  Since the proposer generates a
+random walk, all shaping of distribution of the samples is due to the MH test.
+All methods are run 5000 times to collect 5000 samples.
 
 Figure~\ref{fig:gauss_mix_1} shows scatter plots of the resulting $\theta$
 samples for the three methods, with darker regions indicating a greater density
 of points. There are no obvious differences, so we measure the similarity
 between each set of samples and the actual posterior. 
 
-We discretize the posterior coordinates into bins (non-overlapping ranges) with
-respect to the two components of the parameter $\theta$.  The probability of a
-sample falling into bin $i$ (denoted as $P_i$) is the integral of the true
-posterior probability over the area of that bin.  A single sample from any of
-the MH methods should therefore be multinomial with distribution $P$, and a set
-of $n$ (ideally independent) samples should follow a ${\rm Multinomial}(P,n)$
-distribution.  Since the ideal distribution is simple, we can use it to measure
-the quality of the sample distributions rather than use general purpose tests
-like KL-divergence or likelihood-ratio.  The latter are problematic with zero
+We discretize the posterior coordinates into bins with respect to the two
+components of $\theta$.  The probability $P_i$ of a sample falling into bin $i$
+is the integral of the true posterior probability over the area of that bin.  A
+single sample from any of the MH methods should therefore be multinomial with
+distribution $P$, and a set of $n$ (ideally independent) samples should be ${\rm
+Multinomial}(P,n)$.  The ideal distribution is simple, so we can use it to
+measure the quality of the sample distributions rather than use general purpose
+tests like KL-divergence or likelihood-ratio, which can be problematic with zero
 counts in some bins as we have here.
 
-In practice, it is difficult to compute multinomial probabilities for large $n$,
-in that case the per-bin distributions are well-approximated by Poisson
+For large $n$, the per-bin distributions are well-approximated by Poisson
 distributions with parameter $\lambda_i=P_i n$. Given a set of samples
-$\{\theta_1,\ldots,\theta_T\}$, let $c_j$ denote the number of individual samples
-$\theta_i$ that fall in bin $j$ out of $N_{\rm bins}$ total. Then we have
+$\{\theta_1,\ldots,\theta_T\}$, let $c_j$ denote the number of individual
+samples $\theta_i$ that fall in bin $j$ out of $N_{\rm bins}$ total. We have
 \begin{equation}\label{eq:log_prob_poissons}
 \begin{split}
     \log p(c_1, \ldots, c_{N_{\rm bins}} \mid P_1, \ldots, P_{N_{\rm bins}}) & =  \\
@@ -962,55 +945,24 @@ $\theta_i$ that fall in bin $j$ out of $N_{\rm bins}$ total. Then we have
 The results for each model are shown in Table~\ref{tab:poissons}.
 
 While the Poisson results provide general guidance on the relative accuracy of
-the models, it is difficult to interpret the scores, so we perform significance
-tests to show the difference between the MCMC-sampled distributions and the
-ground-truth.  We perform an approximate test using the Chi-Squared distribution
-as the test statistic, which we also show in Table~\ref{tab:poissons}.
+the models, it is difficult to interpret the scores. Thus, we perform
+significance tests to show the difference between the MCMC-sampled distributions
+and the ground-truth using the Chi-Squared distribution as the test statistic,
+which we also show in Table~\ref{tab:poissons}. Both results imply that our
+method is slightly superior to~\citet{cutting_mh_2014}, but slightly worse
+than~\citet{icml2014c1_bardenet14}. 
 
-Both the Poisson values and the Chi-Squared test statistic result in similar
-conclusions: our method is slightly superior to~\citet{cutting_mh_2014}, but
-slightly worse than~\citet{icml2014c1_bardenet14}. We now show, however, that
-minibatch size results suggest that our method dominates in terms of speed and
-efficiency.
-
-Figure~\ref{fig:gauss_mix_2} shows a histogram of the final minibatch sizes used
-by the three methods in each iteration. Our method consumes significantly less
-data; most minibatch sizes are smaller than 1000, and the average size is 210.
-The other methods occasionally need to consume a large proportion of the
-entire data set of one million elements; the average minibatch sizes are 15562
-and 16857 for Korattikara 2014 and Bardenet 2014, respectively. The average
-minibatch sizes accurately predict the running times of these methods since
-all methods have a running time proportional to the total data consumed, with
-one caveat: the method of~\citet{icml2014c1_bardenet14} requires a global bound
-on the term $C_{\theta,\theta'}$ (see Equation~(\ref{eq:bad_bound})) over the
-entire the data set at every iteration in order to calculate the error bound.
-This bound must be either computed analytically using properties of the specific
-dataset, or it must be checked at each sample if a black-box test is required.
-We found that the sample code provided by the authors
-of~\citet{icml2014c1_bardenet14} in fact computed this bound explicitly for each
-sample generated, i.e. the implementation traversed the entire dataset for each
-sample, providing no performance advantage over the complete test. For this
-reason, we omitted the time to compute $C_{\theta,\theta'}$ from our
-measurements of the running time of the sample implementation
-of~\citet{icml2014c1_bardenet14}, and consider only the time to process the
-minibatches.
-
-%% In Figure ~\ref{fig:gauss_bardenet}, the value
-%% of the first part and second part of equation (9)
-%% in~\cite{icml2014c1_bardenet14} is shown with respect to the size of actual
-%% minibatch data used. The second part which contains  the $C_{\theta,\theta'}$
-%% term is larger than the first part, which means that the second part is
-%% non-negligible and has to be calculated at every iteration. This is one of the
-%% very time-consuming parts in this method.  {\color{blue} Daniel: I am not sure
-%% if we should include this plot. Let me think about it and if we decide to
-%% include it I will help rewrite the explanation.}
-
-%% JFC - it would still be interesting to see this comparison, however:
-%% (i) its important to include equation (9) and explain what the terms are.
-%% (ii) the results dont look right. I wouldnt expect the first term to be
-%% so small compared to the second and I'm fairly certain they should cross
-%% in the illustrated range. It would be better to include both curves on
-%% the same plot. 
+Figure~\ref{fig:gauss_mix_2}, however, suggests that our method dominates in
+terms of speed and efficiency. It shows histograms of the (final) minibatch
+sizes used each iteration by the three methods. Our method consumes
+significantly less data; most minibatch sizes are smaller than 1000, and the
+average size is 210.  The other methods occasionally need to consume nearly all
+data points, and average minibatch sizes are 15562 and 16857. The average
+minibatch sizes roughly predict the running times of these methods since all
+have a running time proportional to the total data consumed, with the exception
+of~\citet{icml2014c1_bardenet14}, which requires a pass over the data to compute
+$C_{\theta,\theta'}$ (see Equation~(\ref{eq:bad_bound})). Using minibatch sizes
+as a proxy for time also avoids discrepancies due to code optimization.
 
 \begin{table}[t]
     \caption{Gaussian Mixture Model Statistics}
@@ -1031,7 +983,8 @@ minibatches.
 
 \begin{figure*}[t]
 	\centering
-	\includegraphics[width=0.9\linewidth]{logistic_performance.png}
+	%\includegraphics[width=0.9\linewidth]{logistic_performance.png}
+	\includegraphics[width=0.85\linewidth]{logistic_regression_ll_acc_results.png}
 	\caption{
     Logistic regression performance (accuracy/log likelihood) based on
     cumulative data usage.
@@ -1040,7 +993,8 @@ minibatches.
 \end{figure*}
 \begin{figure*}[t]
 	\centering
-	\includegraphics[width=0.9\linewidth]{minibatch_size_logistic.png}
+	%\includegraphics[width=0.9\linewidth]{minibatch_size_logistic.png}
+	\includegraphics[width=0.85\linewidth]{logistic_regression_histograms_results.png}
 	\caption{
     Counts of minibatch sizes in the MNIST logistic regression experiment
     (analogous to Figure~\ref{fig:gauss_mix_2}).
@@ -1048,35 +1002,41 @@ minibatches.
 	\label{fig:logistic_minibatch}
 \end{figure*}
 
-We next use logistic regression for the binary classification of 1s versus 7s in
-the MNIST dataset~\citep{lecun-mnisthandwrittendigit-2010}. The data has 12007
-training and 1000 testing elements (we used a random subset of the test data).
-The pixel values are scaled to be in $(0,1)$.  We impose a flat prior on
-$\theta$. For the proposer, we again use a random walk, this time with
-covariance matrix $0.05I$ for the $784\times 784$ identity matrix $I$. The
-posterior temperature is set at $T=1000$.  We run our MH test and compare with
-Korattikara 2014 and Bardenet 2014; minibatch sizes and other parameters are set
-to be the same value as with the Gaussian Mixtures experiment from
-Section~\ref{ssec:gaussians}.
+We next use logistic regression for the binary classification of 1s versus 7s on
+a subset of the MNIST8M dataset, which is a larger version of
+MNIST~\citep{lecun-mnisthandwrittendigit-2010} and well-suited to our desire to
+run MCMC on large data. We randomly subsampled 450k training and 192k testing
+points. The pixels are scaled in $[0,1]$. We impose a flat prior on $\theta$ and
+again use a random walk proposer, this time with covariance matrix $0.05I$ for
+the $784\times 784$ identity matrix $I$. The posterior temperature is set at
+$T=1000$.  We run our MH test for 3000 samples and again compare with the two
+baseline algorithms with starting minibatch size 100. To
+make~\citet{cutting_mh_2014} run faster, we use a larger $\epsilon=0.05$ value.
+For~\citet{icml2014c1_bardenet14}, we tuned $\gamma \in \{1.1,1.25,1.5,1.75,2\}$
+before concluding that $\gamma=1.5$ was reasonable. In addition, we originally
+used their suggested analytic approximation to $C_{\theta,\theta'}$, but found
+that the resulting values were too high, meaning that their method needed to
+consume the entire dataset each iteration. Thus, we naively compute
+$C_{\theta,\theta'}$.
 
-Figure~\ref{fig:logistic_performance} shows the training log likelihood and the
-testing prediction accuracy, each as a function of the cumulative training data
-points processed.\footnote{Note that the curves do not span the same length over
-the x-axis, because our test consumes fewer samples throughout the MCMC
-procedure, so the corresponding curve will ``end'' before the other two.} To
-generate the curves, for each of the 5000 sampled vectors $\theta_t$,
-$t\in\{1,\ldots,5000\}$, we use $\theta_t$ as the parameter for logistic
-regression.  We see that our minibatch MH test is more efficient compared to the
-other two methods, because it achieves similar or superior performance while
-consuming fewer data points.
+Figure~\ref{fig:logistic_performance} shows the testing log likelihood and
+prediction accuracy, each as a function of the cumulative training data points
+processed.\footnote{Note that the curves do not span the same length over the
+x-axis, because our test consumes fewer samples throughout the MCMC procedure,
+so the corresponding curve will ``end'' before the other two.} To generate the
+curves, for each of the 3000 sampled vectors $\theta_t$,
+$t\in\{1,\ldots,3000\}$, we use $\theta_t$ as the parameter for logistic
+regression.  Our minibatch MH test is more efficient in terms of
+accuracy, achieving convergence using roughly half as many elements
+compared to~\citet{cutting_mh_2014} and \textbf{TODO TODO TODO} compared
+to~\citet{icml2014c1_bardenet14}, though its log likelihood results lag slightly
+behind the former algorithm during the very early stages.
 
 Figure~\ref{fig:logistic_minibatch}, in a similar manner as
 Figure~\ref{fig:gauss_mix_2}, shows the histogram of minibatch sizes for all
-three methods on a log-log scale. With an initial minibatch size of 100,
-Korattikara 2014 and Bardenet 2014 achieve average minibatch size of 2026 and
-7612 respectively over the MNIST classification task, while our method achieves
-that of 163, showing significantly better performance than the benchmark test
-methods.
+three methods on a log-log scale. With an initial size of 100, our method
+achieves an average minibatch size of 393, far smaller than the averages of the
+other two methods, which is due to their longer-tailed distributions.
 
 
 
@@ -1289,6 +1249,20 @@ probability of the conjunction of these events is $c = p_0 p_1 p_2 = 0.0085$.
 
 
 
+
+\section{Proof of Lemma~\ref{lem:quant_clt}}\label{app:quant_clt}
+
+The following bound is given immediately after Corollary 2 from~\citet{explicit-clt05}:
+\begin{align*}
+-6.4E|X|^3-2E|X| &\leq \sup_x|{\rm Pr}(t<x)-\Phi(x)|{\sqrt{n}} \\
+&\leq 1.36E|X|^3.
+\end{align*}
+This bound applies to $x\geq 0$. Applying the bound to $-x$ when $x<0$
+and combining with $x>0$, we obtain the weaker but unqualified bound
+in Equation~(\ref{eq:clt-bounds}).
+
+
+
 \section{Proof of Lemma~\ref{lem:cdf_bounds}}\label{app:proof_cdf_bounds}
 
 We first observe that
@@ -1349,15 +1323,17 @@ moment of $X$. If Cramer's condition holds:
     \lim_{t \to \infty} \sup |E(\exp(i t X))| < 1,
 \end{equation}
 then Equation 2.2 in Bentkus et al.'s work on Edgeworth
-expansions~\citep{Bentkus97} provides the following:
+expansions~\citep{Bentkus97} provides:
 
 \begin{lemma}\label{lem:clt_edgeworth}
 Let $X_1,\ldots,X_n$ be a set of zero-mean, independent, identically-distributed
 random variables with sample mean $\hat{X}$ and with $t$ defined as in Lemma 3.
 If $X$ satisfies Cramer's condition, then
-\begin{equation}\label{eq:clt-bounds_edgeworth}
+%\begin{equation}\label{eq:clt-bounds_edgeworth}
+\[
     \sup_x\left|{\rm Pr}(t<x) - G\left(x, \frac{\mu_3}{b_2^{3/2}}\right)\right| \leq \frac{c(\epsilon,b_2,b_3,b_4,b_{4+\epsilon})}{n}
-\end{equation}
+\]
+%\end{equation}
 where
 \begin{equation}
     G_n(x,y) = \Phi(x) + \frac{y(2x^2+1)}{6\sqrt{n}}\Phi'(x).
@@ -1366,7 +1342,7 @@ where
 Lemma~\ref{lem:clt_edgeworth} shows that the average of the $X_i$ has a more
 precise, skewed CDF limit $G_n(x,y)$ where the skew term has weight proportional
 to a certain measure of skew derived from the moments:
-$\frac{\mu_3}{b_2^{3/2}}$. Note that if the $X_i$ are symmetric, the weight of
+$\mu_3/b_2^{3/2}$. Note that if the $X_i$ are symmetric, the weight of
 the correction term is zero, and the CDF of the average of the $X_i$ converges
 to $\Phi(x)$ at a rate of $O(n^{-1})$.
 
@@ -1419,7 +1395,7 @@ table. We leave further analysis and experiments with $g(x,y)$ as future work.
 % more noticeable). Obviously for the arXiv version, we don't want this there.
 % Also, note to John, the reviewers for AISTATS **will have access to the
 % previous NIPS reviews**, which is why I am making references to those.
-\newpage
+\clearpage
 \section{NIPS 2016 Submission Statement}
 
 We previously submitted a much older draft of this paper to NIPS 2016. The
