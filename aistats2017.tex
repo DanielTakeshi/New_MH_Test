@@ -799,11 +799,10 @@ the random variables we use, showing that our test should remain accurate.
 % Daniel: I'm moving this paragraph over here and putting the rest of it in the
 % supplementary material since our code doesn't do this, so we should not
 % describe this in much detail.
-In fact we can do better than $O(n^{-1/2})$ error for the quantitative CLT
-(showing the error decreases as $O(n^{-1})$) by using a more precise limit
-distribution under an additional assumption. We review the details in
-the Supplementary Material, Section~\ref{app:better_error_bound}, and leave the
-implementation details to future work.
+In fact we can do better ($O(n^{-1})$) by using a more precise limit
+distribution under an additional assumption. We review this in the Supplementary
+Material, Section~\ref{app:better_error_bound}, and leave the details to future
+work.
 
 % Daniel: this is probably less important than other parts of the paper. Hence,
 % I put it in as \begin{comment} ... \end{comment} but we can think about
@@ -840,14 +839,12 @@ where $\epsilon$ is the bound on the error in the acceptance test.
 
 \section{EXPERIMENTS}\label{sec:experiments}
 
-We conduct two sets of experiments to explore the benefits of our minibatch MH
-test and to benchmark it with previous work. In Section~\ref{ssec:gaussians}, we
-show that our test enables samples to converge to the posterior distribution of
-a heated Gaussian mixture model. In Section~\ref{ssec:logistic}, we analyze its
-efficiency on logistic regression.
+We conduct two sets of experiments. In Section~\ref{ssec:gaussians}, we analyze
+convergence to the posterior of a heated Gaussian mixture. In
+Section~\ref{ssec:logistic}, we analyze its efficiency on logistic regression.
 
-\subsection{Mixture of Gaussians}\label{ssec:gaussians}
-
+% Daniel: moving this here so figures don't overflow to next pages. We can tune
+% the positioning if needed.
 \begin{figure*}[t]
     \centering
     \includegraphics[width=0.85\linewidth]{GaussianMixtureResult/posterior_of_gaussian.png}
@@ -867,6 +864,23 @@ efficiency on logistic regression.
     \label{fig:gauss_mix_2}
 \end{figure*}
 
+
+\subsection{Mixture of Gaussians}\label{ssec:gaussians}
+
+\begin{table}[t]
+    \caption{Gaussian Mixture Model Statistics}
+    \label{tab:poissons}
+    \centering
+    \resizebox{.45\textwidth}{!}{% <------ Don't forget this %
+    \begin{tabular}{l l l l}
+    {\bf Metric} & {\bf Ours} & {\bf Korat.'14} & {\bf Barde.'14} \\
+    \hline
+    Equation~\ref{eq:log_prob_poissons} & -1430.0 & -1578.9 & -1232.7 \\
+    Chi-Squared & 3313.9 & 3647.7 & 2444.1 \\
+    \end{tabular}% <------ Don't forget this %
+   }
+\end{table}
+
 We borrow a Gaussian mixture experiment from~\citet{langevin_2011}.  The
 parameter is 2-D, $\theta = \langle \theta_1,\theta_2 \rangle$, and the
 generation process is
@@ -877,14 +891,14 @@ generation process is
 \end{split}
 \end{equation}
 We set $\sigma_1^2 = 10, \sigma_2^2 = 1$ and $\sigma_x^2=2$.  We fix $\theta =
-\langle 0,1 \rangle$. The original paper sampled 100 data points from this
-distribution, and estimated the posterior in the parameters. We are interested
-in performance on larger problems and so sampled 1,000,000 points to form the
-posterior of $p(\theta)\prod_{i=1}^{1,000,000}p(x_i\mid \theta)$ with the same
-prior from Equation~(\ref{eq:data_generation}). This produces a much sharper
-posterior with two very narrow peaks.  Our goal is to reproduce the original
-posterior, so we adjust the temperature to $T=10,000$.  Taking logs, we get the
-target as shown in the far left of Figure~\ref{fig:gauss_mix_1}.
+\langle 0,1 \rangle$. The original paper sampled 100 data points and estimated
+the posterior. We are interested in performance on larger problems and so
+sampled 1,000,000 points to form the posterior of
+$p(\theta)\prod_{i=1}^{1,000,000}p(x_i\mid \theta)$ with the same prior from
+Equation~(\ref{eq:data_generation}). This produces a much sharper posterior with
+two very narrow peaks.  Our goal is to reproduce the original posterior, so we
+adjust the temperature to $T=10,000$.  Taking logs, we get the target as shown
+in the far left of Figure~\ref{fig:gauss_mix_1}.
 
 We run MCMC with our M-H test and benchmark with~\citet{cutting_mh_2014}
 and~\citet{icml2014c1_bardenet14}, all with initial minibatch size $m=100$.  For
@@ -920,43 +934,28 @@ out of $N_{\rm bins}$ total. We have
     \sum_{j=1}^{N_{\rm bins}} c_j \log (n P_j) - n P_j - \log(\Gamma(c_j+1)). & \\
 \end{split}
 \end{equation}
-The results for each model are shown in Table~\ref{tab:poissons}. It is
-difficult, however, to interpret the scores. Thus, we perform significance tests
-to show the difference between the MCMC-sampled distributions and the
-ground-truth using the Chi-Squared distribution as the test statistic, which we
-also show in Table~\ref{tab:poissons}. Both results imply that our method is
-slightly superior to~\citet{cutting_mh_2014}, but slightly worse
-than~\citet{icml2014c1_bardenet14}. 
+Table~\ref{tab:poissons} shows the results. It is difficult, however, to
+interpret the scores, so we perform significance tests to show the difference
+between the MCMC-sampled distributions and ground-truth using the Chi-Squared
+distribution as the test statistic (also in Table~\ref{tab:poissons}). Both
+imply that our method is slightly superior to~\citet{cutting_mh_2014}, but
+slightly worse than~\citet{icml2014c1_bardenet14}. 
 
 Figure~\ref{fig:gauss_mix_2}, however, suggests that our method dominates in
 terms of speed and efficiency. It shows histograms of the (final) minibatch
-sizes used each iteration. Our method consumes
-significantly less data; most sizes are smaller than 1000, and the
-average size is 210.  The other methods occasionally need to consume nearly all
-data points, and average minibatch sizes are 15562 and 16857. The average
-minibatch sizes roughly predict the running times of these methods since all
-have a running time proportional to the total data consumed, with the exception
-of~\citet{icml2014c1_bardenet14}, which requires a pass over the data to compute
-$C_{\theta,\theta'}$ (see Equation~(\ref{eq:bad_bound})). Using minibatch sizes
-as a proxy for time also avoids discrepancies due to code optimization.
-
-\begin{table}[t]
-    \caption{Gaussian Mixture Model Statistics}
-    \label{tab:poissons}
-    \centering
-    \resizebox{.45\textwidth}{!}{% <------ Don't forget this %
-    \begin{tabular}{l l l l}
-    {\bf Metric} & {\bf Ours} & {\bf Korat.'14} & {\bf Barde.'14} \\
-    \hline
-    Equation~\ref{eq:log_prob_poissons} & -1430.0 & -1578.9 & -1232.7 \\
-    Chi-Squared & 3313.9 & 3647.7 & 2444.1 \\
-    \end{tabular}% <------ Don't forget this %
-   }
-\end{table}
+sizes used each iteration. Our method consumes significantly less data; most
+sizes are smaller than 1000, and the average size is 210.  The other methods
+occasionally need to consume nearly all data points, and average minibatch sizes
+are 15562 and 16857. The average minibatch sizes roughly predict the running
+times of these methods since all have a running time proportional to the total
+data consumed, with the exception of~\citet{icml2014c1_bardenet14}, which
+requires a pass over the data to compute $C_{\theta,\theta'}$ (see
+Equation~(\ref{eq:bad_bound})). Using minibatch sizes as a proxy for time also
+avoids discrepancies due to code optimization.
 
 
-\subsection{Logistic Regression}\label{ssec:logistic}
-
+% Daniel: moving this here so figures don't overflow to next pages. We can tune
+% the positioning if needed.
 \begin{figure*}[t]
 	\centering
 	%\includegraphics[width=0.9\linewidth]{logistic_performance.png}
@@ -978,6 +977,8 @@ as a proxy for time also avoids discrepancies due to code optimization.
 	\label{fig:logistic_minibatch}
 \end{figure*}
 
+\subsection{Logistic Regression}\label{ssec:logistic}
+
 We next use logistic regression for the binary classification of 1s versus 7s on
 a subset of the MNIST8M dataset, which is a larger version of
 MNIST~\citep{lecun-mnisthandwrittendigit-2010} and well-suited to our desire to
@@ -995,18 +996,17 @@ that the resulting values were too high, meaning that their method needed to
 consume the entire dataset each iteration. Thus, we naively compute
 $C_{\theta,\theta'}$.
 
-Figure~\ref{fig:logistic_performance} shows the testing log likelihood and
-prediction accuracy, each as a function of the cumulative training data points
+Figure~\ref{fig:logistic_performance} shows the test log likelihood and
+prediction accuracy as a function of the cumulative training points
 processed.\footnote{Note that the curves do not span the same length over the
 x-axis, because our test consumes fewer samples throughout the MCMC procedure,
 so the corresponding curve will ``end'' before the other two.} To generate the
-curves, for each of the 3000 sampled vectors $\theta_t$,
-$t\in\{1,\ldots,3000\}$, we use $\theta_t$ as the parameter for logistic
-regression.  Our minibatch MH test is more efficient in terms of
-accuracy, achieving convergence using roughly half as many elements
-compared to~\citet{cutting_mh_2014} and \textbf{TODO TODO TODO} compared
-to~\citet{icml2014c1_bardenet14}, though its log likelihood results lag slightly
-behind the former algorithm during the very early stages.
+curves, for each of the sampled vectors $\theta_t$, $t\in\{1,\ldots,3000\}$, we
+use $\theta_t$ as the parameter for logistic regression.  Our minibatch MH test
+is more efficient in terms of accuracy, achieving convergence using roughly half
+as many elements compared to~\citet{cutting_mh_2014} and \textbf{TODO TODO TODO}
+compared to~\citet{icml2014c1_bardenet14}, though its log likelihood results lag
+slightly behind the former algorithm during the very early stages.
 
 Figure~\ref{fig:logistic_minibatch}, in a similar manner as
 Figure~\ref{fig:gauss_mix_2}, shows the histogram of minibatch sizes for all
@@ -1018,16 +1018,15 @@ other two methods, which is due to their longer-tailed distributions.
 
 \section{CONCLUSIONS}\label{sec:conclusion}
 
-In this paper, we have derived a new MH test for minibatch MCMC methods. We
-demonstrated how a simple deconvolution process allows us to use a minibatch
-approximation to the full data tests. We experimentally show the benefits of our
-test on Gaussian mixtures and logistic regression.  Straightforward directions
-for future work include running more experiments with a particular focus on
-investigation of the variance precondition.  More elaborate extensions include
-testing on deep neural networks and combining our results with Hamiltonian Monte
-Carlo methods, providing a recipe for how to use our algorithm (following the
-framework of~\citet{sgmcmc_2015}), or integrating parallel
-MCMC~\citep{conf/uai/AngelinoKWSA14,conf/icml/AhnSW14} concepts.
+In this paper, we derived an M-H test for minibatch MCMC which approximates full
+data tests. We provide theoretical results and experimentally show the benefits
+of our test on Gaussian mixtures and logistic regression. Directions for future
+work include running more experiments with a particular focus on controlling
+variances.  More elaborate extensions include testing on neural networks,
+combining our results with Hamiltonian Monte Carlo methods, providing a recipe
+for how to use our algorithm (following the framework of~\citet{sgmcmc_2015}),
+or integrating parallel MCMC~\citep{conf/uai/AngelinoKWSA14,conf/icml/AhnSW14}
+concepts.
 
 
 
