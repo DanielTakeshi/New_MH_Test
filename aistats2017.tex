@@ -265,17 +265,15 @@ $\theta'$. Here, $p(\theta'\mid\theta)=q(\theta'\mid\theta)\alpha(\theta,\theta'
 %\end{equation}
 This condition, together with ergodicity, guarantees that the Markov chain has a
 unique stationary distribution $\pi(\theta) = p(\theta)$. For Bayesian
-inference, we would like to sample from a parameter distribution for $\theta$
-based on some observed data, so the target distribution is $p(\theta \mid x_1,
-\ldots, x_N)$. The acceptance probability is now:
+inference, the target distribution is $p(\theta \mid x_1, \ldots, x_N)$. The
+acceptance probability is now:
 \begin{equation}\label{eq:acceptance_probability}
     \alpha(\theta,\theta') = 
     \frac{p_0(\theta')\prod_{i=1}^N p(x_i \mid \theta')q(\theta \mid
     \theta')}{p_0(\theta)\prod_{i=1}^N p(x_i \mid \theta)q(\theta' \mid\theta)}
     \wedge 1
 \end{equation}
-where $p_0(\theta)$ is a prior, and $p(x_i \mid \theta)$ are the probabilities
-of the observations. Computing samples this way requires the use of all $N$
+where $p_0(\theta)$ is the prior. Computing samples this way requires the use of all $N$
 training data points, but this is very expensive for large datasets. To address
 this challenge,~\citet{cutting_mh_2014,icml2014c1_bardenet14} perform approximate
 Metropolis-Hasting tests using sequential hypothesis testing. During each
@@ -289,9 +287,8 @@ concentration bound~\citep{icml2014c1_bardenet14}. The latter requires direct
 bounds on the log likelihood ratio, which for general distributions requires
 knowing $p(x_i \mid \theta)$ and $p(x_i \mid \theta')$ for all $N$ samples. In
 addition, both methods suffer the drawback of resolving small log likelihood
-ratio differences between the minibatch and full batch versions.  In the worst
-case, all $N$ data points may be needed, as we show in
-Section~\ref{ssec:gaussian_example}.
+ratio differences between the minibatch and full batch versions.  We discuss
+a worst-case scenario in Section~\ref{ssec:gaussian_example}.
 
 Following~\citet{icml2014c1_bardenet14}, we write the test
 $u<\alpha(\theta,\theta')$ equivalently as $\Lambda(\theta,\theta') >
@@ -376,14 +373,14 @@ accelerated M-H tests from prior work require at least a constant fraction $\geq
 c$ in the amount of data consumed per test compared to full-data tests, so their
 speed-up is $\le 1/c$.
 
-The problem is that these methods use tail bounds to separate $\Delta$ away
-from zero, but for certain input/random $u$ combinations, $\Delta$ can be
-arbitrarily close to zero. We will avoid this by using the {\em approximately
-normal} variation in $\Delta^*$ to {\em replace} the variation due to $u$. 
+The issue is the use of tail bounds to separate $\Delta$ from zero; for certain
+input/random $u$ combinations, $\Delta$ can be arbitrarily close to zero. We
+avoid this by using the {\em approximately normal} variation in $\Delta^*$ to
+{\em replace} the variation due to $u$. 
 
 \subsection{MCMC Posterior Inference}
 There is a separate line of MCMC work drawing principles from statistical
-physics. By viewing random variables as particles in a system, one can apply
+physics. One can apply
 Hamiltonian Monte Carlo (HMC)~\citep{mcmc_hamiltonian_2010} methods which
 generate high acceptance \emph{and} distant proposals when run on full batches
 of data. Recently Langevin Dynamics~\citep{langevin_2011,conf/icml/AhnBW12} has
@@ -532,22 +529,22 @@ to the full batch version.
 
 
 
+% Daniel: Saves space by using one line instead of two. Lame, I know.
+%\section{COMPUTING THE CORRECTION DISTRIBUTION}\label{sec:correction}
+\section{CORRECTION DISTRIBUTION}\label{sec:correction}
 
-\section{COMPUTING THE CORRECTION DISTRIBUTION}\label{sec:correction}
-
-Our proposed test in Equation~(\ref{eq:criteria}) requires knowing the
-distribution of the correction variable $X_{\rm corr}$ such that $X_{\rm norm} +
+Our test in Equation~(\ref{eq:criteria}) requires knowing the
+distribution of $X_{\rm corr}$ such that $X_{\rm norm} +
 X_{\rm corr} = X_{\rm log}$, where $X_{\rm norm} \sim \mathcal{N}(0,\sigma^2)$
 and $X_{\rm log}$ has a standard logistic CDF, $(1+\exp(-X))^{-1}$. In
-Section~\ref{sec:analysis}, we show that the accuracy of the test depends on the
+Section~\ref{sec:analysis}, we show that the test accuracy depends on the
 absolute error between the CDFs of $X_{\rm norm} + X_{\rm corr}$ and $X_{\rm
 log}$. Consequently, we need to minimize this in our construction of $X_{\rm
 corr}$. More formally, let $\Phi_{s_X} = \Phi(X/s_X)$ where $\Phi$ is the
 standard normal CDF\footnote{Hence, $\Phi_{s_X}$ is the CDF of a zero-mean
 Gaussian with standard deviation $s_X$.}, $S(X)$ be the logistic function, and
 $C_{\sigma}(X)$ be the \emph{density} of the correction $X_{\rm corr}$
-distribution. Our goal, based on Equation~(\ref{eq:deconvolution}), is to solve
-the following optimization problem:
+distribution. Our goal is to solve:
 \begin{equation}\label{eq:overall_corr_problem}
     C_\sigma^* = \argmin_{C_\sigma} |\Phi_{\sigma} * C_{\sigma} - S|
 \end{equation}
@@ -686,14 +683,13 @@ bounding:
 Such bounds can be derived efficiently for models such as logistic regression,
 but it is unclear how to derive them for a complex model such as a neural
 network. In general, since a new $\theta'$ value is obtained each iteration, one
-would need to iterate through all the $p(x_i\mid \theta')$ terms\footnote{The
-sample code provided by the authors of~\citet{icml2014c1_bardenet14} in fact
-computes $C_{\theta,\theta'}$ explicitly for each sample generated, i.e. it
-traverses the entire data, thus providing no performance advantage over the
-complete test.}. In contrast, we use quantitative forms of the Central Limit
-Theorem which rely on measurable statistics from a single minibatch. Thus a
-sampler using our approach does not need to see data beyond the current
-minibatch.
+would need to use all the $p(x_i\mid \theta')$ terms\footnote{The sample code
+provided by the authors of~\citet{icml2014c1_bardenet14} in fact computes
+$C_{\theta,\theta'}$ explicitly for each sample generated, i.e. it traverses the
+entire data, thus providing no performance advantage over the complete test.}.
+In contrast, we use quantitative forms of the Central Limit Theorem which rely
+on measurable statistics from a single minibatch. Thus a sampler using our
+approach does not need to see data beyond the current minibatch.
 
 In Section~\ref{ssec:delta_star_distribution}, we present bounds on the absolute
 and relative error (in terms of the CDFs) of the distribution of $\Delta^*$ vs.
@@ -780,7 +776,7 @@ We next relate the CDFs of distributions and show that bounds are preserved
 after adding random variables.
 
 \begin{lemma}\label{lem:cdf_bounds}
-Let $P(x)$ and $Q(x)$ be two cumulative distributions satisfying
+Let $P(x)$ and $Q(x)$ be two CDFs satisfying
 $\sup_x|P(x)-Q(x)|\leq \epsilon$ with $x$ in some real range. Let $R(y)$ be the
 {\em density} of another random variable $y$. Let $P'$ be the convolution $P*R$
 and $Q'$ be the convolution $Q*R$. Then $P'(z)$ (resp. $Q'(z)$) is the CDF of
@@ -887,9 +883,9 @@ efficiency on logistic regression.
     \label{fig:gauss_mix_2}
 \end{figure*}
 
-We start with a simple Gaussian mixture model, borrowing an experiment
-from~\citet{langevin_2011}.  The parameter is 2-D, $\theta =
-\langle \theta_1,\theta_2 \rangle$, and the parameter/data generation process is
+We borrow a Gaussian mixture experiment from~\citet{langevin_2011}.  The
+parameter is 2-D, $\theta = \langle \theta_1,\theta_2 \rangle$, and the
+generation process is
 \begin{equation}\label{eq:data_generation}
 \begin{split}
     \theta &\sim \mathcal{N}(0, {\rm diag}(\sigma_1^2,\sigma_2^2)) \\
@@ -932,30 +928,28 @@ measure the quality of the sample distributions rather than use general purpose
 tests like KL-divergence or likelihood-ratio, which can be problematic with zero
 counts in some bins as we have here.
 
-For large $n$, the per-bin distributions are well-approximated by Poisson
-distributions with parameter $\lambda_i=P_i n$. Given a set of samples
-$\{\theta_1,\ldots,\theta_T\}$, let $c_j$ denote the number of individual
-samples $\theta_i$ that fall in bin $j$ out of $N_{\rm bins}$ total. We have
+For large $n$, the per-bin distributions are approximated by Poissons with
+parameter $\lambda_i=P_i n$. Given samples $\{\theta_1,\ldots,\theta_T\}$, let
+$c_j$ denote the number of individual samples $\theta_i$ that fall in bin $j$
+out of $N_{\rm bins}$ total. We have
 \begin{equation}\label{eq:log_prob_poissons}
 \begin{split}
     \log p(c_1, \ldots, c_{N_{\rm bins}} \mid P_1, \ldots, P_{N_{\rm bins}}) & =  \\
     \sum_{j=1}^{N_{\rm bins}} c_j \log (n P_j) - n P_j - \log(\Gamma(c_j+1)). & \\
 \end{split}
 \end{equation}
-The results for each model are shown in Table~\ref{tab:poissons}.
-
-While the Poisson results provide general guidance on the relative accuracy of
-the models, it is difficult to interpret the scores. Thus, we perform
-significance tests to show the difference between the MCMC-sampled distributions
-and the ground-truth using the Chi-Squared distribution as the test statistic,
-which we also show in Table~\ref{tab:poissons}. Both results imply that our
-method is slightly superior to~\citet{cutting_mh_2014}, but slightly worse
+The results for each model are shown in Table~\ref{tab:poissons}. It is
+difficult, however, to interpret the scores. Thus, we perform significance tests
+to show the difference between the MCMC-sampled distributions and the
+ground-truth using the Chi-Squared distribution as the test statistic, which we
+also show in Table~\ref{tab:poissons}. Both results imply that our method is
+slightly superior to~\citet{cutting_mh_2014}, but slightly worse
 than~\citet{icml2014c1_bardenet14}. 
 
 Figure~\ref{fig:gauss_mix_2}, however, suggests that our method dominates in
 terms of speed and efficiency. It shows histograms of the (final) minibatch
-sizes used each iteration by the three methods. Our method consumes
-significantly less data; most minibatch sizes are smaller than 1000, and the
+sizes used each iteration. Our method consumes
+significantly less data; most sizes are smaller than 1000, and the
 average size is 210.  The other methods occasionally need to consume nearly all
 data points, and average minibatch sizes are 15562 and 16857. The average
 minibatch sizes roughly predict the running times of these methods since all
