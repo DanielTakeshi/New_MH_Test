@@ -124,15 +124,11 @@ high sample efficiency.  In contrast, conventional M-H requires calculations
 over the full dataset to produce a new sample.  Recent results
 from~\citet{cutting_mh_2014} and~\citet{icml2014c1_bardenet14} perform
 approximate (bounded error) acceptance tests using subsets of the full dataset.
-The tests depend on minibatch statistics, and on the value of an additional
-uniform random variable $u$. The amount of data consumed for each test varies
-significantly from one minibatch to the next, and depends on the current sample,
-the proposed sample, and on the random variable $u$. By
-contrast,~\citet{conf/uai/MaclaurinA14,TallData15} perform exact tests but
-require a lower bound on parameter distribution across its domain.  The amount
-of data reduction depends on the accuracy of this bound, and such bounds are
-only available for relatively simple distributions.
-
+The amount of data consumed for each test varies significantly from one
+minibatch to the next. By contrast,~\citet{conf/uai/MaclaurinA14,TallData15}
+perform exact tests but require a lower bound on parameter distribution across
+its domain.  The amount of data reduction depends on the accuracy of this bound,
+and such bounds are only available for relatively simple distributions.
 
 Here we derive a new test which incorporates the variability in minibatch
 statistics as {\em a natural part of the test} and requires less data per
@@ -160,18 +156,38 @@ of several ways. Either:
     temperature different from that assumed during data generation), but higher
     temperature can be advantageous for parameter exploration.
 
-    \item For continuous probability distributions, reduce the proposal step
-    size and variance (for stochastic proposals) compared to an optimal
-    proposal. The variance of the log acceptance probability scales as the
-    square of proposal step size. 
-
     \item Increase the minibatch size when needed for certain minibatches. Log
     acceptance variance scales as $1/k$ vs the minibatch size $k$. Our test is
     adaptive like earlier works, but unlike them, the distribution of minibatch
     size is Gaussian, not long-tailed.  Increased minibatch size also reduces
     the error rate for the test.
+
+    \item For continuous probability distributions, reduce the proposal step
+    size and variance (for stochastic proposals) compared to an optimal
+    proposal. The variance of the log acceptance probability scales as the
+    square of proposal step size. 
 \end{itemize}
 
+It is worth discussing at this point the typical goals of M-H sampling on large
+datasets. By the Bernstein-von Mises Theorem, the posterior distribution for a
+Bayesian inference task has variance that scales inversely with the $N$ data
+samples. Simply sampling from it is one application, but an efficient
+proposal~\citep{OptimalScaling01} has similar variance to the target and will
+diffuse to it extremely slowly. For applications to neural networks or models
+where the posterior is multimodal~\citep{choromanska2014loss}, samplers will
+likely get trapped in one of the modes. A common solution is to anneal the
+sampler, running first at high temperature (scaling log likelihoods by $1/T$)
+to flatten the likelihood landscape. This in turn reduces the variance of
+the log acceptance probability and allows our acceptance test to be applied. Our
+samples can cover the search space densely with small steps rather than taking a
+few sparse steps towards an optimum. In this mode, Metropolis-Hastings can be
+used in similar fashion to Stochastic Gradient Descent. The goal in SGD is to
+make gradual progress to a posterior mode with each step, taking small steps so
+that the cumulative displacement has progressively lower variance.
+
+% Daniel: I merged these two paragraphs into one, because these were too long,
+% and we also never experiment with the step size. Let me know what you think.
+\begin{comment}
 It is worth discussing at this point the typical goals of M-H sampling on large
 datasets.  By the Bernstein-von Mises Theorem, the posterior distribution for a
 Bayesian inference task is asymptotically normal, and has variance that scales
@@ -199,6 +215,7 @@ Descent. The goal in SGD is to make gradual progress to a posterior mode with
 each step, taking small steps so that the cumulative displacement has
 progressively lower variance. We demonstrate this behavior in our logistic
 regression experiments. 
+\end{comment}
 
 The contributions of this paper are as follows:
 
@@ -211,9 +228,9 @@ The contributions of this paper are as follows:
     %\item We analyze the test for accuracy and speed.
 
     \item We compare performance of our new test and prior approaches on several
-    datasets. We demonstrate the test is several orders of magnitude more
-    efficient than prior work measured as data consumed per test, and that it
-    does not suffer from long-tailed minibatch sizes (up to the dataset size). 
+    datasets. We demonstrate orders of magnitude improvements in efficiency
+    (measured as data consumed per test), and that it does not suffer from
+    long-tailed minibatch sizes.
 \end{itemize}
 
 
@@ -320,9 +337,9 @@ were no worst-case bounds, which we explore in the following section.
 
 \subsection{A Worst-Case Gaussian Example}\label{ssec:gaussian_example}
 
-Consider a Gaussian model where $x_1,\ldots,x_N$ are i.i.d. $\mathcal{N}(\theta,1)$
-with a known variance $\sigma^2=1$, true mean $\theta=0.5$, and a uniform prior
-on $\theta$. The log likelihood ratio is
+Let $x_1,\ldots,x_N$ be i.i.d. $\mathcal{N}(\theta,1)$ with known variance
+$\sigma^2=1$ and (unknown) mean $\theta=0.5$. We use a uniform prior on
+$\theta$. The log likelihood ratio is
 \begin{equation}\label{eq:lemma_ll_ratio}
     \Lambda^*(\theta,\theta') = N(\theta'-\theta)\left(\frac{1}{b}\sum_{i=1}^b x_i-\theta-\frac{\theta'-\theta}{2}\right)
 \end{equation}
@@ -336,13 +353,11 @@ $\Lambda^*(\theta,\theta')$ and $\psi(u,\theta,\theta')$.
 The posterior is a Gaussian centered on the sample mean $\mu$, and with variance
 $1/N$ (i.e., $\mathcal{N}(\mu, 1/N)$). In one dimension, an efficient proposal
 distribution has the same variance as the target
-distribution~\citep{OptimalScaling01}, so we use the proposal
-$\mathcal{N}(\theta,1/N)$, which is implemented as
-$q(\theta'\mid\theta)=\phi((\theta'-\theta)N)$, where $\phi(x)$ is the Normal
-density function with zero mean and unit variance. This proposal is symmetric
+distribution~\citep{OptimalScaling01}, so we use a proposal based on
+$\mathcal{N}(\theta,1/N)$. It is symmetric
 $q(\theta'\mid\theta)=q(\theta\mid\theta')$, and since we assumed a uniform
-prior on $\theta$, we see that $\psi(u,\theta,\theta')$ reduces to $\log u$. Our
-worst-case scenario is specified in Lemma~\ref{lem:worst_case}.
+prior, $\psi(u,\theta,\theta')=\log u$. Our worst-case scenario is specified in
+Lemma~\ref{lem:worst_case}.
 
 \begin{lemma}\label{lem:worst_case}
     For the model in Section~\ref{ssec:gaussian_example}, there exists a fixed
@@ -357,9 +372,9 @@ See Supplementary Material, Section~\ref{app:worst_case_proof}.
 Similar results can be shown for other distributions and proposals by
 identifying regions in product space $(\theta,\theta',u)$ such that the
 hypothesis test needs to separate nearly-equal values.  It follows that the
-accelerated M-H tests in~\citet{cutting_mh_2014,icml2014c1_bardenet14} require at
-least a constant fraction $\geq c$ in the amount of data consumed per test
-compared to full-dataset tests, so their speed-up is at most $1/c$.
+accelerated M-H tests from prior work require at least a constant fraction $\geq
+c$ in the amount of data consumed per test compared to full-data tests, so their
+speed-up is $\le 1/c$.
 
 The problem is that these methods use tail bounds to separate $\Delta$ away
 from zero, but for certain input/random $u$ combinations, $\Delta$ can be
@@ -373,12 +388,12 @@ Hamiltonian Monte Carlo (HMC)~\citep{mcmc_hamiltonian_2010} methods which
 generate high acceptance \emph{and} distant proposals when run on full batches
 of data. Recently Langevin Dynamics~\citep{langevin_2011,conf/icml/AhnBW12} has
 been applied to Bayesian estimation on minibatches of data. This simplified
-dynamics uses local proposals and avoids MH tests by using small proposal steps
+dynamics uses local proposals and avoids M-H tests by using small proposal steps
 whose acceptance approaches 1 in the limit. However, the constraint on proposal
 step size is severe, and the state space exploration reduces to a random walk.
 Full minibatch HMC for minibatches was described in~\citet{sghmc_2014} which
 allows momentum-augmented proposals with larger step sizes. However, step sizes
-are still limited by the need to run accurately without MH tests.  By providing
+are still limited by the need to run accurately without M-H tests.  By providing
 an M-H test with similar cost to standard gradient steps, our work opens the
 door to applying those methods with much more aggressive step sizes without loss
 of accuracy. 
@@ -812,21 +827,31 @@ where $S(x)$ is the standard logistic function, and $X_{\rm nc}$ and $X_{\rm cor
 See Supplementary Material, Section~\ref{app:bounds_preserved}.
 \end{proof}
 
-As our discussion in Section~\ref{sec:our_algorithm} showed, as the distribution
-of $\Delta^*$ approaches a Gaussian, our new MH test becomes more accurate.
+From Section~\ref{sec:our_algorithm}, as the distribution of $\Delta^*$
+approaches a Gaussian, our new MH test becomes more accurate.
 Corollary~\ref{cor:bounds_preserved} shows that the bounds from
 Section~\ref{ssec:delta_star_distribution} are preserved after the addition of
 the random variables we use, showing that our test should remain accurate.
 
+% Daniel: I'm moving this paragraph over here and putting the rest of it in the
+% supplementary material since our code doesn't do this, so we should not
+% describe this in much detail.
+In fact we can do better than $O(n^{-1/2})$ error for the quantitative CLT
+(showing the error decreases as $O(n^{-1})$) by using a more precise limit
+distribution under an additional assumption. We review the details in
+the Supplementary Material, Section~\ref{app:better_error_bound}, and leave the
+implementation details to future work.
 
 % Daniel: this is probably less important than other parts of the paper. Hence,
 % I put it in as \begin{comment} ... \end{comment} but we can think about
-% including it back in if it is important enough.
+% including it back in if it is important enough. Also, the sub-section that was
+% after that, improved error bounds on skew estimation, has been moved to the
+% supplementary material. I don't see how we can discuss it in the paper without
+% taking up too much space.
 
 \begin{comment}
 
 \subsection{Bounds on the Stationary Distribution}
-
 Bounds on the error of an M-H test imply bounds on the stationary distribution
 of the Markov chain under appropriate conditions. Such bounds were derived in
 both ~\citet{cutting_mh_2014} and~\citet{icml2014c1_bardenet14}. We include the
@@ -848,78 +873,6 @@ where $\epsilon$ is the bound on the error in the acceptance test.
 
 \end{comment}
 
-\subsection{Improved Error Bounds Based on Skew Estimation}
-In fact we can do better than $O(n^{-1/2})$ error for the quantitative CLT (showing the error decreases as
-$O(n^{-1})$) by using a more precise limit distribution under an additional
-assumption. Let $\mu_i$ denote the $i^{th}$ moment, and $b_i$ denote the
-$i^{th}$ absolute moment of $X$. If Cramer's condition holds:
-\begin{equation}\label{eq:cramers_condition}
-    \lim_{t \to \infty} \sup |E(\exp(i t X))| < 1,
-\end{equation}
-then Equation 2.2 in Bentkus et al.'s work on Edgeworth
-expansions~\citep{Bentkus97} provides the following:
-
-\begin{lemma}\label{lem:clt_edgeworth}
-Let $X_1,\ldots,X_n$ be a set of zero-mean, independent, identically-distributed
-random variables with sample mean $\hat{X}$ and with $t$ defined as in Lemma 3.
-If $X$ satisfies Cramer's condition, then
-\begin{equation}\label{eq:clt-bounds_edgeworth}
-    \sup_x\left|{\rm Pr}(t<x) - G\left(x, \frac{\mu_3}{b_2^{3/2}}\right)\right| \leq \frac{c(\epsilon,b_2,b_3,b_4,b_{4+\epsilon})}{n}
-\end{equation}
-where
-\begin{equation}
-    G_n(x,y) = \Phi(x) + \frac{y(2x^2+1)}{6\sqrt{n}}\Phi'(x).
-\end{equation}
-\end{lemma}
-
-Lemma~\ref{lem:clt_edgeworth} shows that the average of the $X_i$ has a more
-precise, skewed CDF limit $G_n(x,y)$ where the skew term has weight proportional
-to a certain measure of skew derived from the moments:
-$\frac{\mu_3}{b_2^{3/2}}$. Note that if the $X_i$ are symmetric, the weight of
-the correction term is zero, and the CDF of the average of the $X_i$ converges
-to $\Phi(x)$ at a rate of $O(n^{-1})$.
-
-Here the limit $G_n(x,y)$ is a normal CDF plus a correction term that decays as
-$n^{-1/2}$.
-%{\color{blue} (Daniel: how did the equation in the next sentence
-% appear? I verified it and it seems correct, but it looks like it popped out of
-%nowhere.)}
-% JFC: It comes from taking a second derivative. You dont need to explain it. 
-Importantly, since $\phi^{''}(x) = x^2\phi(x) - \phi(x)$ where
-$\phi(x)=\Phi'(x)$, the correction term can be rewritten giving:
-\begin{equation}\label{eq:GNderivatives}
-    G_n(x,y) = \Phi(x) + \frac{y}{6\sqrt{n}}(2\phi^{''}(x)+3\phi(x))
-\end{equation}
-From which we see that $G_n(x,y)$ is a linear combination of $\Phi(x)$,
-$\phi(x)$ and $\phi^{''}(x)$. In Algorithm 1, we
-correct for the difference in $\sigma$ between $\Delta^*$ and the variance
-needed by $X_{\rm corr}$ using $X_{\rm nc}$. This same method works when we
-wish to estimate the error in $\Delta^*$ vs $G_n(x,y)$. Since all of the
-component functions of $G_n(x,y)$ are derivatives of a (unit variance)
-$\Phi(x)$, adding a normal variable with variance $\sigma'$ increases the
-variance of all three functions to $1+\sigma'$. Thus we add $X_{\rm nc}$ as
-per Algorithm 1 preserving the limit in Equation~(\ref{eq:GNderivatives}).
-
-The deconvolution approach can be used to construct a correction variable
-$X_{\rm corr}$ between $G_n(x,y)$ and $S(x)$ the standard logistic function. An
-additional complexity is that $G_n(x,y)$ has additional parameters $y$ and $n$.
-Since these act as a single multiplier $\frac{y}{6\sqrt{n}}$ in
-Equation~(\ref{eq:GNderivatives}), its enough to consider a function $g(x,y')$
-parametrized by $y'= \frac{y}{6\sqrt{n}}$. This function can be computed and
-saved offline. As we have shown above, errors in the ``limit'' function
-propagate directly through as errors in the acceptance test.  To achieve a test
-error of $10^{-6}$ (close to single floating point precision), we need a $y'$
-spacing of $10^{-6}$. It should not be necessary to tabulate values all the way to
-$y'=1$, since $y'$ is scaled inversely by the square root of minibatch size.
-Assuming a max $y'$ of 0.1 requires us to tabulate about 100,000.  Since our $x$
-resolution is 10,000, this leads to a table with about 1 billion values, which
-can comfortably be stored in memory.  However, if $g(x,y)$ is moderately smooth
-in $y$, it should be possible to achieve similar accuracy with a much smaller
-table. We leave further analysis and experiments with $g(x,y)$ as future work.
-%{\color{blue} Daniel: I will look at the code to understand this paragraph
-%better because right now I am confused.}
-% JFC: the code doesnt implement this yet.
-
 
 
 \section{EXPERIMENTS}\label{sec:experiments}
@@ -932,6 +885,25 @@ efficiency on logistic regression.
 
 \subsection{Mixture of Gaussians}\label{ssec:gaussians}
 
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=0.85\linewidth]{GaussianMixtureResult/posterior_of_gaussian.png}
+    \caption{
+    The log posterior contours and scatter plots of sampled $\theta$ values
+    using different methods. 
+    }
+    \label{fig:gauss_mix_1}
+\end{figure*}
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=0.85\linewidth]{minibatch_size_gaussian.png}
+    \caption{
+    Minibatch sizes used in Section~\ref{ssec:gaussians}'s experiment. The axes
+    have the same (log-log scale) range.
+    }
+    \label{fig:gauss_mix_2}
+\end{figure*}
+
 We start with a simple Gaussian mixture model, borrowing an experiment
 from~\citet{langevin_2011}.  The parameter is 2-D, $\theta =
 \langle \theta_1,\theta_2 \rangle$, and the parameter/data generation process is
@@ -941,9 +913,7 @@ from~\citet{langevin_2011}.  The parameter is 2-D, $\theta =
 %% \end{equation}
 \begin{equation}\label{eq:data_generation}
 \begin{split}
-    \begin{bmatrix} \theta_1 \\ \theta_2 \end{bmatrix} 
-    & \sim \mathcal{N}\left(\begin{bmatrix}0 \\ 0\end{bmatrix}, 
-    \begin{bmatrix} \sigma_1^2 & 0 \\ 0 & \sigma_2^2\end{bmatrix} \right); \\
+    \theta &\sim \mathcal{N}(0, {\rm diag}(\sigma_1^2,\sigma_2^2)) \\
     x_i & \sim 0.5 \cdot \mathcal{N}(\theta_1, \sigma_x^2) + 0.5 \cdot \mathcal{N}(\theta_1+\theta_2, \sigma_x^2).
 \end{split}
 \end{equation}
@@ -975,26 +945,6 @@ diag}(0.15, 0.15)$.  Since the proposer generates a random walk, all shaping of
 distribution of the samples is due to the MH test. All methods are run 5000
 times to collect 5000 samples.
 
-\begin{figure*}[t]
-    \centering
-    \includegraphics[width=0.9\linewidth]{GaussianMixtureResult/posterior_of_gaussian.png}
-    \caption{
-    The log posterior contours and scatter plots of sampled $\theta$ values
-    using different methods. 
-    }
-    \label{fig:gauss_mix_1}
-\end{figure*}
-\begin{figure*}[t]
-    \centering
-    \includegraphics[width=0.9\linewidth]{minibatch_size_gaussian.png}
-    \caption{
-    Counts of minibatch sizes that the three methods used in the experiment of
-    Section~\ref{ssec:gaussians}. To make comparisons easier, the axes have the
-    same range (using a log-log scale).
-    }
-    \label{fig:gauss_mix_2}
-\end{figure*}
-
 Figure~\ref{fig:gauss_mix_1} shows scatter plots of the resulting $\theta$
 samples for the three methods, with darker regions indicating a greater density
 of points. There are no obvious differences, so we measure the similarity
@@ -1002,15 +952,14 @@ between each set of samples and the actual posterior.
 
 We discretize the posterior coordinates into bins (non-overlapping ranges) with
 respect to the two components of the parameter $\theta$.  The probability of a
-sample falling into one of these bins is the integral of the true posterior
-probability over the area of that bin. Let this probability be denoted $P_i$
-where $i$ is the bin number. A single sample from any of the MH methods should
-therefore be multinomial with distribution $P$, and a set of $n$ (ideally
-independent) samples should follow a ${\rm Multinomial}(P,n)$ distribution.
-Since the ideal distribution is simple, we can use it to measure the quality of
-the sample distributions rather than use general purpose tests like
-KL-divergence or likelihood-ratio.  The latter are problematic with zero counts
-in some bins as we have here.
+sample falling into bin $i$ (denoted as $P_i$) is the integral of the true
+posterior probability over the area of that bin.  A single sample from any of
+the MH methods should therefore be multinomial with distribution $P$, and a set
+of $n$ (ideally independent) samples should follow a ${\rm Multinomial}(P,n)$
+distribution.  Since the ideal distribution is simple, we can use it to measure
+the quality of the sample distributions rather than use general purpose tests
+like KL-divergence or likelihood-ratio.  The latter are problematic with zero
+counts in some bins as we have here.
 
 In practice, it is difficult to compute multinomial probabilities for large $n$,
 in that case the per-bin distributions are well-approximated by Poisson
@@ -1106,9 +1055,8 @@ minibatches.
 	\centering
 	\includegraphics[width=0.9\linewidth]{minibatch_size_logistic.png}
 	\caption{
-    Counts of minibatch sizes that the three methods used in the MNIST logistic
-    regression experiment from Section~\ref{ssec:logistic}. It is analogous to
-    Figure~\ref{fig:gauss_mix_2}.
+    Counts of minibatch sizes in the MNIST logistic regression experiment
+    (analogous to Figure~\ref{fig:gauss_mix_2}).
     }
 	\label{fig:logistic_minibatch}
 \end{figure*}
@@ -1401,6 +1349,80 @@ Pr}(\Delta + X_{\rm log} < y)$ for a logistic random $X_{\rm log}$. We conclude
 that the probability of acceptance for the actual test ${\rm Pr}(\Delta^*+X_{\rm
 nc}+X_{\rm corr} > 0)$ differs from the exact test ${\rm Pr}(\Delta+X_{\rm
 log} > 0)$ by at most $\epsilon$.
+
+
+
+\section{Improved Error Bounds Based on Skew Estimation}\label{app:better_error_bound}
+
+We demonstrate how we can show $O(n^{-1})$ error for the quantitative CLT by
+using a more precise limit distribution under an additional assumption. Let
+$\mu_i$ denote the $i^{th}$ moment, and $b_i$ denote the $i^{th}$ absolute
+moment of $X$. If Cramer's condition holds:
+\begin{equation}\label{eq:cramers_condition}
+    \lim_{t \to \infty} \sup |E(\exp(i t X))| < 1,
+\end{equation}
+then Equation 2.2 in Bentkus et al.'s work on Edgeworth
+expansions~\citep{Bentkus97} provides the following:
+
+\begin{lemma}\label{lem:clt_edgeworth}
+Let $X_1,\ldots,X_n$ be a set of zero-mean, independent, identically-distributed
+random variables with sample mean $\hat{X}$ and with $t$ defined as in Lemma 3.
+If $X$ satisfies Cramer's condition, then
+\begin{equation}\label{eq:clt-bounds_edgeworth}
+    \sup_x\left|{\rm Pr}(t<x) - G\left(x, \frac{\mu_3}{b_2^{3/2}}\right)\right| \leq \frac{c(\epsilon,b_2,b_3,b_4,b_{4+\epsilon})}{n}
+\end{equation}
+where
+\begin{equation}
+    G_n(x,y) = \Phi(x) + \frac{y(2x^2+1)}{6\sqrt{n}}\Phi'(x).
+\end{equation}
+\end{lemma}
+Lemma~\ref{lem:clt_edgeworth} shows that the average of the $X_i$ has a more
+precise, skewed CDF limit $G_n(x,y)$ where the skew term has weight proportional
+to a certain measure of skew derived from the moments:
+$\frac{\mu_3}{b_2^{3/2}}$. Note that if the $X_i$ are symmetric, the weight of
+the correction term is zero, and the CDF of the average of the $X_i$ converges
+to $\Phi(x)$ at a rate of $O(n^{-1})$.
+
+Here the limit $G_n(x,y)$ is a normal CDF plus a correction term that decays as
+$n^{-1/2}$.
+%{\color{blue} (Daniel: how did the equation in the next sentence
+% appear? I verified it and it seems correct, but it looks like it popped out of
+%nowhere.)}
+% JFC: It comes from taking a second derivative. You dont need to explain it. 
+Importantly, since $\phi^{''}(x) = x^2\phi(x) - \phi(x)$ where
+$\phi(x)=\Phi'(x)$, the correction term can be rewritten giving:
+\begin{equation}\label{eq:GNderivatives}
+    G_n(x,y) = \Phi(x) + \frac{y}{6\sqrt{n}}(2\phi^{''}(x)+3\phi(x))
+\end{equation}
+From which we see that $G_n(x,y)$ is a linear combination of $\Phi(x)$,
+$\phi(x)$ and $\phi^{''}(x)$. In Algorithm 1, we
+correct for the difference in $\sigma$ between $\Delta^*$ and the variance
+needed by $X_{\rm corr}$ using $X_{\rm nc}$. This same method works when we
+wish to estimate the error in $\Delta^*$ vs $G_n(x,y)$. Since all of the
+component functions of $G_n(x,y)$ are derivatives of a (unit variance)
+$\Phi(x)$, adding a normal variable with variance $\sigma'$ increases the
+variance of all three functions to $1+\sigma'$. Thus we add $X_{\rm nc}$ as
+per Algorithm 1 preserving the limit in Equation~(\ref{eq:GNderivatives}).
+
+The deconvolution approach can be used to construct a correction variable
+$X_{\rm corr}$ between $G_n(x,y)$ and $S(x)$ the standard logistic function. An
+additional complexity is that $G_n(x,y)$ has additional parameters $y$ and $n$.
+Since these act as a single multiplier $\frac{y}{6\sqrt{n}}$ in
+Equation~(\ref{eq:GNderivatives}), its enough to consider a function $g(x,y')$
+parametrized by $y'= \frac{y}{6\sqrt{n}}$. This function can be computed and
+saved offline. As we have shown earlier, errors in the ``limit'' function
+propagate directly through as errors in the acceptance test.  To achieve a test
+error of $10^{-6}$ (close to single floating point precision), we need a $y'$
+spacing of $10^{-6}$. It should not be necessary to tabulate values all the way to
+$y'=1$, since $y'$ is scaled inversely by the square root of minibatch size.
+Assuming a max $y'$ of 0.1 requires us to tabulate about 100,000.  Since our $x$
+resolution is 10,000, this leads to a table with about 1 billion values, which
+can comfortably be stored in memory.  However, if $g(x,y)$ is moderately smooth
+in $y$, it should be possible to achieve similar accuracy with a much smaller
+table. We leave further analysis and experiments with $g(x,y)$ as future work.
+%{\color{blue} Daniel: I will look at the code to understand this paragraph
+%better because right now I am confused.}
+% JFC: the code doesnt implement this yet.
 
 
 \end{document}
