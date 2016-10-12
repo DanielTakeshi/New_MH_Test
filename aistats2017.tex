@@ -478,9 +478,6 @@ whether
     \Delta(\theta,\theta') + X > 0
 \end{equation}
 for a logistic random variable $X$.
-%{\color{blue} Daniel: I think the text
-%before Equation~\ref{eq:the_exact_test} should be similar to what we had in our
-%NIPS submission because I find it much clearer.}
 
 
 \subsection{A Minibatch Acceptance Test}\label{ssec:deltas_minibatch}
@@ -533,14 +530,6 @@ CDF of $\mathcal{\bar{N}}(0, \sigma^2(\Delta^*))$ and the CDF of $\mathcal{N}(0,
 \sigma^2(\Delta^*))$, then our test has an error of at most $\epsilon$ relative
 to the full batch version.
 
-%% {\color{blue} Daniel: this subsection is improved from earlier. My main concern
-%% now is that $X_{\rm norm}$ is described as being both approximately Gaussian
-%% $\bar{\mathcal{N}}$ and Gaussian $\mathcal{N}$ here. We may want to clear that
-%% up; in our NIPS submission we actually used a new variable $\varepsilon$ for
-%% that and assigned it to be the $\mathcal{N}$ distribution. My current
-%% suggestion is to have $\Delta^*$ be the $\bar{\mathcal{N}}$ approx. normal
-%% distribution (but with mean $\Delta$, of course), and keep $X_{\rm norm}$ as an
-%% exact Gaussian.}
 
 
 
@@ -565,17 +554,18 @@ the following optimization problem:
 where $*$ denotes convolution.
 
 For computation of $C_\sigma$, we assume that its input $Y$ and another variable
-$X$ lie in the intervals $[-V,V]$ and $[-2V,2V]$, respectively.  In continuous
-form, the optimization problem is to find the $C_\sigma^*$ solving
+$X$ lie in the intervals $[-V,V]$ and $[-2V,2V]$, respectively.
+% Daniel: removing this because we were explaining this in quite some detail and
+% it was taking a lot of space.
+%\[
+%    \argmin_{C\sigma} \sup_{x \in [-2V,2V]}\left|\int_{-V}^{V}\Phi_{\sigma}(x-y) C_{\sigma}(y)dy - S(x)\right|.
+%\]
+We discretize the convolution by discretizing $X$ and $Y$ into $4N+1$ and $2N+1$
+values respectively. If $i \in \{-2N, \ldots, 2N\}=\mathcal{I}$ and $j \in \{-N,
+\ldots, N\}=\mathcal{J}$, then we can write $X_i = i(V/N)$ and $Y_j = j(V/N)$, and the
+objective can be written as:
 \[
-    \argmin_{C\sigma} \sup_{x \in [-2V,2V]}\left|\int_{-V}^{V}\Phi_{\sigma}(x-y) C_{\sigma}(y)dy - S(x)\right|.
-\]
-To get $C_\sigma^*$ in a computable form, we discretize $X$ and $Y$ into $4N+1$
-and $2N+1$ values respectively. If $i \in \{-2N, \ldots, 2N\}=\mathcal{I}$ and
-$j \in \{-N, \ldots, N\}$, then we can write $X_i = i(V/N)$ and $Y_j = j(V/N)$,
-and the objective can be re-expressed as:
-\[
-    C_\sigma^* = \argmin_{C_\sigma} \max_{i \in \mathcal{I}}\left|\sum_{j = -N}^{N}\Phi_{\sigma}(X_i-Y_j) C_{\sigma}(Y_j) - S(X_i)\right|.
+C_\sigma^* = \argmin_{C_\sigma} \max_{i \in \mathcal{I}}\left|\sum_{j\in\mathcal{J}} \Phi_{\sigma}(X_i-Y_j) C_{\sigma}(Y_j) - S(X_i)\right|.
 \]
 We now define a matrix $M$ and vectors $u$ and $v$ such that $M_{ij} =
 \Phi_{\sigma}(X_i-Y_j)$, $u_j = C_{\sigma}(Y_j)$, and $v_i = S(X_i)$, where the
@@ -586,9 +576,9 @@ with a least squares solution:
 \begin{equation}\label{eq:optimization_l2}
     u^* = \argmin_u\; \|Mu-v\|_2^2 + \lambda \|u\|_2^2,
 \end{equation}
-where we add the standard regularization factor $\lambda$. The solution is
-well-known from the normal equations: $u^* = (M^TM + \lambda I)^{-1}M^Tv$, and
-in practice, it yields an acceptable $L_{\infty}$ norm.
+with regularization $\lambda$. The solution is well-known from the normal
+equations ($u^* = (M^TM + \lambda I)^{-1}M^Tv$) and in practice yields an
+acceptable $L_{\infty}$ norm.
 
 % Daniel: This was taking up too much space, and we usually don't want to spend
 % a paragraph explaining what *didn't* work, and readers will know what it means
@@ -697,13 +687,10 @@ Such bounds can be derived efficiently for models such as logistic regression,
 but it is unclear how to derive them for a complex model such as a neural
 network. In general, since a new $\theta'$ value is obtained each iteration, one
 would need to iterate through all the $p(x_i\mid \theta')$ terms, defeating the
-purpose of minibatch MCMC.
-
-Here, we use quantitative forms of the Central Limit Theorem which rely on
-measurable statistics from a single minibatch. Thus a sampler using our approach
-does not need to see data beyond the current minibatch, and can easily be
-applied on large datasets and in online modes where the data is presented as a
-stream.
+purpose of minibatch MCMC. In contrast, we use quantitative forms of the Central
+Limit Theorem which rely on measurable statistics from a single minibatch. Thus
+a sampler using our approach does not need to see data beyond the current
+minibatch.
 
 In Section~\ref{ssec:delta_star_distribution}, we present bounds on the absolute
 and relative error (in terms of the CDFs) of the distribution of $\Delta^*$ vs.
