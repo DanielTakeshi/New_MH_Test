@@ -625,7 +625,7 @@ acceptable $L_{\infty}$ norm.
 \end{algorithm}
 
 \begin{table}[t]
-    \caption{Error in $X_{\rm norm}+X_{\rm corr}$ versus $X_{\rm log}$}
+    \caption{Error ($L_\infty$) in $X_{\rm norm}+X_{\rm corr}$ versus $X_{\rm log}$}
     \label{tab:xcorr}
     \centering
     \begin{tabular}{l l l l}
@@ -1414,12 +1414,69 @@ table. We leave further analysis and experiments with $g(x,y)$ as future work.
 
 
 
-% Daniel: don't forget this. The instructions say to put it in the supplementary
-% material, so I put it at the very end on a new page (to make it more
-% noticeable). Obviously for the arXiv version, we don't want this there.
+% Daniel: don't forget this. The AISTATS website says to put it in the
+% supplementary material, so I put it at the very end on a new page (to make it
+% more noticeable). Obviously for the arXiv version, we don't want this there.
+% Also, note to John, the reviewers for AISTATS **will have access to the
+% previous NIPS reviews**, which is why I am making references to those.
 \newpage
 \section{NIPS 2016 Submission Statement}
 
-{\huge TODO}
+We previously submitted a much older draft of this paper to NIPS 2016. The
+current manuscript has been substantially revised since that submission. We have
+made the following changes:
+
+\begin{enumerate}
+    \item At the time of the NIPS submission, we were unaware of several
+    references which described some of what we wrote. For this submission, we
+    now cite the important work of~\citep{TallData15} which had the idea of
+    using subsampling noise for exploration (rather than the $\log u$ variable).
+    We also cite the work of~\citep{Barker65} which uses the Barker function. We
+    welcome information about other potentially missing references.
+
+    \item The previous theoretical results have been entirely scrapped and
+    replaced with different but more relevant results. The NIPS submission
+    listed a page of theoretical results which did not tie into the rest of the
+    paper's contributions and were confusing to the readers. We now have
+    theoretical results that are much clearer and also \emph{directly} show the
+    expected performance benefits of our acceptance test. Note also that
+    Lemma~\ref{lem:worst_case} is an entirely new addition to this version.
+
+    \item Several reviewers mentioned that our deconvolution approach to
+    determine the correction distribution was not unique and thus ill-defined.
+    Consequently, we have added an entirely new section of the paper
+    (Section~\ref{sec:correction}) explaining how we derived that distribution.
+
+    \item Reviewers pointed out one of our mistakes when we said our minibatch
+    sizes were fixed. We have changed this in the current manuscript to mean
+    that the per-iteration minibatch sizes for our test have a distribution with
+    \emph{shorter tails} than those of prior work, which can be observed by
+    plotting a histogram of minibatch sizes.
+
+    \item Our experiments now include new comparisons with a baseline
+    from~\citep{icml2014c1_bardenet14} (in addition to~\citep{cutting_mh_2014},
+    which we had earlier). In addition, each algorithm now runs MCMC sampling on
+    the \emph{same} distribution.  Previously, we ran our distribution at a
+    higher temperature but kept the algorithm from~\citep{cutting_mh_2014}
+    running on the distribution at temperature $T=1$. In this set of
+    experiments, we tuned hyperparameters of the other algorithms to make the
+    comparison fairer. Finally, in the Gaussian mixture model scenario
+    (Section~\ref{ssec:gaussians}), we provide more details on how ``accurate''
+    the samples are, rather than solely relying on the visualization of
+    Figure~\ref{fig:gauss_mix_1}.
+
+    \item We improved Algorithm~\ref{alg:our_algorithm} so that we show
+    explicitly when we compute the moments, and why we now only need one
+    distribution $C_\sigma$ for $\sigma=1$ due to the extra $X_{\rm nc}$
+    variable.
+
+    \item Finally, we made minor revisions addressing: differences between the
+    Barker function vs. the original MH test, and sampling with vs. without
+    replacement.
+\end{enumerate}
+
+We are confident that the current manuscript is of far better quality than the
+NIPS submission, and we appreciate the efforts of the NIPS reviewers to give us
+ideas for improvement.
 
 \end{document}
