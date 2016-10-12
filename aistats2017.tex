@@ -533,28 +533,20 @@ distribution. Our goal is to solve:
 \begin{equation}\label{eq:overall_corr_problem}
     C_\sigma^* = \argmin_{C_\sigma} |\Phi_{\sigma} * C_{\sigma} - S|
 \end{equation}
-where $*$ denotes convolution.
-
-For computation of $C_\sigma$, we assume that its input $Y$ and another variable
-$X$ lie in the intervals $[-V,V]$ and $[-2V,2V]$, respectively.
-% Daniel: removing this because we were explaining this in quite some detail and
-% it was taking a lot of space.
-%\[
-%    \argmin_{C\sigma} \sup_{x \in [-2V,2V]}\left|\int_{-V}^{V}\Phi_{\sigma}(x-y) C_{\sigma}(y)dy - S(x)\right|.
-%\]
-We discretize the convolution by discretizing $X$ and $Y$ into $4N+1$ and $2N+1$
-values respectively. If $i \in \{-2N, \ldots, 2N\}=\mathcal{I}$ and $j \in \{-N,
-\ldots, N\}=\mathcal{J}$, then we can write $X_i = i(V/N)$ and $Y_j = j(V/N)$, and the
-objective can be written as:
+where $*$ denotes convolution. To compute $C_\sigma$, we assume the input $Y$
+and another variable $X$ lie in the intervals $[-V,V]$ and $[-2V,2V]$,
+respectively.  We discretize the convolution by discretizing $X$ and $Y$ into
+$4N+1$ and $2N+1$ values respectively. If $i \in \{-2N, \ldots,
+2N\}=\mathcal{I}$ and $j \in \{-N, \ldots, N\}=\mathcal{J}$, then we can write
+$X_i = i(V/N)$ and $Y_j = j(V/N)$, and the objective can be written as:
 \[
 C_\sigma^* = \argmin_{C_\sigma} \max_{i \in \mathcal{I}}\left|\sum_{j\in\mathcal{J}} \Phi_{\sigma}(X_i-Y_j) C_{\sigma}(Y_j) - S(X_i)\right|.
 \]
-We now define a matrix $M$ and vectors $u$ and $v$ such that $M_{ij} =
+Now define matrix $M$ and vectors $u$ and $v$ such that $M_{ij} =
 \Phi_{\sigma}(X_i-Y_j)$, $u_j = C_{\sigma}(Y_j)$, and $v_i = S(X_i)$, where the
-indices $i$ and $j$ are appropriately translated to be non-negative indices for
-$M, u,$ and $v$. Thus, the problem is now to minimize $\|Mu-v\|_{\infty}$ with
-the constraint that $u > 0$ since it represents a density. We approximate this
-with a least squares solution:
+indices $i$ and $j$ are appropriately translated to be non-negative for $M, u,$
+and $v$. The problem is now to minimize $\|Mu-v\|_{\infty}$ with the density
+non-negative constraint $u > 0$. We approximate this with least squares:
 \begin{equation}\label{eq:optimization_l2}
     u^* = \argmin_u\; \|Mu-v\|_2^2 + \lambda \|u\|_2^2,
 \end{equation}
@@ -632,42 +624,43 @@ procedure. A few points:
 
 \begin{itemize}[noitemsep]
     \item It uses an adaptive step size so as to use the smallest possible
-    average minibatch size. Unlike previous work however (and as we show in
-    Section~\ref{sec:experiments}) the size distribution is short-tailed.
+    average minibatch size. Unlike previous work, the size distribution is
+    short-tailed.
 
     \item An additional normal variable $X_{\rm nc}$ is added to $\Delta^*$ to
     produce a variable with unit variance. This is not mathematically necessary,
     but allows us to use a single correction distribution $C_1$ with $\sigma=1$
     for $X_{\rm corr}$, saving on memory footprint.
 
-    \item The sample variance $s^2_{\Delta^*}$ is proportional to
-    $\|\theta'-\theta\|_2^2$ whose distribution for Normal proposals is the
-    square of a normal variable. 
+    % Daniel: I cut some space to use this:
+    \item The sample variance is denoted as $s^2_{\Delta^*}$ and is proportional
+    to $\|\theta'-\theta\|_2^2$.
+    
+    % Daniel: instead of this:
+    %\item The sample variance $s^2_{\Delta^*}$ is proportional to
+    %$\|\theta'-\theta\|_2^2$ whose distribution for Normal proposals is the
+    %square of a normal variable. 
 \end{itemize}
 
 
 
 \section{ANALYSIS}\label{sec:analysis}
 
-We now derive error bounds for our M-H test and the approximate target
-distribution it generates. In the most similar prior
-works,~\citet{cutting_mh_2014} uses asymptotic arguments based on the CLT to
-argue that its approximate acceptance test error tends to zero as batch size
-increases, but no quantitative bounds are given.
-In~\citet{icml2014c1_bardenet14}, explicit bounds are given, but they depend on
-bounding:
+We now derive error bounds for our M-H test and the target distribution it
+generates. In the most similar prior works,~\citet{cutting_mh_2014} use CLT
+asymptotic arguments to show that its approximate acceptance test error tends to
+zero as batch size increases, but no quantitative bounds are given.
+In~\citet{icml2014c1_bardenet14}, explicit bounds are given and depend on
 \begin{equation}\label{eq:bad_bound}
     C_{\theta, \theta'} = \max_{1\leq i\leq N}|\log p(x_i\mid\theta') - \log p(x_i\mid\theta)|.
 \end{equation}
 It is possible to analytically determine $C_{\theta,\theta'}$ for logistic
 regression, but it is unclear how to do so for more complicated models, and one
 generally needs to use all $p(x_i\mid \theta')$ terms\footnote{The sample code
-provided by the authors of~\citet{icml2014c1_bardenet14} in fact computes
-$C_{\theta,\theta'}$ explicitly for each sample generated, i.e. it traverses the
-entire data, thus providing no performance advantage over the complete test.} to
-get $C_{\theta,\theta'}$.  In contrast, we use quantitative forms of the Central
-Limit Theorem which rely on measurable statistics from a single minibatch. Thus
-a sampler using our approach does not need to see data beyond the current
+provided by~\citet{icml2014c1_bardenet14} computes $C_{\theta,\theta'}$
+by traversing the entire data, thus providing no performance advantage over the
+complete test.} to get $C_{\theta,\theta'}$.  In contrast, we use quantitative
+forms of the CLT which rely on measurable statistics from a \emph{single}
 minibatch.
 
 In Section~\ref{ssec:delta_star_distribution}, we present bounds on the absolute
@@ -688,8 +681,8 @@ where:
 \begin{equation}
     \bar{X} = \frac{1}{n}\sum_{i=1}^nX_i, \quad s_X = \frac{1}{n}\left(\sum_{i=1}^n(X_i-\bar{X})^2\right)^{\frac{1}{2}}.
 \end{equation}
-This implies $t=\bar{X}/s_X$ has an approximate Student's distribution
-which approaches a normal distribution in the limit. Then
+This means $t=\bar{X}/s_X$ has an approximate Student's distribution
+which approaches a Gaussian. Then
 \begin{equation}\label{eq:clt-bounds}
     \sup_x|{\rm Pr}(t<x) - \Phi(x)| \leq \frac{6.4E|X|^3+2E|X|}{\sqrt{n}}.
 \end{equation}
@@ -709,10 +702,10 @@ See Supplementary Material, Section~\ref{app:quant_clt}.
 %% JFC - this bound applies to minibatches, not the full dataset so the size $n$ is
 %% deliberately not $N$.
 
-Lemma~\ref{lem:quant_clt} demonstrates that as long as we know the first and
-third absolute moments $E|X|$ and $E|X|^3$, we can bound the error of the normal
-approximation, which decays as $O(n^{-\frac{1}{2}})$. Making the change of
-variables $y = x s_X$, Equation~(\ref{eq:clt-bounds}) becomes
+Lemma~\ref{lem:quant_clt} demonstrates that if we know $E|X|$ and $E|X|^3$, we
+can bound the error of the normal approximation, which decays as
+$O(n^{-\frac{1}{2}})$. Making the change of variables $y = x s_X$,
+Equation~(\ref{eq:clt-bounds}) becomes
 \begin{equation}\label{eq:clt-bounds2}
    \sup_y\left|{\rm Pr}(\bar{X}< y) - \Phi\left(\frac{y}{s_X}\right)\right| \leq \frac{6.4E|X|^3+2E|X|}{\sqrt{n}}
 \end{equation}
@@ -781,18 +774,15 @@ where $S(x)$ is the standard logistic function, and $X_{\rm nc}$ and $X_{\rm cor
 See Supplementary Material, Section~\ref{app:bounds_preserved}.
 \end{proof}
 
-From Section~\ref{sec:our_algorithm}, as the distribution of $\Delta^*$
-approaches a Gaussian, our new MH test becomes more accurate.
 Corollary~\ref{cor:bounds_preserved} shows that the bounds from
-Section~\ref{ssec:delta_star_distribution} are preserved after the addition of
-the random variables we use, showing that our test should remain accurate.
-% Daniel: I'm moving this paragraph over here and putting the rest of it in the
-% supplementary material since our code doesn't do this, so we should not
-% describe this in much detail.
-In fact we can do better ($O(n^{-1})$) by using a more precise limit
+Section~\ref{ssec:delta_star_distribution} are preserved after adding 
+random variables, so our test remains accurate.  In fact we can do better
+($O(n^{-1})$ instead of $O(n^{-1/2})$) by using a more precise limit
 distribution under an additional assumption. We review this in the Supplementary
-Material, Section~\ref{app:better_error_bound}, and leave the details to future
-work.
+Material, Section~\ref{app:better_error_bound}.
+
+% Daniel: I moved the previous Section 5.4 part to the supplementary material
+% since our code doesn't do this, so we should not describe this in much detail.
 
 % Daniel: this is probably less important than other parts of the paper. Hence,
 % I put it in as \begin{comment} ... \end{comment} but we can think about
@@ -829,14 +819,11 @@ where $\epsilon$ is the bound on the error in the acceptance test.
 
 \section{EXPERIMENTS}\label{sec:experiments}
 
-We conduct two sets of experiments analyzing convergence to the posterior of a
-heated Gaussian mixture, and efficiency on logistic regression.
-
 % Daniel: moving this here so figures don't overflow to next pages. We can tune
 % the positioning if needed.
 \begin{figure*}[t]
     \centering
-    \includegraphics[width=0.85\linewidth]{GaussianMixtureResult/posterior_of_gaussian.png}
+    \includegraphics[width=0.8\linewidth]{GaussianMixtureResult/posterior_of_gaussian.png}
     \caption{
     The log posterior contours and scatter plots of sampled $\theta$ values
     using different methods. 
@@ -845,7 +832,7 @@ heated Gaussian mixture, and efficiency on logistic regression.
 \end{figure*}
 \begin{figure*}[t]
     \centering
-    \includegraphics[width=0.85\linewidth]{minibatch_size_gaussian.png}
+    \includegraphics[width=0.8\linewidth]{minibatch_size_gaussian.png}
     \caption{
     Minibatch sizes used in Section~\ref{ssec:gaussians}'s experiment. The axes
     have the same (log-log scale) range.
@@ -856,21 +843,30 @@ heated Gaussian mixture, and efficiency on logistic regression.
 
 \subsection{Mixture of Gaussians}\label{ssec:gaussians}
 
-\begin{table}[t]
-    \caption{Gaussian Mixture Model Statistics}
-    \label{tab:poissons}
-    \centering
-    \resizebox{.45\textwidth}{!}{% <------ Don't forget this %
-    \begin{tabular}{l l l l}
-    {\bf Metric} & {\bf Ours} & {\bf Korat.'14} & {\bf Barde.'14} \\
-    \hline
-    Equation~\ref{eq:log_prob_poissons} & -1430.0 & -1578.9 & -1232.7 \\
-    Chi-Squared & 3313.9 & 3647.7 & 2444.1 \\
-    \end{tabular}% <------ Don't forget this %
-   }
-\end{table}
+% Daniel: moving this here so figures don't overflow to next pages. We can tune
+% the positioning if needed.
+\begin{figure*}[t]
+	\centering
+	%\includegraphics[width=0.9\linewidth]{logistic_performance.png}
+	\includegraphics[width=0.8\linewidth]{logistic_regression_ll_acc_results.png}
+	\caption{
+    Logistic regression performance (accuracy/log likelihood) based on
+    cumulative data usage.
+    }
+	\label{fig:logistic_performance}
+\end{figure*}
+\begin{figure*}[t]
+	\centering
+	%\includegraphics[width=0.9\linewidth]{minibatch_size_logistic.png}
+	\includegraphics[width=0.8\linewidth]{logistic_regression_histograms_results.png}
+	\caption{
+    Counts of minibatch sizes in the MNIST logistic regression experiment
+    (analogous to Figure~\ref{fig:gauss_mix_2}).
+    }
+	\label{fig:logistic_minibatch}
+\end{figure*}
 
-We borrow a Gaussian mixture experiment from~\citet{langevin_2011}.  The
+We first borrow a Gaussian mixture experiment from~\citet{langevin_2011}.  The
 parameter is 2-D, $\theta = \langle \theta_1,\theta_2 \rangle$, and the
 generation process is
 \begin{equation}\label{eq:data_generation}
@@ -934,36 +930,27 @@ used each iteration show that our method consumes significantly less data; the
 distribution is short-tailed and the mean is 210. The other methods occasionally
 need to use nearly all data points, and average minibatch sizes are 15562 and
 16857. The sizes roughly predict the running times of these methods, which are
-proportional to the data consumed, with the exception
-of~\citet{icml2014c1_bardenet14}, which requires a full pass to compute
-$C_{\theta,\theta'}$ (Equation~(\ref{eq:bad_bound})). Using minibatch sizes
-as a proxy for time also avoids discrepancies due to code optimization.
+proportional to the data consumed, with the exception of the
+$C_{\theta,\theta'}$ time for~\citet{icml2014c1_bardenet14}.Using minibatch
+sizes as a proxy for time also avoids discrepancies due to code optimization.
 
-
-% Daniel: moving this here so figures don't overflow to next pages. We can tune
-% the positioning if needed.
-\begin{figure*}[t]
-	\centering
-	%\includegraphics[width=0.9\linewidth]{logistic_performance.png}
-	\includegraphics[width=0.85\linewidth]{logistic_regression_ll_acc_results.png}
-	\caption{
-    Logistic regression performance (accuracy/log likelihood) based on
-    cumulative data usage.
-    }
-	\label{fig:logistic_performance}
-\end{figure*}
-\begin{figure*}[t]
-	\centering
-	%\includegraphics[width=0.9\linewidth]{minibatch_size_logistic.png}
-	\includegraphics[width=0.85\linewidth]{logistic_regression_histograms_results.png}
-	\caption{
-    Counts of minibatch sizes in the MNIST logistic regression experiment
-    (analogous to Figure~\ref{fig:gauss_mix_2}).
-    }
-	\label{fig:logistic_minibatch}
-\end{figure*}
 
 \subsection{Logistic Regression}\label{ssec:logistic}
+
+\begin{table}[t]
+    \caption{Gaussian Mixture Model Statistics}
+    \label{tab:poissons}
+    \centering
+    \resizebox{.45\textwidth}{!}{% <------ Don't forget this %
+    \begin{tabular}{l l l l}
+    {\bf Metric} & {\bf Ours} & {\bf Korat.'14} & {\bf Barde.'14} \\
+    \hline
+    Equation~\ref{eq:log_prob_poissons} & -1430.0 & -1578.9 & -1232.7 \\
+    Chi-Squared & 3313.9 & 3647.7 & 2444.1 \\
+    \end{tabular}% <------ Don't forget this %
+   }
+\end{table}
+
 
 We next use logistic regression for the binary classification of 1s versus 7s on
 a subset of the MNIST8M dataset, a larger version of
@@ -982,15 +969,14 @@ Thus, we naively compute $C_{\theta,\theta'}$.
 
 Figure~\ref{fig:logistic_performance} shows the test log likelihood and
 prediction accuracy as a function of the cumulative training points
-processed.\footnote{Note that the curves do not span the same length over the
-x-axis, because our test consumes fewer samples throughout the MCMC procedure,
-so the corresponding curve will ``end'' before the other two.} To generate the
-curves, for each of the sampled vectors $\theta_t$, $t\in\{1,\ldots,3000\}$, we
-use $\theta_t$ as the parameter for logistic regression.  Our minibatch MH test
-is more efficient in terms of accuracy, achieving convergence using roughly half
-as many elements compared to~\citet{cutting_mh_2014} and \textbf{TODO TODO TODO}
-compared to~\citet{icml2014c1_bardenet14}, though its log likelihood results lag
-slightly behind the former algorithm during the very early stages.
+processed.\footnote{The curves do not span the same length over the x-axis since
+the methods consume different amounts of data.} To generate the curves, for each
+of the sampled vectors $\theta_t$, $t\in\{1,\ldots,3000\}$, we use $\theta_t$ as
+the parameter for logistic regression.  Our minibatch MH test is more efficient
+in terms of accuracy, achieving convergence using roughly half as many elements
+compared to~\citet{cutting_mh_2014} and \textbf{TODO TODO TODO} compared
+to~\citet{icml2014c1_bardenet14}, though its log likelihood results lag slightly
+behind the former algorithm during the very early stages.
 
 Figure~\ref{fig:logistic_minibatch} shows histograms of minibatch sizes for the
 three methods on a log-log scale. With an initial size of 100, we achieve an
@@ -1001,15 +987,14 @@ methods, which have longer-tailed distributions.
 
 \section{CONCLUSIONS}\label{sec:conclusion}
 
-In this paper, we derived an M-H test for minibatch MCMC which approximates full
-data tests. We provide theoretical results and experimentally show the benefits
-of our test on Gaussian mixtures and logistic regression. Directions for future
+We have derived an M-H test for minibatch MCMC which approximates full data
+tests. We present theoretical results and experimentally show the benefits of
+our test on Gaussian mixtures and logistic regression. Directions for future
 work include running more experiments with a particular focus on controlling
-variances.  More elaborate extensions include testing on neural networks,
-combining our results with Hamiltonian Monte Carlo methods, providing a recipe
-for how to use our algorithm (following the framework of~\citet{sgmcmc_2015}),
-or integrating parallel MCMC~\citep{conf/uai/AngelinoKWSA14,conf/icml/AhnSW14}
-concepts.
+variances, testing on neural networks, combining our results with Hamiltonian
+Monte Carlo methods, providing a recipe for how to use our algorithm (following
+the framework of~\citet{sgmcmc_2015}), or integrating parallel
+MCMC~\citep{conf/uai/AngelinoKWSA14,conf/icml/AhnSW14} concepts.
 
 
 
