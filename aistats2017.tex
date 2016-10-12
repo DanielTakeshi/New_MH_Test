@@ -649,12 +649,9 @@ Algorithm~\ref{alg:our_algorithm} describes our procedure. A few points:
 
 \section{ANALYSIS}\label{sec:analysis}
 
-We now derive error bounds for our M-H test, and for the approximate target
-distribution that it generates. From Table~\ref{tab:xcorr}, we know that it is
-possible to generate the correction samples $X_{\rm corr}$ with a CDF error
-approaching single-precision floating point error. We therefore treat $X_{\rm
-corr}$ as a sample from the exact correction distribution and we will not
-analyze its errors.
+We now derive error bounds for our M-H test and the approximate target
+distribution it generates. (We treat $X_{\rm corr}$ samples from the exact
+correction distribution based on the results in Table~\ref{tab:xcorr}.)
 
 In the most similar prior works,~\citet{cutting_mh_2014} uses asymptotic
 arguments based on the CLT to argue that its approximate acceptance test error
@@ -664,16 +661,16 @@ bounding:
 \begin{equation}\label{eq:bad_bound}
     C_{\theta, \theta'} = \max_{1\leq i\leq N}|\log p(x_i\mid\theta') - \log p(x_i\mid\theta)|.
 \end{equation}
-Such bounds can be derived efficiently for models such as logistic regression,
-but it is unclear how to derive them for a complex model such as a neural
-network. In general, since a new $\theta'$ value is obtained each iteration, one
-would need to use all the $p(x_i\mid \theta')$ terms\footnote{The sample code
+It is possible to analytically determine $C_{\theta,\theta'}$ for logistic
+regression, but it is unclear how to do so for more complicated models, and one
+generally needs to use all $p(x_i\mid \theta')$ terms\footnote{The sample code
 provided by the authors of~\citet{icml2014c1_bardenet14} in fact computes
 $C_{\theta,\theta'}$ explicitly for each sample generated, i.e. it traverses the
-entire data, thus providing no performance advantage over the complete test.}.
-In contrast, we use quantitative forms of the Central Limit Theorem which rely
-on measurable statistics from a single minibatch. Thus a sampler using our
-approach does not need to see data beyond the current minibatch.
+entire data, thus providing no performance advantage over the complete test.} to
+get $C_{\theta,\theta'}$.  In contrast, we use quantitative forms of the Central
+Limit Theorem which rely on measurable statistics from a single minibatch. Thus
+a sampler using our approach does not need to see data beyond the current
+minibatch.
 
 In Section~\ref{ssec:delta_star_distribution}, we present bounds on the absolute
 and relative error (in terms of the CDFs) of the distribution of $\Delta^*$ vs.
@@ -749,8 +746,11 @@ quantities}: both $E|X|$ and $E|X|^3$ can be estimated as means of $|\Lambda_i
 - \Lambda|$ and $|\Lambda_i - \Lambda|^3$, respectively, on each minibatch. We
 expect this will often be accurate enough on minibatches with hundreds or
 thousands of points, but otherwise bootstrap CIs can be computed from those
-sequences. Since the bounds are monotone in $E|X|$ and $E|X|^3$, using upper
-bootstrap CI limits will provide high-confidence error bounds.
+sequences.
+
+% Daniel: I removed this sentence to save space.
+% Since the bounds are monotone in $E|X|$ and $E|X|^3$, using upper
+% bootstrap CI limits will provide high-confidence error bounds.
 
 
 
