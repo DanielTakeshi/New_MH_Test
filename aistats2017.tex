@@ -86,24 +86,18 @@ framexleftmargin=20pt}
   %spacing of 11~points. The {\bf Abstract} heading must be centered,
   %bold, and in point size 12. Two line spaces precede the
   %Abstract. The Abstract must be limited to one paragraph.
-  Markov chain Monte Carlo (MCMC) methods have many applications in
-  machine learning. We are particularly interested in their application
-  to modeling very large datasets, where it is impractical to perform
-  Metropolis-Hastings tests on the full data. Previous work on reducing
-  the cost of Metropolis-Hastings tests yield variable data consumed per
-  sample, with only constant factor reductions versus using the full
-  dataset for each sample.  Here we present a method that can be tuned
-  to provide arbitrarily small batch sizes, by adjusting either proposal
-  step size or temperature. Our approach uses the natural noise present
-  in minibatch likelihood estimates to furnish the randomness in a
-  Metropolis-Hastings test. Our test uses the noise-tolerant Barker
-  acceptance test with a novel additive correction variable.  The
-  resulting test can be combined with minibatch proposals to yield
-  updates with the same complexity as a simple SGD update. In this paper
-  we derive the test, analyze its performance, discuss its
-  implementation, and present several experiments. We demonstrate 
-  order-of-magnitude speedups over previous work, and show for
-  the first time that small expected minibatch sizes are possible. 
+  We
+  present a novel Metropolis-Hastings method for large datasets that
+  uses small expected-size minibatches of data. Previous work on
+  reducing the cost of Metropolis-Hastings tests yield variable data
+  consumed per sample, with only constant factor reductions versus
+  using the full dataset for each sample.  Here we present a method
+  that can be tuned to provide arbitrarily small batch sizes, by
+  adjusting either proposal step size or temperature. Our test uses
+  the noise-tolerant Barker acceptance test with a novel additive
+  correction variable.  The resulting test has simlar cost to a normal
+  SGD update. Our experiments demonstrate several order-of-magnitude
+  speedup over previous work.
 \end{abstract}
 
 \section{INTRODUCTION}\label{sec:introduction}
@@ -156,15 +150,16 @@ of several ways. Either:
     temperature different from that assumed during data generation), but higher
     temperature can be advantageous for parameter exploration.
 
-    \item Increase the minibatch size when needed. Log acceptance variance
-    scales as $1/k$ vs the minibatch size $k$. Our test is adaptive like earlier
-    works, but unlike them, the distribution of minibatch size is Gaussian, not
-    long-tailed.  Increased minibatch size also reduces the error rate for the
-    test.
 
     \item For continuous distributions, reduce the proposal step size and
     variance compared to an optimal proposal. The variance of the log acceptance
     probability scales as the square of proposal step size. 
+
+%  \item Increase the minibatch size when needed. Log acceptance variance
+%    scales as $1/k$ vs the minibatch size $k$. Our test is adaptive like earlier
+%    works, but unlike them, the distribution of minibatch size is Gaussian, not
+%    long-tailed.  Increased minibatch size also reduces the error rate for the
+%    test.
 \end{itemize}
 
 It is worth discussing at this point the typical goals of M-H sampling on large
@@ -177,7 +172,7 @@ where the posterior is multimodal~\citep{choromanska2014loss}, samplers will
 likely get trapped in one of the modes. A common solution is to anneal the
 sampler, running first at high temperatures to flatten the likelihood landscape.
 This in turn reduces the variance of the log acceptance probability and allows
-our test to be applied. Our samples can cover the search space densely with
+our test to be applied. Theses samples can cover the search space densely with
 small steps rather than taking a few sparse steps towards an optimum. In this
 mode, Metropolis-Hastings can be used in similar fashion to Stochastic Gradient
 Descent. The goal in SGD is to make gradual progress to a posterior mode with
@@ -431,21 +426,24 @@ functions is specified as follows:
     g(\Delta(\theta,\theta'))$ satisfies detailed balance.
 \end{lemma}
 
-This result is used in~\citet{Barker65} to define the Barker acceptance test.  As
-a sanity check, choosing $g(s) = \exp(s) \wedge 1$ --- a function satisfying the
-requirement of Lemma~\ref{lem:detailed_balance} --- produces the classical
-Metropolis acceptance test $\alpha(\theta,\theta') = g(\Delta(\theta,\theta')) =
-\frac{p(\theta')q(\theta \mid \theta')}{p(\theta)q(\theta' \mid \theta)}\wedge
-1$. In fact, $g(s) =\exp(s) \wedge 1$ is the optimal acceptance function in
-terms of acceptance rate, since it accepts with probability 1 for $\Delta > 0$.
+This result is used in~\citet{Barker65} to define the Barker acceptance test.
+%As
+%a sanity check, choosing $g(s) = \exp(s) \wedge 1$ --- a function satisfying the
+%requirement of Lemma~\ref{lem:detailed_balance} --- produces the classical
+%Metropolis acceptance test $\alpha(\theta,\theta') = g(\Delta(\theta,\theta')) =
+%\frac{p(\theta')q(\theta \mid \theta')}{p(\theta)q(\theta' \mid \theta)}\wedge
+%1$.
+%In fact, $g(s) =\exp(s) \wedge 1$ is the optimal acceptance function in
+%terms of acceptance rate, since it accepts with probability 1 for $\Delta > 0$.
 
 \subsection{Barker (Logistic) Acceptance Function}\label{ssec:barker_function}
-For our new MH test we use the Barker logistic~\citep{Barker65} function:
-$g(s)=(1+\exp(-s))^{-1}$. Straightforward arithmetic shows that it satisfies the
-condition in Lemma~\ref{lem:detailed_balance}.  While it is slightly less
-efficient than the Metropolis test when used on the full dataset, we will see
-that its smoothness allows it to naturally tolerate substantial variance in its
-input. This in turn will lead to a much more efficient test on subsets of data.
+For our new MH test we use the Barker logistic~\citep{Barker65}
+function: $g(s)=(1+\exp(-s))^{-1}$. Straightforward arithmetic shows
+that it satisfies the condition in Lemma~\ref{lem:detailed_balance}.
+It is slightly less efficient than the Metropolis test, since its
+acceptance rate for vanishing likelihood difference is 0.5. However we
+will see that its overall sample efficiency is much higher than the
+earlier methods.
 
 Assume we begin with the current sample $\theta$ and a candidate sample
 $\theta'$, and that $V \sim \mathcal{U}(0,1)$ is a uniform random variable. We
@@ -487,8 +485,8 @@ where $\mathcal{\bar{N}}(0, \sigma^2(\Delta^*))$ denotes a distribution which is
 approximately normal with variance $\sigma^2(\Delta^*)$.  But to perform the
 test in Equation~(\ref{eq:the_exact_test}) we want $\Delta + X$ for a logistic
 random variable $X$ (call it $X_{\rm log}$ from now on). In~\citet{TallData15} it
-was proposed to use $\Delta^*$ in a Barker test anyway and tolerate the fixed
-error caused by this approximation. 
+was proposed to use $\Delta^*$ in a Barker test, and tolerate the fixed
+error between logistic and normal distributions. 
 
 Our approach is to instead decompose $X_{\rm log}$ as
 \begin{equation}\label{eq:deconvolution}
@@ -718,10 +716,10 @@ To apply this to our test, let $X_i = \Lambda_i(\theta,\theta') -
 instead of all $n$ samples, we only extract a subset of $b$ samples
 corresponding to our minibatch, we can connect $\bar{X}$ with our $\Delta^*$
 term: $\bar{X} = \Delta^*(\theta,\theta') - \Delta(\theta,\theta')$, so that
-$s_X = s_{\Delta^*}$. This results in the following:
+$s_X = s_{\Delta^*}$. We can now substitute into Equation~(\ref{eq:clt-bounds2}) and displace by the mean, giving:
+
 
 \begin{corollary}\label{cor:our_bound_delta_prime}
-We can now substitute into Equation~(\ref{eq:clt-bounds2}) and displace by the mean, giving:
 \begin{align*}
     \sup_y\left|{\rm Pr}(\Delta^*< y) - \Phi\left(\frac{y-\Delta}{s_{\Delta^*}}\right)\right| &\leq \frac{6.4E|X|^3+2E|X|}{\sqrt{b}} \\
     &= \epsilon(\theta,\theta',b).
@@ -791,8 +789,6 @@ Material, Section~\ref{app:better_error_bound}.
 % supplementary material. I don't see how we can discuss it in the paper without
 % taking up too much space.
 
-\begin{comment}
-
 \subsection{Bounds on the Stationary Distribution}
 Bounds on the error of an M-H test imply bounds on the stationary distribution
 of the Markov chain under appropriate conditions. Such bounds were derived in
@@ -812,9 +808,6 @@ constant $\eta\in [0,1)$ and all probability distributions $P$, then
 \end{equation}
 where $\epsilon$ is the bound on the error in the acceptance test. 
 \end{lemma}
-
-\end{comment}
-
 
 
 \section{EXPERIMENTS}\label{sec:experiments}
@@ -866,8 +859,8 @@ where $\epsilon$ is the bound on the error in the acceptance test.
 	\label{fig:logistic_minibatch}
 \end{figure*}
 
-We first borrow a Gaussian mixture experiment from~\citet{langevin_2011}.  The
-parameter is 2-D, $\theta = \langle \theta_1,\theta_2 \rangle$, and the
+This model is adapted from~\citet{langevin_2011} by increasing the number
+of samples to 1 million.  The parameters are $\theta = \langle \theta_1,\theta_2 \rangle$, and the
 generation process is
 \begin{equation}\label{eq:data_generation}
 \begin{split}
@@ -885,13 +878,23 @@ two very narrow peaks.  Our goal is to reproduce the original posterior, so we
 adjust the temperature to $T=10,000$.  Taking logs, we get the target as shown
 in the far left of Figure~\ref{fig:gauss_mix_1}.
 
-We run MCMC with our test and benchmark with~\citet{cutting_mh_2014}
-and~\citet{icml2014c1_bardenet14}, all with initial minibatch size 100.  For the
-former, we increment sizes by 100 and set the tolerance $\epsilon=0.005$.  For
-the latter, we increase sizes geometrically with $\gamma = 1.5$ and use
-parameters $p = 2, \delta = 0.01$.  All methods collect 5000 samples using a
-random walk proposer with covariance ${\rm diag}(0.15, 0.15)$, which means the
-M-H test is responsible for the sample distribution.
+We ran MCMC with with our test against the test
+from~\citet{icml2014c1_bardenet14} and a simplified version
+of~\citet{cutting_mh_2014}. Both methods use repeated testing which
+must be discounted to bound overall test
+accuracy. ~\citet{icml2014c1_bardenet14} conservatively partitions the
+test error, while~\citet{cutting_mh_2014} used a complex dynamic
+programming heuristic to estimate the overall test error. We did not
+implement this heuristic and instead set the individual test error
+equal to the overall test error. Thus our results for
+~\citet{cutting_mh_2014} should be treated as lower bounds. All
+methods were initialized with minibatch size 100.  For ~\citet{cutting_mh_2014} we
+increment sizes by 100 and set the tolerance $\epsilon=0.005$.  For
+~\citet{icml2014c1_bardenet14}, we increase sizes geometrically with $\gamma = 1.5$ and
+use parameters $p = 2, \delta = 0.01$.  All methods collect 5000
+samples using a random walk proposer with covariance ${\rm diag}(0.15,
+0.15)$, which means the M-H test is responsible for shaping the sample
+distribution.
 
 Figure~\ref{fig:gauss_mix_1} shows scatter plots of the resulting $\theta$
 samples for the three methods, with darker regions indicating a greater density
@@ -904,8 +907,8 @@ is the integral of the true posterior over the bin's area.  A single sample
 should therefore be multinomial with distribution $P$, and a set of $n$ (ideally
 independent) samples is ${\rm Multinomial}(P,n)$. This distribution is simple
 and we can use it to measure the quality of the samples rather than use general
-purpose tests like KL-divergence or likelihood-ratio, which can be problematic
-with zero counts in bins.
+purpose tests like KL-divergence or likelihood-ratio, which are problematic
+with zero counts.
 
 For large $n$, the per-bin distributions are approximated by Poissons with
 parameter $\lambda_i=P_i n$. Given samples $\{\theta_1,\ldots,\theta_T\}$, let
@@ -917,22 +920,20 @@ out of $N_{\rm bins}$ total. We have
     \sum_{j=1}^{N_{\rm bins}} c_j \log (n P_j) - n P_j - \log(\Gamma(c_j+1)). & \\
 \end{split}
 \end{equation}
-Table~\ref{tab:poissons} shows the results, but it is difficult to interpret the
-scores, so we perform significance tests to show the difference between the
-MCMC-samples and ground-truth using the Chi-Squared distribution as the test
-statistic (also in Table~\ref{tab:poissons}). Both metrics imply that our method
-is slightly superior to~\citet{cutting_mh_2014}, but slightly worse
-than~\citet{icml2014c1_bardenet14}. 
+Table~\ref{tab:poissons} shows the likelihoods. To facilitate
+interpretation we perform significance tests using Chi-Squared
+distribution (also in Table~\ref{tab:poissons}). Scores lie
+between~\citet{cutting_mh_2014} and~\citet{icml2014c1_bardenet14}, but
+the variance of these values is high and ordering changes depending on
+the range of samples generated.
 
-Figure~\ref{fig:gauss_mix_2}, however, suggests that our method dominates in
+Figure~\ref{fig:gauss_mix_2} shows that the new method dominates in
 terms of speed and efficiency. The histograms of the (final) minibatch sizes
 used each iteration show that our method consumes significantly less data; the
 distribution is short-tailed and the mean is 210, more than an order of
 magnitude better compared to the other two methods (averages are 15562 and
-16857). The sizes roughly predict the running times of these methods, which are
-proportional to the data consumed, with the exception of the
-$C_{\theta,\theta'}$ time for~\citet{icml2014c1_bardenet14}. Using minibatch
-sizes as a proxy for time also avoids discrepancies due to code optimization.
+16857). The sizes correspond to the running times of the methods, since
+they all consume linear time in data consumed. 
 
 
 \subsection{Logistic Regression}\label{ssec:logistic}
@@ -952,20 +953,22 @@ sizes as a proxy for time also avoids discrepancies due to code optimization.
 \end{table}
 
 
-We next use logistic regression for the binary classification of 1s versus 7s on
-a subset of the MNIST8M dataset, a larger version of
-MNIST~\citep{lecun-mnisthandwrittendigit-2010} and well-suited to our big data
-objectives. We randomly subsampled 450k training and 192k testing points. The
-pixels are scaled in $[0,1]$. We impose a flat prior on $\theta$ and again use a
-random walk proposer, this time with covariance matrix $0.05I$ for the
-$784\times 784$ identity matrix $I$. The temperature is set at $T=1000$. We run
-the three tests for samples and again use 100 as the starting minibatch size. To
-make~\citet{cutting_mh_2014} run faster, we now use $\epsilon=0.05$.
-For~\citet{icml2014c1_bardenet14}, we tuned $\gamma \in \{1.1,1.25,1.5,1.75,2\}$
-before concluding that $\gamma=2.0$ was OK. In addition, we tried their analytic
-approximation to $C_{\theta,\theta'}$, but found that the bounds were too high,
-meaning that their method needed to consume the entire dataset each iteration.
-Thus, we naively compute $C_{\theta,\theta'}$.
+We next test logistic regression for the binary classification of 1s
+versus 7s on a subset of the MNIST8M dataset, a larger version of
+MNIST~\citep{lecun-mnisthandwrittendigit-2010}. We randomly subsampled
+450k training and 192k testing points.
+%%% The pixels are scaled in $[0,1]$  - JFC Why ????
+We impose a uniform prior on $\theta$ and again use a random walk
+proposer, this time with covariance matrix $0.05I$. The temperature is
+set at $T=1000$. We run the three tests for samples and again use 100
+as the starting minibatch size. Method~\citet{cutting_mh_2014} used
+per-test error of $\epsilon=0.05$.  For~\citet{icml2014c1_bardenet14},
+we used $\gamma=2.0$ (discounting factor). We tried to use the
+symbolic bound for $C_{\theta,\theta'}$ for Logistic regression from
+~\citet{icml2014c1_bardenet14}, but found it to be too high. Instead
+we used the empirical $C_{\theta,\theta'}$ from the entire dataset
+without including the test for this test, so again our results
+represent a lower bound for this method.
 
 Figure~\ref{fig:logistic_performance} shows the test log likelihood and
 prediction accuracy as a function of the cumulative training points
@@ -1259,7 +1262,7 @@ log} > 0)$ by at most $\epsilon$.
 
 \section{Improved Error Bounds Based on Skew Estimation}\label{app:better_error_bound}
 
-We demonstrate how we can show $O(n^{-1})$ error for the quantitative CLT by
+We show that the CLT error bound can be improved to $O(n^{-1})$ 
 using a more precise limit distribution under an additional assumption. Let
 $\mu_i$ denote the $i^{th}$ moment, and $b_i$ denote the $i^{th}$ absolute
 moment of $X$. If Cramer's condition holds:
@@ -1342,61 +1345,55 @@ table. We leave further analysis and experiments with $g(x,y)$ as future work.
 \clearpage
 \section{NIPS 2016 Submission Statement}
 
-We previously submitted a much older draft of this paper to NIPS 2016. The
-current manuscript has been substantially revised since that submission. We have
+We previously submitted an early, incomplete draft of this paper to NIPS 2016. The
+current manuscript has been substantially improved since that submission. We have
 made the following changes:
 
 \begin{enumerate}
-    \item At the time of the NIPS submission, we were unaware of several
-    references which described some of what we wrote. For this submission, we
-    now cite the important work of~\citep{TallData15} which had the idea of
-    using subsampling noise for exploration (rather than the $\log u$ variable).
-    We also cite the work of~\citep{Barker65} which uses the Barker function. We
-    welcome information about other potentially missing references.
+\item The (incomplete) analysis in the NIPS paper has been substantially replaced.
+  The asymptotic CLT arguments in the earlier paper have been replaced with
+  explicit quantitative bounds. There were several gaps in the earlier analysis:
+  the effects of addition of random variables on CDF errors and the construction and
+  error bounds of the correction distribution which are key parts of the present
+  paper have been added. 
 
-    \item The previous theoretical results have been entirely scrapped and
-    replaced with different but more relevant results. The NIPS submission
-    listed a page of theoretical results which did not tie into the rest of the
-    paper's contributions and were confusing to the readers. We now have
-    theoretical results that are much clearer and also \emph{directly} show the
-    expected performance benefits of our acceptance test. Note also that
-    Lemma~\ref{lem:worst_case} is an entirely new addition to this version.
+\item Several recent relevant references have been added, and we have written
+  clearer statements about the contribution of the present work.
+  These include~\citep{TallData15} and the Barker test~\citep{Barker65}.
 
-    \item Several reviewers mentioned that our deconvolution approach to
-    determine the correction distribution was not unique and thus ill-defined.
-    Consequently, we have added an entirely new section of the paper
-    (Section~\ref{sec:correction}) explaining how we derived that distribution.
+\item Some reviewers mentioned that our deconvolution approach to
+  determine the correction distribution was not unique and thus
+  ill-defined.  We added detail description on how the correction
+  distribution is computed. While the distribution is not unique, we
+  regularize the inversion to obtain a concrete distribution with very
+  low error (close to single-point machine precision).
 
-    \item Reviewers pointed out one of our mistakes when we said our minibatch
-    sizes were fixed. We have changed this in the current manuscript to mean
-    that the per-iteration minibatch sizes for our test have a distribution with
-    \emph{shorter tails} than those of prior work, which can be observed by
-    plotting a histogram of minibatch sizes.
+\item The earlier draft had an inconsistency in its statement about constant
+  minibatch size. We clarify that this is true only in expected value.
 
-    \item Our experiments now include new comparisons with a baseline
-    from~\citep{icml2014c1_bardenet14} (in addition to~\citep{cutting_mh_2014},
-    which we had earlier). In addition, each algorithm now runs MCMC sampling on
-    the \emph{same} distribution.  Previously, we ran our distribution at a
-    higher temperature but kept the algorithm from~\citep{cutting_mh_2014}
-    running on the distribution at temperature $T=1$. In this set of
-    experiments, we tuned hyperparameters of the other algorithms to make the
-    comparison fairer. Finally, in the Gaussian mixture model scenario
-    (Section~\ref{ssec:gaussians}), we provide more details on how ``accurate''
-    the samples are, rather than solely relying on the visualization of
-    Figure~\ref{fig:gauss_mix_1}.
+\item Our experiments now include new comparisons with a baseline
+  from~\citep{icml2014c1_bardenet14} (in addition to~\citep{cutting_mh_2014},
+  which we had earlier). In addition, each algorithm now runs MCMC sampling on
+  the \emph{same} distribution.  Previously, we ran our distribution at a
+  higher temperature but kept the algorithm from~\citep{cutting_mh_2014}
+  running on the distribution at temperature $T=1$. In this set of
+  experiments, we tuned hyperparameters of the other algorithms to yield
+  best results. In the Gaussian mixture model scenario
+  (Section~\ref{ssec:gaussians}), we provide likelihoods and test
+  statistics to measure the accuracy of the samples.
 
-    \item We improved Algorithm~\ref{alg:our_algorithm} so that we show
-    explicitly when we compute the moments, and why we now only need one
-    distribution $C_\sigma$ for $\sigma=1$ due to the extra $X_{\rm nc}$
-    variable.
+\item We improved Algorithm~\ref{alg:our_algorithm} so that we show
+  explicitly when we compute the moments, and why we now only need one
+  distribution $C_\sigma$ for $\sigma=1$ due to the extra $X_{\rm nc}$
+  variable.
 
-    \item Finally, we made minor revisions addressing: differences between the
-    Barker function vs. the original MH test, and sampling with vs. without
-    replacement.
+\item Finally, we made minor revisions addressing: differences between the
+  Barker function vs. the original MH test, and sampling with vs. without
+  replacement.
 \end{enumerate}
 
-We are confident that the current manuscript is of far better quality than the
-NIPS submission, and we appreciate the efforts of the NIPS reviewers to give us
-ideas for improvement.
+We estimate the degree of overlap between the papers in mathematics (equations) at less than
+10\%, in overall text at less than 30\%. The experiments are similar but were also redone at larger
+scale in this draft. 
 
 \end{document}
