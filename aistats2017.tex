@@ -95,9 +95,9 @@ framexleftmargin=20pt}
   that can be tuned to provide arbitrarily small batch sizes, by
   adjusting either proposal step size or temperature. Our test uses
   the noise-tolerant Barker acceptance test with a novel additive
-  correction variable.  The resulting test has simlar cost to a normal
-  SGD update. Our experiments demonstrate several order-of-magnitude
-  speedup over previous work.
+  correction variable.  The resulting test has similar cost to a normal
+  SGD update. Our experiments demonstrate order-of-magnitude
+  speedups over previous work.
 \end{abstract}
 
 \section{INTRODUCTION}\label{sec:introduction}
@@ -172,7 +172,7 @@ where the posterior is multimodal~\citep{choromanska2014loss}, samplers will
 likely get trapped in one of the modes. A common solution is to anneal the
 sampler, running first at high temperatures to flatten the likelihood landscape.
 This in turn reduces the variance of the log acceptance probability and allows
-our test to be applied. Theses samples can cover the search space densely with
+our test to be applied. These samples can cover the search space densely with
 small steps rather than taking a few sparse steps towards an optimum. In this
 mode, Metropolis-Hastings can be used in similar fashion to Stochastic Gradient
 Descent. The goal in SGD is to make gradual progress to a posterior mode with
@@ -486,7 +486,7 @@ approximately normal with variance $\sigma^2(\Delta^*)$.  But to perform the
 test in Equation~(\ref{eq:the_exact_test}) we want $\Delta + X$ for a logistic
 random variable $X$ (call it $X_{\rm log}$ from now on). In~\citet{TallData15} it
 was proposed to use $\Delta^*$ in a Barker test, and tolerate the fixed
-error between logistic and normal distributions. 
+error between the logistic and normal distributions. 
 
 Our approach is to instead decompose $X_{\rm log}$ as
 \begin{equation}\label{eq:deconvolution}
@@ -886,11 +886,9 @@ accuracy. ~\citet{icml2014c1_bardenet14} conservatively partitions the
 test error, while~\citet{cutting_mh_2014} used a complex dynamic
 programming heuristic to estimate the overall test error. We did not
 implement this heuristic and instead set the individual test error
-equal to the overall test error. Thus our results for
-~\citet{cutting_mh_2014} should be treated as lower bounds. All
-methods were initialized with minibatch size 100.  For ~\citet{cutting_mh_2014} we
-increment sizes by 100 and set the tolerance $\epsilon=0.005$.  For
-~\citet{icml2014c1_bardenet14}, we increase sizes geometrically with $\gamma = 1.5$ and
+equal to the overall test error. Thus our results for~\citet{cutting_mh_2014} should be treated as lower bounds. All
+methods were initialized with minibatch size 100.  For~\citet{cutting_mh_2014} we
+increment sizes by 100 and set the tolerance $\epsilon=0.005$.  For~\citet{icml2014c1_bardenet14}, we increase sizes geometrically with $\gamma = 1.5$ and
 use parameters $p = 2, \delta = 0.01$.  All methods collect 5000
 samples using a random walk proposer with covariance ${\rm diag}(0.15,
 0.15)$, which means the M-H test is responsible for shaping the sample
@@ -960,15 +958,15 @@ MNIST~\citep{lecun-mnisthandwrittendigit-2010}. We randomly subsampled
 %%% The pixels are scaled in $[0,1]$  - JFC Why ????
 We impose a uniform prior on $\theta$ and again use a random walk
 proposer, this time with covariance matrix $0.05I$. The temperature is
-set at $T=1000$. We run the three tests for samples and again use 100
+set at $T=1000$. We run the three tests for 3000 samples and again use 100
 as the starting minibatch size. Method~\citet{cutting_mh_2014} used
 per-test error of $\epsilon=0.05$.  For~\citet{icml2014c1_bardenet14},
 we used $\gamma=2.0$ (discounting factor). We tried to use the
-symbolic bound for $C_{\theta,\theta'}$ for Logistic regression from
-~\citet{icml2014c1_bardenet14}, but found it to be too high. Instead
-we used the empirical $C_{\theta,\theta'}$ from the entire dataset
-without including the test for this test, so again our results
-represent a lower bound for this method.
+symbolic bound for $C_{\theta,\theta'}$ for Logistic regression
+from~\citet{icml2014c1_bardenet14}, but found it to be too high. Instead we use
+the empirical $C_{\theta,\theta'}$ from the entire dataset without including the
+test for this test, so again our results represent a lower bound for this
+method.
 
 Figure~\ref{fig:logistic_performance} shows the test log likelihood and
 prediction accuracy as a function of the cumulative training points
@@ -1363,8 +1361,8 @@ made the following changes:
 
 \item Some reviewers mentioned that our deconvolution approach to
   determine the correction distribution was not unique and thus
-  ill-defined.  We added detail description on how the correction
-  distribution is computed. While the distribution is not unique, we
+  ill-defined.  We added detail on how the correction
+  distribution is computed (see Section~\ref{sec:correction}). While the distribution is not unique, we
   regularize the inversion to obtain a concrete distribution with very
   low error (close to single-point machine precision).
 
@@ -1373,7 +1371,7 @@ made the following changes:
 
 \item Our experiments now include new comparisons with a baseline
   from~\citep{icml2014c1_bardenet14} (in addition to~\citep{cutting_mh_2014},
-  which we had earlier). In addition, each algorithm now runs MCMC sampling on
+  which we had earlier). Furthermore, each algorithm now runs MCMC sampling on
   the \emph{same} distribution.  Previously, we ran our distribution at a
   higher temperature but kept the algorithm from~\citep{cutting_mh_2014}
   running on the distribution at temperature $T=1$. In this set of
