@@ -604,7 +604,7 @@ acceptable $L_{\infty}$ norm.
     ${\bf N}$ & ${\bf \sigma}$ & ${\bf \lambda}$ & ${\bf L_{\infty}}$ {\bf error} \\
     \hline
     4000 & 0.9 & 1 & 1.0e-4  \\
-    4000 & 0.8 & 0.03 & 5.0e-6 \\
+    4000 & 0.8 & 0.03 & 5.0e-6
     \end{tabular}
 \end{table}
 
@@ -961,12 +961,12 @@ proposer, this time with covariance matrix $0.05I$. The temperature is
 set at $T=1000$. We run the three tests for 3000 samples and again use 100
 as the starting minibatch size. Method~\citet{cutting_mh_2014} used
 per-test error of $\epsilon=0.05$.  For~\citet{icml2014c1_bardenet14},
-we used $\gamma=2.0$ (discounting factor). We tried to use the
+we use their recommended discounting factor value of $\gamma=2.0$. We tried to use the
 symbolic bound for $C_{\theta,\theta'}$ for Logistic regression
 from~\citet{icml2014c1_bardenet14}, but found it to be too high. Instead we use
-the empirical $C_{\theta,\theta'}$ from the entire dataset without including the
-test for this test, so again our results represent a lower bound for this
-method.
+the empirical $C_{\theta,\theta'}$ from the entire dataset and do not add its
+computation time when considering runtime, so again our results represent a
+lower bound for this method.
 
 Figure~\ref{fig:logistic_performance} shows the test log likelihood and
 prediction accuracy as a function of the cumulative training points
