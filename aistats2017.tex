@@ -102,7 +102,7 @@ framexleftmargin=20pt}
   updates with the same complexity as a simple SGD update. In this paper
   we derive the test, analyze its performance, discuss its
   implementation, and present several experiments. We demonstrate 
-  several order-of-magnitude speedup over previous work, and show for
+  order-of-magnitude speedups over previous work, and show for
   the first time that small expected minibatch sizes are possible. 
 \end{abstract}
 
@@ -860,8 +860,8 @@ where $\epsilon$ is the bound on the error in the acceptance test.
 	%\includegraphics[width=0.9\linewidth]{minibatch_size_logistic.png}
 	\includegraphics[width=0.8\linewidth]{logistic_regression_histograms_results.png}
 	\caption{
-    Counts of minibatch sizes in the MNIST logistic regression experiment
-    (analogous to Figure~\ref{fig:gauss_mix_2}).
+    Counts of minibatch sizes in the logistic regression experiment (analogous
+    to Figure~\ref{fig:gauss_mix_2}).
     }
 	\label{fig:logistic_minibatch}
 \end{figure*}
@@ -927,11 +927,11 @@ than~\citet{icml2014c1_bardenet14}.
 Figure~\ref{fig:gauss_mix_2}, however, suggests that our method dominates in
 terms of speed and efficiency. The histograms of the (final) minibatch sizes
 used each iteration show that our method consumes significantly less data; the
-distribution is short-tailed and the mean is 210. The other methods occasionally
-need to use nearly all data points, and average minibatch sizes are 15562 and
-16857. The sizes roughly predict the running times of these methods, which are
+distribution is short-tailed and the mean is 210, more than an order of
+magnitude better compared to the other two methods (averages are 15562 and
+16857). The sizes roughly predict the running times of these methods, which are
 proportional to the data consumed, with the exception of the
-$C_{\theta,\theta'}$ time for~\citet{icml2014c1_bardenet14}.Using minibatch
+$C_{\theta,\theta'}$ time for~\citet{icml2014c1_bardenet14}. Using minibatch
 sizes as a proxy for time also avoids discrepancies due to code optimization.
 
 
@@ -973,10 +973,11 @@ processed.\footnote{The curves do not span the same length over the x-axis since
 the methods consume different amounts of data.} To generate the curves, for each
 of the sampled vectors $\theta_t$, $t\in\{1,\ldots,3000\}$, we use $\theta_t$ as
 the parameter for logistic regression.  Our minibatch MH test is more efficient
-in terms of accuracy, achieving convergence using roughly half as many elements
-compared to~\citet{cutting_mh_2014} and \textbf{TODO TODO TODO} compared
-to~\citet{icml2014c1_bardenet14}, though its log likelihood results lag slightly
-behind the former algorithm during the very early stages.
+in terms of accuracy, achieving convergence roughly twice as fast compared
+to~\citet{cutting_mh_2014} and about 1.5 orders of magnitude faster
+than~\citet{icml2014c1_bardenet14}, though its log likelihood results lag
+slightly behind the former algorithm during the very early stages of
+exploration.
 
 Figure~\ref{fig:logistic_minibatch} shows histograms of minibatch sizes for the
 three methods on a log-log scale. With an initial size of 100, we achieve an
@@ -1051,11 +1052,11 @@ can include them in the supplementary material file.
 \fi
 
 
-%\newpage
+\newpage
 \subsubsection*{References}
 % Daniel: Sorry, I don't know why this is needed to get rid of the annoying
 % spaces below the "References" text.
-\vspace{-20pt} 
+\vspace{-25pt} 
 %\bibliographystyle{apalike}
 \bibliographystyle{abbrvnat}
 \setcitestyle{authoryear,open={[},close={]}}
