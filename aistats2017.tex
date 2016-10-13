@@ -120,7 +120,7 @@ from~\citet{cutting_mh_2014} and~\citet{icml2014c1_bardenet14} perform
 approximate (bounded error) acceptance tests using subsets of the full dataset.
 The amount of data consumed for each test varies significantly from one
 minibatch to the next. By contrast,~\citet{conf/uai/MaclaurinA14,TallData15}
-perform exact tests but require a lower bound on parameter distribution across
+perform exact tests but require a lower bound on the parameter distribution across
 its domain.  The amount of data reduction depends on the accuracy of this bound,
 and such bounds are only available for relatively simple distributions.
 
@@ -221,7 +221,7 @@ The contributions of this paper are as follows:
     %\item We analyze the test for accuracy and speed.
 
     \item We compare performance of our new test and prior approaches on several
-    datasets. We demonstrate orders of magnitude improvements in efficiency
+    datasets. We show order-of-magnitude improvements in efficiency
     (measured as data consumed per test), and that it does not suffer from
     long-tailed minibatch sizes.
 \end{itemize}
@@ -232,7 +232,7 @@ The contributions of this paper are as follows:
 
 In the Metropolis-Hastings method~\citep{gilks1996markov,brooks2011handbook}, a
 difficult-to-compute probability distribution $p(\theta)$ is sampled using a
-Markov chain $\theta_1,\ldots,\theta_n$. The sample $\theta_{t+1}$ at time $t+1$
+Markov chain $\theta_1,\ldots,\theta_T$. The sample $\theta_{t+1}$ at time $t+1$
 is generated using a candidate $\theta'$ from a (simpler) proposal distribution
 $q(\theta'\mid \theta_t)$, filtered by an acceptance test. The acceptance test
 is usually a Metropolis test. The Metropolis test has acceptance probability:
@@ -309,9 +309,9 @@ the entire dataset, and $\Lambda^*(\theta,\theta')$ is the mean of
 $\Lambda_i(\theta,\theta')$ over its minibatch. 
 
 Since minibatches contains randomly selected samples $x_i$, the values
-$\Lambda_i$ are i.i.d. random variables\footnote{The analysis assumes sampling
+$\Lambda_i$ are i.i.d. random variables.\footnote{The analysis assumes sampling
 with replacement although implementations on typical large datasets will
-approximate this by sampling without replacement.}.  By the Central Limit
+approximate this by sampling without replacement.} By the Central Limit
 Theorem, we expect $\Lambda^*(\theta,\theta')$ to be approximately Gaussian. The
 acceptance test then becomes a statistical test of the hypothesis that
 $\Lambda(\theta,\theta')>\psi(u,\theta,\theta')$ by establishing that
@@ -358,10 +358,10 @@ identifying regions in product space $(\theta,\theta',u)$ such that the
 hypothesis test needs to separate nearly-equal values.  It follows that the
 accelerated tests from prior work require at least a constant fraction $\geq c$
 in the amount of data consumed per test compared to full-data tests, so their
-speed-up is $\le 1/c$. The issue is the use of tail bounds to separate $\Delta$
-from zero; for certain input/random $u$ combinations, $\Delta$ can be
+speed-up is $\le 1/c$. The issue is the use of tail bounds to separate $\Lambda-\psi$
+from zero; for certain input/random $u$ combinations, this difference can be
 arbitrarily close to zero. We avoid this by using the {\em approximately normal}
-variation in $\Delta^*$ to {\em replace} the variation due to $u$. 
+variation in $\Lambda^*$ to {\em replace} the variation due to $u$. 
 
 \subsection{MCMC Posterior Inference}
 There is a separate line of MCMC work drawing principles from statistical
