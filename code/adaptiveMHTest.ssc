@@ -6,7 +6,7 @@ def std(A:DMat):Double = {
 }
 
 class adaptiveMHTest {
-	var N = 100000;     
+	var N = 1000000;     
 	var p = 2.0;
 	var delta = 0.01;
 	var gamma = 2.00;  
@@ -56,6 +56,7 @@ def adaptiveMH_dostep(mod:MHmodel, test:adaptiveMHTest, data:Mat, size:Int, here
     var b = size;
     var t = 0.0 ;
     var t_look = 1.0;
+    test.N = data.ncols;
     val psi = 1.0/test.N * ln(rand(1,1)).dv;
 
     println("inside adaptiveMH_dostep, size=" +size+ ", now starting while loop...")
