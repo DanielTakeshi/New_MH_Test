@@ -68,9 +68,8 @@ class LogisticRegression(n:Int, sigma:Double, pscale: Double) extends MHmodel (1
     val data = loadFMat(train_data_dir);
 
     /** 
-     * Initialize starting \theta randomly with values in (0,1). The reason why
-     * we have a -1 here is because we assume the last row of `data` contains
-     * the labels.
+     * Initialize starting \theta randomly with values in (0,1). We have a -1
+     * here because we assume the last row of `data` contains the labels.
      */
     def initfn():Mat = {
         val parameter_dim = data.dims(0) - 1;
@@ -94,7 +93,9 @@ class LogisticRegression(n:Int, sigma:Double, pscale: Double) extends MHmodel (1
      * @param theta A column vector representing the weights for logistic
      *      regression.
      *
-     * @return The log likelihood of this current minibatch and \theta pair.
+     * @return A vector containing the log likelihood of each element x_i in
+     *      this current minibatch based on the current \theta, multiplied by n
+     *      to maintain unbiased-ness and scaled by temperature if needed.
      */
     def evalfn(batch:Mat, theta:Mat):Mat = {
         val X = batch(0 until batch.dims(0)-1, ?)
@@ -151,13 +152,10 @@ def run_experiment(exp_type:String, nn:LogisticRegression) = {
 
     // TEST #1: OUR METHOD ("ours")
     if (exp_type == "ours") {
-        
         val (samples, mb_size, ll_train) = dosimm(mod=nn, test=newtest, size=batchsize, nsamps=nsamps, acc=0.05);
-
         val testdata = loadFMat(test_data_dir);
         val X = testdata(0 until testdata.dims(0)-1, ?);
         var Y = testdata(testdata.dims(0)-1, ?);
-
         val (accuracy, ll_test) = eval_cost(X, Y, samples);
         val cum_size = cumsum(DMat(mb_size));
 
@@ -171,11 +169,9 @@ def run_experiment(exp_type:String, nn:LogisticRegression) = {
     // TEST #2: KORATTIKARA ("kora")
     else if (exp_type == "kora") {
         val (samples, mb_size, ll_train) = cutMHTest_dosimm(mod=nn, test=cutMHtest, size=batchsize, nsamps=nsamps, acc=0.05);
-
         val testdata = loadFMat(test_data_dir);
         val X = testdata(0 until testdata.dims(0)-1, ?);
         var Y = testdata(testdata.dims(0)-1, ?);
-
         val (accuracy, ll_test) = eval_cost(X, Y, samples);
         val cum_size = cumsum(DMat(mb_size));
 
@@ -189,11 +185,9 @@ def run_experiment(exp_type:String, nn:LogisticRegression) = {
     // // TEST #3: BARDENET ("bard")
     // else if (exp_type == "bard") {
     //     val (samples, mb_size, ll_train, bc1c2_list) = adaptiveMH_dosimm(mod=nn, test=adaptiveMHtest, size=batchsize, nsamps=nsamps, acc=0.05);
-
     //     val testdata = loadFMat(test_data_dir);
     //     val X = testdata(0 until testdata.dims(0)-1, ?);
     //     var Y = testdata(testdata.dims(0)-1, ?);
-
     //     val (accuracy, ll_test) = eval_cost(X, Y, samples);
     //     val cum_size = cumsum(DMat(mb_size));
 
