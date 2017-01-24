@@ -26,23 +26,41 @@ reachable from anywhere.
 #### Step-by-step guide to run gaussian mixture model experiment
 
 ##### Data preparation
-1. Generate "norm2log%d_20_%2.1f.txt" file using "genNormToLog.ssc". Be sure to specify the value of sigma and N at the first and second line of "genNormToLog.ssc". We use sigma = 0.9 and N = 2000 here for example. After running this, there will be a file named "norm2log2000_20_0.9.txt" under the folder "code". 
 
-(1) change sigma = 0.9, N = 2000 in "genNormToLog.ssc" first 2 lines
-(2) $BIDMach/bidmach genNormToLog.ssc
+1. Generate `norm2log%d_20_%2.1f.txt` file using `genNormToLog.ssc`. Be sure to
+specify the value of sigma and N at the first and second line of
+`genNormToLog.ssc`. We use sigma = 0.9 and N = 2000 here for example. After
+running this, there will be a file named `norm2log2000_20_0.9.txt` under the
+folder "code". 
 
-For replicating the exact results in the paper, you may need to use the file we generated here in the github.
+(1) Change sigma = 0.9, N = 2000 in `genNormToLog.ssc` in the first 2 lines.
 
-2. Generate the gaussian data file using "gaussianDataGeneration.ssc". Be sure to specify the parameters at the first part of "gaussianDataGeneration.ssc", where sigma is the standard error of sample x, n is the number of samples, theta1 together with theta2 is the model mode. This will generate a file named "gaussianPureData.mat" file under the folder "code".
+(2) Run `$ BIDMach/bidmach genNormToLog.ssc`
 
-(1) set sigma to math.sqrt(2), n to 1000000, theta1 to 0.0 and theta2 to 1.0
-(2) $BIDMach/bidmach gaussianDataGeneration.ssc
+For replicating the exact results in the paper, you may need to use the file we
+generated here in the github.
+
+2. Generate the gaussian data file using `gaussianDataGeneration.ssc`. Be sure
+to specify the parameters at the first part of `gaussianDataGeneration.ssc`,
+where sigma is the standard error of sample x, n is the number of samples,
+theta1 together with theta2 is the model mode. This will generate a file named
+`gaussianPureData.mat` file under the folder `code`.
+
+(1) Set sigma to math.sqrt(2), n to 1000000, theta1 to 0.0 and theta2 to 1.0.
+
+(2) Run: `$ BIDMach/bidmach gaussianDataGeneration.ssc`.
 
 ##### Run the test
 
-3. Run "gaussianMixtureModel.ssc". Be sure to specify the parameters at the last part of this code, where nsamps is the number of MCMC sampling, n is the number of data points, sigma is the standard error of sample data point, batchsize is the minibatch size, sigma_proposer is the standard error of random walk proposer. After running this file, a file named "gaussiandata.mat" which contains the samples of theta, likelihood of the data from our method, cutmh method, and the adaptivemh method.
+3. Run `gaussianMixtureModel.ssc`. Be sure to specify the parameters at the last
+part of this code, where nsamps is the number of MCMC sampling, n is the number
+of data points, sigma is the standard error of sample data point, batchsize is
+the minibatch size, sigma_proposer is the standard error of random walk
+proposer. After running this file, a file named `gaussiandata.mat` which
+contains the samples of theta, likelihood of the data from our method, cutmh
+method, and the adaptivemh method.
 
-scala> :load gaussianMixtureModel.ssc
+`scala> :load gaussianMixtureModel.ssc`
 
 ### Plotting and Analyzing
 
@@ -61,16 +79,19 @@ we copy the final version of the figures over to the official `figures` director
 
 #### Data required for "plot_result_GaussianMixtureModel.ipynb"
 
-The dataset required for running this notebook are "gaussiandata.mat" and "log_posterior.mat". You can download "log_posterior.mat" from here: https://www.dropbox.com/s/vguodsuk0dnu0wb/log_posterior.mat?dl=0
+The dataset required for running this notebook are `gaussiandata.mat` and
+`log_posterior.mat`. You can download `log_posterior.mat` from here:
+https://www.dropbox.com/s/vguodsuk0dnu0wb/log_posterior.mat?dl=0
 
 # File Organization
 
 This repository containing materials for our MH test, along with supporting
 materials for our AISTATS 2017 paper submission.
 
-The actual paper is in aistats2017.tex. This is the version that has the most up
-to date content. There are other paper versions in the `paper_versions`
-directory. (There is a separate README there.)
+The actual paper is in `arxiv.tex`. This is the version that has the most up to
+date content. Compile with `pdflatex arxiv.tex` and then `bibtex arxiv` for the
+BibTeX. There are other paper versions in the `paper_versions` directory.
+(There is a separate README there.)
 
 Besides that directory, there are two other important directories. The `figures`
 directory contains the figures for the LaTeX document, and the `code` directory
