@@ -3,7 +3,6 @@ nips_2016.bbl
 nips_2016.blg
 nips_2016.log
 nips_2016.out
-.nips_2016.tex.swp
 iPython_stuff/.DS_Store
 .DS_Store
 .ipynb_checkpoints/
@@ -12,3 +11,5 @@ aistats2017.aux
 aistats2017.bbl
 aistats2017.blg
 aistats2017.log
+*.swp
+*.log
