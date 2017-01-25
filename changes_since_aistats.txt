@@ -1,0 +1,13 @@
+Here are the paper adjustments since the AISTATS 2017 submission (or,
+equivalently, the October 016 arXiv submission). This is to help keep track of
+the changes.
+
+1.
+
+2.
+
+TODO
+
+1. Change notation, use x_i^* for minibatches.
+
+2. [...a lot of stuff that John and I talked about]
