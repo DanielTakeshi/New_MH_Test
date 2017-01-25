@@ -29,26 +29,26 @@
 // IMPORTANT STUFF! AT LEAST CHECK THESE EVERY TIME YOU RUN SOMETHING!
 val nsamps = 3000           // The number of \theta values to sample (i.e., number of iterations).
 val test_to_use = "kora"    // Three options: "ours", "kora", or "bard". Use one of these.
-val k = 450000              // k = (#training)+(#testing) points. This will change the output data names.
-val n = 450000              // The number of training points, should be 80% of k.
+val ntrain = 100000         // Number of training data (affects output name).
+val ntest = 20000           // Number of testing data (affects output name).
 val temperature = 1000.0    // This was 1000.0 for the previous MNIST (not 8M) experiment.
 val batchsize = 100         // I'm also experimenting with changing minibatch sizes.
 val cutMHeps = 0.05         // Set this here (to keep all modifiable parameters here).
 val adapt_gamma = 2.00      // The gamma value for the adaptive MH test.
 
 // Change the data path depending on your machine!
-val train_data_dir = "/home/daniel/data/FINAL_MNIST8M_TRAIN_450000.fmat.lz4"
-val test_data_dir = "/home/daniel/data/FINAL_MNIST8M_TEST_192935.fmat.lz4";
-val sigma_proposer = 0.05;
+val train_data_dir = "/home/daniel/data/FINAL_MNIST8M_TRAIN_" +ntrain+ ".fmat.lz4"
+val test_data_dir = "/home/daniel/data/FINAL_MNIST8M_TEST_" +ntest+ ".fmat.lz4"
+val sigma_proposer = 0.05
 
 // Create the different tests we will be using.
-val newtest = new NewTest;
-newtest.explin = false;
-val cutMHtest = new cutMHTest;
-val adaptiveMHtest = new adaptiveMHTest;
-cutMHtest.N = n;
-adaptiveMHtest.N = n;
-adaptiveMHtest.gamma = adapt_gamma;
+val newtest = new NewTest
+newtest.explin = false
+val cutMHtest = new cutMHTest
+val adaptiveMHtest = new adaptiveMHTest
+cutMHtest.N = ntrain
+adaptiveMHtest.N = ntrain
+adaptiveMHtest.gamma = adapt_gamma
 cutMHtest.eps = cutMHeps
 
 /**
@@ -102,11 +102,12 @@ class LogisticRegression(n:Int, sigma:Double, pscale: Double) extends MHmodel (1
         val z = Y dot (theta.t * X);
         val sig = 1/(1 + exp(-1.0 * z));
         val log_sig = ln(sig);
-        val scale_and_temp = 1.0 * (n/temp);
+        val scale_and_temp = 1.0 * (n/temp); // TODO where do we scale down 1/b?
         scale_and_temp * log_sig;
     };
 }
 	
+
 /**
  * Evaluates the performance of our sampled \theta values on the Logistic
  * Regression testing dataset. It can be a little confusing at first sight but
@@ -147,74 +148,73 @@ def eval_cost(X:DMat, Y:DMat, theta:DMat): (DMat, DMat) = {
  * @param nn The LogisticRegression model we are using.
  */
 
-def run_experiment(exp_type:String, nn:LogisticRegression) = {
+def run_experiment(exp:String, nn:LogisticRegression) = {
 
     // TEST #1: OUR METHOD ("ours")
-    if (exp_type == "ours") {
-        
-        val (samples, mb_size, ll_train) = dosimm(mod=nn, test=newtest, size=batchsize, nsamps=nsamps, acc=0.05);
+    if (exp == "ours") {
 
-        val testdata = loadFMat(test_data_dir);
-        val X = testdata(0 until testdata.dims(0)-1, ?);
-        var Y = testdata(testdata.dims(0)-1, ?);
+        val (samples, mb_size, ll_train) = dosimm(mod=nn, test=newtest, size=batchsize, nsamps=nsamps, acc=0.05)
+        val testdata = loadFMat(test_data_dir)
+        val X = testdata(0 until testdata.dims(0)-1, ?)
+        var Y = testdata(testdata.dims(0)-1, ?)
+        val (accuracy, ll_test) = eval_cost(X, Y, samples)
+        val cum_size = cumsum(DMat(mb_size))
 
-        val (accuracy, ll_test) = eval_cost(X, Y, samples);
-        val cum_size = cumsum(DMat(mb_size));
-
-        saveAs("logistic_results_" +exp_type+ "_" +k+ ".mat", samples,       "samples_ours", 
-                                                              cum_size,      "cum_size_ours",
-                                                              DMat(mb_size), "mb_size_ours",
-                                                              ll_train,      "ll_train_ours", 
-                                                              ll_test,       "ll_test_ours", 
-                                                              accuracy,      "accuracy_ours");
+        saveAs("testLR_ours_" +ntrain+ "_" +ntest+ "_" +nsamps+ "_" +temperature+ ".mat", 
+                    samples,       "samples_ours", 
+                    cum_size,      "cum_size_ours",
+                    DMat(mb_size), "mb_size_ours",
+                    ll_train,      "ll_train_ours", 
+                    ll_test,       "ll_test_ours", 
+                    accuracy,      "accuracy_ours")
     }
     // TEST #2: KORATTIKARA ("kora")
-    else if (exp_type == "kora") {
-        val (samples, mb_size, ll_train) = cutMHTest_dosimm(mod=nn, test=cutMHtest, size=batchsize, nsamps=nsamps, acc=0.05);
+    else if (exp == "kora") {
 
-        val testdata = loadFMat(test_data_dir);
-        val X = testdata(0 until testdata.dims(0)-1, ?);
-        var Y = testdata(testdata.dims(0)-1, ?);
+        val (samples, mb_size, ll_train) = cutMHTest_dosimm(mod=nn, test=cutMHtest, size=batchsize, nsamps=nsamps, acc=0.05)
+        val testdata = loadFMat(test_data_dir)
+        val X = testdata(0 until testdata.dims(0)-1, ?)
+        var Y = testdata(testdata.dims(0)-1, ?)
+        val (accuracy, ll_test) = eval_cost(X, Y, samples)
+        val cum_size = cumsum(DMat(mb_size))
 
-        val (accuracy, ll_test) = eval_cost(X, Y, samples);
-        val cum_size = cumsum(DMat(mb_size));
-
-        saveAs("logistic_results_" +exp_type+ "_" +k+ ".mat", samples,       "samples_kora", 
-                                                              cum_size,      "cum_size_kora",
-                                                              DMat(mb_size), "mb_size_kora",
-                                                              ll_train,      "ll_train_kora", 
-                                                              ll_test,       "ll_test_kora", 
-                                                              accuracy,      "accuracy_kora");
+        saveAs("testLR_kora_" +ntrain+ "_" +ntest+ "_" +nsamps+ "_" +temperature+ ".mat", 
+                    samples,       "samples_kora", 
+                    cum_size,      "cum_size_kora",
+                    DMat(mb_size), "mb_size_kora",
+                    ll_train,      "ll_train_kora", 
+                    ll_test,       "ll_test_kora", 
+                    accuracy,      "accuracy_kora")
     }
     // // TEST #3: BARDENET ("bard")
-    // else if (exp_type == "bard") {
-    //     val (samples, mb_size, ll_train, bc1c2_list) = adaptiveMH_dosimm(mod=nn, test=adaptiveMHtest, size=batchsize, nsamps=nsamps, acc=0.05);
+    // else if (exp == "bard") {
 
-    //     val testdata = loadFMat(test_data_dir);
-    //     val X = testdata(0 until testdata.dims(0)-1, ?);
-    //     var Y = testdata(testdata.dims(0)-1, ?);
+    //     val (samples, mb_size, ll_train, bc1c2_list) = adaptiveMH_dosimm(mod=nn, test=adaptiveMHtest, size=batchsize, nsamps=nsamps, acc=0.05)
+    //     val testdata = loadFMat(test_data_dir)
+    //     val X = testdata(0 until testdata.dims(0)-1, ?)
+    //     var Y = testdata(testdata.dims(0)-1, ?)
+    //     val (accuracy, ll_test) = eval_cost(X, Y, samples)
+    //     val cum_size = cumsum(DMat(mb_size))
 
-    //     val (accuracy, ll_test) = eval_cost(X, Y, samples);
-    //     val cum_size = cumsum(DMat(mb_size));
-
-    //     saveAs("logistic_results_" +exp_type+ "_" +k+ ".mat", samples,       "samples_bard", 
-    //                                                           cum_size,      "cum_size_bard",
-    //                                                           DMat(mb_size), "mb_size_bard",
-    //                                                           ll_train,      "ll_train_bard", 
-    //                                                           ll_test,       "ll_test_bard", 
-    //                                                           accuracy,      "accuracy_bard");
+    //     saveAs("testLR_bard_" +ntrain+ "_" +ntest+ "_" +nsamps+ "_" +temperature+ ".mat", 
+    //              samples,       "samples_bard", 
+    //              cum_size,      "cum_size_bard",
+    //              DMat(mb_size), "mb_size_bard",
+    //              ll_train,      "ll_train_bard", 
+    //              ll_test,       "ll_test_bard", 
+    //              accuracy,      "accuracy_bard")
     // }
     else {
-        println("Error, type=" +exp_type+ " not a valid type.")
+        println("Error, type=" +exp+ " not a valid type.")
         sys.exit
     }
 }
 
 
 // Define the Logistic Regression Model (we have to do it here after the class definition).
-val nn = new LogisticRegression(n=n, sigma=1.0, pscale=1.0);
-nn.temp = temperature;
-nn.sigma_proposer = sigma_proposer;
+val nn = new LogisticRegression(n=ntrain, sigma=1.0, pscale=1.0)
+nn.temp = temperature
+nn.sigma_proposer = sigma_proposer
 
 // -------------------------- //
 // CHOOSE WHICH METHOD TO RUN //
