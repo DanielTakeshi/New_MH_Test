@@ -25,6 +25,10 @@ def normcdfinv(a:DMat):DMat = {
     math.sqrt(2) * erfinv(2*a - 1);
 };
 
+
+/**
+ *
+ */
 def normlogrnd(m:Int, n:Int):DMat = {
     val rr = drand(m, n);
     var i = 0;
@@ -52,109 +56,193 @@ def normlogrnd(m:Int, n:Int):DMat = {
     rr;
 };
 
+
+/**
+ *
+ */
 class NewTest extends MHtestType {
+
+    /**
+     * This is our major MH test contribution and partly listed in Algorithm 1
+     * of the arXiv 2016 paper.
+     *
+     * @param diff
+     * @param logu
+     * @param nsig
+     */
     def testfn(diff:Mat, logu:Double, nsig:Double):(Boolean, Boolean) = {
-	val targvar = n2lsigma * n2lsigma;
-	val tvar = variance(diff).dv/diff.length;
-	val x = mean(diff).dv;
-	val ns = x / math.sqrt(tvar);
-	if (math.abs(ns) > 5) {
-	    if (ns > 0) {
-		(true, true);
-	    } else {
-		(true, false);
-	    }
-	} else {
-	    if (tvar >= targvar) {
-		if (nsig == 0) {
-		    if (keepon) {
-			println("Warning: New test failed variance condition, var=%f nstd = %f" format (tvar, ns));
-			if (x > 0) {
-			    (true, true);
-			} else {
-			    (true, false);
-			}
-		    } else {
-			throw new RuntimeException("New test failed variance condition, var=%f, nstd = %f" format (tvar, ns));
-		    }
-		} else {
-		    (false, false);
-		}
-	    } else {
-		val xn = dnormrnd(0, math.sqrt(targvar - tvar), 1, 1).dv;
-		val xc = normlogrnd(1,1).dv;
-		if ((x + xn + xc) > 0) {
-		    (true, true);
-		} else {
-		    (true, false);
-		}
-	    }
-	}
+
+        val targvar = n2lsigma * n2lsigma;
+        val tvar = variance(diff).dv/diff.length;
+        val x = mean(diff).dv;
+        val ns = x / math.sqrt(tvar);
+
+        if (math.abs(ns) > 5) {
+            if (ns > 0) {
+                (true, true);
+            } else {
+                (true, false);
+            }
+        } else {
+            if (tvar >= targvar) {
+                if (nsig == 0) {
+                    if (keepon) {
+                        println("Warning: New test failed variance condition, var=%f nstd = %f" format (tvar, ns));
+                        if (x > 0) {
+                            (true, true);
+                        } else {
+                            (true, false);
+                        }
+                    } else {
+                        throw new RuntimeException("New test failed variance condition, var=%f, nstd = %f" format (tvar, ns));
+                    }
+                } else {
+                    (false, false);
+                }
+            } else {
+                val xn = dnormrnd(0, math.sqrt(targvar - tvar), 1, 1).dv;
+                val xc = normlogrnd(1,1).dv;
+                if ((x + xn + xc) > 0) {
+                    (true, true);
+                } else {
+                    (true, false);
+                }
+            }
+        }
     };
+
     var explin = true;
     def discount(p:Double, n:Int):Double = p;
 };
 
+
+// Our old test. Don't use it.
 class OldTest extends MHtestType {
-    def testfn(diff:Mat, logu:Double, nsig:Double):(Boolean, Boolean) = {
-	val tstd = math.sqrt(variance(diff).dv/diff.length);
-	val ndiff = mean(diff - logu).dv / tstd;
-	if (math.abs(ndiff) < nsig) {
-	    (false, false);
-	} else {
-	    if (ndiff > 0) {
-		(true, true);
-	    } else {
-		(true, false);
-	    }
-	}
-    };
     var explin = true;
+
+    def testfn(diff:Mat, logu:Double, nsig:Double):(Boolean, Boolean) = {
+        val tstd = math.sqrt(variance(diff).dv/diff.length);
+        val ndiff = mean(diff - logu).dv / tstd;
+        if (math.abs(ndiff) < nsig) {
+            (false, false);
+        } else {
+            if (ndiff > 0) {
+                (true, true);
+            } else {
+                (true, false);
+            }
+        }
+    };
+
     def discount(p:Double, n:Int):Double = {
-	val r = 0.5;
-	p * (1 - r) * math.pow(r, n);
+        val r = 0.5;
+        p * (1 - r) * math.pow(r, n);
     }
 };
 
+
+/**
+ * Obtains a minibatch of data of `size` elements. TODO It looks like it doesn't
+ * shuffle! The original data is shuffled, but we always take elements in the
+ * same order!
+ *
+ * @param data The *full* training data.
+ * @param here The "starting point" for the minibatch.
+ * @param size The number of elements to be included in our minibatch.
+ */
 def getbatch(data:Mat, here:Int, size:Int):Mat = {
     val there = here + size;
     val nthere = math.min(there, data.ncols);
     val iwrap = math.max(0, there - data.ncols);
     val batch0 = data.colslice(here, nthere, null);
     val batch = if (iwrap > 0) {
-	batch0 \ data.colslice(0, iwrap, null);
+        batch0 \ data.colslice(0, iwrap, null);
     } else {
-	batch0;
+        batch0;
     }
     batch;
 };    
 
+
+/**
+ * Performs a step in the simulation, where we check to see if we should accept
+ * our proposed theta. Returns (there, ntheta, ll) where `there` is the final
+ * minibatch size needed for this process, `ntheta` is the next theta we should
+ * add (either theta or ttheta), and `ll` is the final minibatch log likelihood
+ * with respect to theta (should that be the new theta?).
+ *
+ * TODO Understand test.testfn(...) along with nsig.
+ *
+ * @param mod The model we're using, augmented with a proposer function.
+ * @param test The MH test we're using (new or old, use the new one).
+ * @param data The *full* training data matrix, accessible from the model.
+ * @param size The starting minibatch size, and how much we increment (the
+ *      latter only if test.explin=false).
+ * @param here
+ * @param theta The current theta.
+ * @param ttheta The proposed theta.
+ * @param acc
+ */
 def dostep(mod:MHmodel, test:MHtestType, data:Mat, size:Int, here:Int, theta:Mat, ttheta:Mat, acc:Double):(Int, Mat, Double) = {
     var step = size;
     var done = false;
     var ntheta:Mat = null;
     var there = 0;
-    var logu = ln(rand(1,1)).v;
     var istep = 0;
     var ll:Mat = null;
+
+    // In our paper, this is \psi(u,theta,theta') for a uniform prior.
+    var logu = ln(rand(1,1)).v;
+
+    // Compute log likelihood ratios into `diff`, which is a *vector* containing
+    // each term (i.e. (N/bT)*log_fraction)) in the \Lambda*(theta,theta') term in
+    // our arXiv 2016 paper (Equation 4), though it doesn't have the `T` factor
+    // for temperature. TODO I think missing a (1/b) factor.
+
     while (! done) {
-	val batch = getbatch(mod.data, here, step);
-	ll = mod.evalfn(batch, theta);
-	val diff = mod.evalfn(batch, ttheta) - ll;
-	val nsig = if (step == data.ncols) 0.0 else (- normcdfinv(drow(test.discount(acc, istep))).dv);
-	val (moved, takestep) = test.testfn(diff, logu, nsig);
-	done = moved;
-	if (done) {
-	    there = (here + step) % data.ncols;
-	    ntheta = if (takestep) ttheta else theta;
-	} else {
-	    step = math.min(if (test.explin) (step*2) else (step + size), data.ncols);
-	}
-	istep += 1;
+        val batch = getbatch(mod.data, here, step);
+        ll = mod.evalfn(batch, theta);
+        val diff = mod.evalfn(batch, ttheta) - ll;
+        val nsig = if (step == data.ncols) 0.0 else (- normcdfinv(drow(test.discount(acc, istep))).dv);
+        val (moved, takestep) = test.testfn(diff, logu, nsig);
+        done = moved;
+        if (done) {
+            there = (here + step) % data.ncols;
+            ntheta = if (takestep) ttheta else theta;
+        } else {
+            // Our results in arXiv 2016 used test.explin = false.
+            step = math.min(if (test.explin) (step*2) else (step + size), data.ncols);
+        }
+        istep += 1;
     }
     (there, ntheta, mean(ll).dv);
 };
 
+
+/**
+ * Runs the entire training step, returning a matrix of samples (rows are the
+ * dimension of \theta) along with the corresponding vectors --- or a
+ * (1,nsamps)-dimensional matrices --- of (final!) minibatch sizes and training
+ * log likelihoods (on that final minibatch) per iteration.
+ *
+ * The sizes are computed using here and there. Easiest way to think of these is
+ * that here represents the starting point and there the ending point, and the
+ * distance is the number of samples chosen. However, here continually updates
+ * to be where there started, so it may "wrap around" the data matrix so that
+ * special case of (there<here) is needed.
+ *
+ * @param mod A subclass of the abstract MHModel class, so it has init,
+ *      proposal, and evaluation functions. More accurately, it represents
+ *      the model we have (Gaussian mixtures, logistic regression, deep
+ *      learning, etc.) **augmented** with proposers.
+ * @param test The MH test type, either our old one or new one (but use the new
+ *      one!). We don't directly use it here but pass it to dostep().
+ * @param size The starting minibatch size, and how much we increment (the
+ *      latter only if test.explin=false).
+ * @param nsamps The number of \thetas to sample (we did 3000 for our AISTATS
+ *      submission).
+ * @param acc
+ */
 def dosimm(mod:MHmodel, test:MHtestType, size:Int, nsamps:Int, acc:Double):(DMat,LMat,DMat) = {
     var theta = mod.initfn();
     val samples = dzeros(theta.length, nsamps);
@@ -166,23 +254,25 @@ def dosimm(mod:MHmodel, test:MHtestType, size:Int, nsamps:Int, acc:Double):(DMat
     println("")
     tic;
     while (i < nsamps) {
-    	if (i % 100 == 0){
+        if (i % 100 == 0) {
             val t = toc;
-    	    println("test iteration = %d, elapsed time = %f" format(i, t));
-    	}
-	    val ttheta = mod.proposalfn(theta);
-	    val (there, nth, ll) = dostep(mod, test, mod.data, size, here, theta, ttheta, acc);
-	    sizes(i) = if (there > here) (there - here) else (there - here + mod.data.ncols);
-	    lls(i) = ll;
-	    here = there;
-	    theta = nth;
-	    samples(?, i) = DMat(theta);
-	    i += 1;
+            println("test iteration = %d, elapsed time = %f" format(i, t));
+        }
+        val ttheta = mod.proposalfn(theta);
+        val (there, nth, ll) = dostep(mod, test, mod.data, size, here, theta, ttheta, acc);
+        sizes(i) = if (there > here) (there - here) else (there - here + mod.data.ncols);
+        lls(i) = ll;
+        here = there;
+        theta = nth;
+        samples(?, i) = DMat(theta);
+        i += 1;
     }
     println("")
     (samples, sizes, lls);
 };
 
+
+// Daniel: I think a toy test case?
 class NormModel(ndim:Int, n:Int, sigma:Double, pscale:Double) extends MHmodel(ndim, n, sigma, pscale) {
     val data = dnormrnd(0, sigma, ndim, n);
     val sigmat = sigma/math.sqrt(n);
@@ -190,16 +280,16 @@ class NormModel(ndim:Int, n:Int, sigma:Double, pscale:Double) extends MHmodel(nd
     var temp = 1.0;
     
     def initfn():Mat = {
-	dnormrnd(0, sigmat * math.sqrt(temp), ndim, 1);
+        dnormrnd(0, sigmat * math.sqrt(temp), ndim, 1);
     };
     
     def proposalfn(theta:Mat):Mat = {
-	theta + dnormrnd(0, sigmap * math.sqrt(temp), ndim, 1);
+        theta + dnormrnd(0, sigmap * math.sqrt(temp), ndim, 1);
     };
     
     def evalfn(batch:Mat,theta:Mat):Mat = {
-	val dd = batch - theta;
-	-(n / (2 * sigma * sigma * temp)) * (dd dot dd);
+        val dd = batch - theta;
+        -(n / (2 * sigma * sigma * temp)) * (dd dot dd);
     };
 };
 
@@ -215,7 +305,3 @@ val t1 = toc;
 //val (samples2, sizes2, lls2) = dosimm(mod=nn, test=oldtest, size=1000, nsamps=10000, acc=0.05);
 val t2 = toc - t1;
 */
-
-
-
-    
