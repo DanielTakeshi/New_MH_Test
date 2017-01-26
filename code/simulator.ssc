@@ -64,16 +64,22 @@ class NewTest extends MHtestType {
 
     /**
      * This is our major MH test contribution and partly listed in Algorithm 1
-     * of the arXiv 2016 paper.
+     * of the arXiv 2016 paper. Returns a boolean (b1,b2) where b1=True
+     * indicates we're finished, otherwise need to get more data (from outside
+     * this method), and b2=True indicates that we move to ttheta (new theta),
+     * otherwise stick with old theta.
      *
      * @param diff
-     * @param logu
+     * @param logu The \psi(u,theta,theta') term, which is log(u) for symmetric
+     *      proposals that we use.
      * @param nsig
      */
     def testfn(diff:Mat, logu:Double, nsig:Double):(Boolean, Boolean) = {
 
+        // AH Maybe this is where (1/b) happens! Investigate more ...
+        val tvar = variance(diff).dv/diff.length; 
+
         val targvar = n2lsigma * n2lsigma;
-        val tvar = variance(diff).dv/diff.length;
         val x = mean(diff).dv;
         val ns = x / math.sqrt(tvar);
 
@@ -203,9 +209,12 @@ def dostep(mod:MHmodel, test:MHtestType, data:Mat, size:Int, here:Int, theta:Mat
         val batch = getbatch(mod.data, here, step);
         ll = mod.evalfn(batch, theta);
         val diff = mod.evalfn(batch, ttheta) - ll;
+
+        // We use a discount factor of 0.05 (test.discount simply returns `acc`)
         val nsig = if (step == data.ncols) 0.0 else (- normcdfinv(drow(test.discount(acc, istep))).dv);
         val (moved, takestep) = test.testfn(diff, logu, nsig);
         done = moved;
+
         if (done) {
             there = (here + step) % data.ncols;
             ntheta = if (takestep) ttheta else theta;
