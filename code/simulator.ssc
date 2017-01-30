@@ -71,7 +71,10 @@ class NewTest extends MHtestType {
      * notes on terms:
      *
      * > tvar is the sample variance of the minibatch, indicated by
-     *      s_{\Delta*}^2 in our arXiv 2016 paper.
+     *      s_{\Delta*}^2 in our arXiv 2016 paper. Note that we take the
+     *      variance of the sample of IID terms, and the variance of the SUM of
+     *      these (i.e. the \Delta* we care about) has the same variance but
+     *      **divided** by b, due to CLT properties.
      * > targvar is by default 0.9*0.9. This is described as 1 in the paper but
      *      we set it to be smaller, perhaps for numerical stability?
      * > x is the \Delta* term. Yes, after we take the mean it is correct to my
@@ -120,6 +123,7 @@ class NewTest extends MHtestType {
                         throw new RuntimeException("New test failed variance condition, var=%f, nstd = %f" format (tvar, ns));
                     }
                 } else {
+                    // Most common case, return False so we get more data.
                     (false, false);
                 }
             } else {

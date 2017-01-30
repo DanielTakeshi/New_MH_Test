@@ -1,6 +1,12 @@
-def sigma = 0.8;
+/**
+ * A script used to generate a possible solution for the deconvolution operation
+ * of X_log = X_norm + X_corr as described in our paper. Table 1 reports on two
+ * possible values.
+ */
+
+def sigma = 1.0;
 val N = 4000;
-val lambda = 0.03;
+val lambda = 10.0;
 val Xmax = 20.0;
 
 val alpha = 0.5;
@@ -16,17 +22,16 @@ def invnormcdf(a:DMat):DMat = {
 
 
 val x = DMat(-N to N) * Xmax / N;
-
 val xlog = DMat(-(2*N) to (2*N)) * Xmax / N;
-val ylog = 1/(1 + exp(-xlog));
+val ylog = 1/(1 + exp(-xlog)); // "ground truth", S(X_i) in our paper.
 
 val xnorm = DMat(-(3*N) to (3*N)) * Xmax / N;
 val ynorm = normcdf(xnorm/sigma);
 
-val xn2l = dzeros(2*N+1,1);
+val xn2l = dzeros(2*N+1,1); // never used?
 
+// This is `M` in our paper.
 val convmat = dzeros(4*N+1, 2*N+1);
-
 for (i <- 0 until (4*N+1)) {
     convmat(i, ?) = ynorm(0, i->(i+2*N+1));
 }
@@ -57,6 +62,7 @@ def evalf(y:DMat):Double = {
     maxi(abs(convmat * max(y, 0.0) - ylog.t)).dv;
 };
 
+// Final result for C_\sigma, where we cut off values at 0 (so no negatives).
 val y = max(y0,0.0).asInstanceOf[DMat];
 
 plot(y);
