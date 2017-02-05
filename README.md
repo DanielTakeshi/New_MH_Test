@@ -86,11 +86,11 @@ https://www.dropbox.com/s/vguodsuk0dnu0wb/log_posterior.mat?dl=0
 # File Organization
 
 This repository containing materials for our MH test, along with supporting
-materials for our AISTATS 2017 paper submission.
+materials for our various conference submissions.
 
-The actual paper is in `arxiv.tex`. This is the version that has the most up to
-date content. Compile with `pdflatex arxiv.tex` and then `bibtex arxiv` for the
-BibTeX. There are other paper versions in the `paper_versions` directory.
+The most up to date version is in the `icml2017` folder. Compile with `pdflatex
+paper.tex` and then `paper arxiv` for the BibTeX in case references have
+changed. There are other paper versions in the `paper_versions` directory.
 (There is a separate README there.)
 
 Besides that directory, there are two other important directories. The `figures`

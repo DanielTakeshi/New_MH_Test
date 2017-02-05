@@ -2,12 +2,24 @@ Here are the paper adjustments since the AISTATS 2017 submission (or,
 equivalently, the October 016 arXiv submission). This is to help keep track of
 the changes.
 
-1.
+0. I converted things to the ICML 2017 format. This resulted in some minor
+changes. I also made the appendix to be the full-width, which seems to be
+standard judging from other ICML papers I've seen (from Berkeley people) and
+it's also easier for us to write instead of having to force math and tables to
+fit in half a page.
 
-2.
+1. I changed x_i to be x_i^* for minibatches, because otherwise if we see x_1,
+it could be the first element in the data, or the first element in the
+subsampled data. The asterisk notation seems to be standard from the
+bootstrapping community so I would use it here. It also addresses one of our
+reviewers' concerns. Another notation change, making "E" into \mathbb{E}, this
+is a clearer way of expectations (to me) but we can change it if strong
+objections.
 
-TODO
+2. (Appendix) I moved part of the Gaussian mixture model to the Appendix. Let's
+state the Poissons result but we shouldn't over-emphasize it. Another change:
+making the appendix more organized, and also having three sub-sections, each for
+the three experiments.
 
-1. Change notation, use x_i^* for minibatches.
-
-2. [...a lot of stuff that John and I talked about]
+3. A new collaborative filtering experiment; it should be the third thing we do
+(up to debate).
