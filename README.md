@@ -1,7 +1,24 @@
 # Instructions/README
 
+# File Organization
 
-### Running the Experiments
+This repository containing materials for our MH test, along with supporting
+materials for our various conference submissions.
+
+The most up to date version is in the `icml2017` folder. Compile with `pdflatex
+paper.tex` and then `paper arxiv` for the BibTeX in case references have
+changed. There are other paper versions in the `paper_versions` directory.
+(There is a separate README there.)
+
+Besides that directory, there are two other important directories. The `figures`
+directory contains the figures for the LaTeX document, and the `code` directory
+contains the scripts. If you need to run experiments, the `code` directory has
+what you need.
+
+Any directory that is prefixed with `old` is considered legacy code. You don't
+have to worry about it.
+
+# Running the Experiments
 
 The original paper contains two experiments, the Gaussian Mixture Model experiment
 and the logistic regression model. To replicate these two experiments that we did
@@ -82,21 +99,3 @@ we copy the final version of the figures over to the official `figures` director
 The dataset required for running this notebook are `gaussiandata.mat` and
 `log_posterior.mat`. You can download `log_posterior.mat` from here:
 https://www.dropbox.com/s/vguodsuk0dnu0wb/log_posterior.mat?dl=0
-
-# File Organization
-
-This repository containing materials for our MH test, along with supporting
-materials for our various conference submissions.
-
-The most up to date version is in the `icml2017` folder. Compile with `pdflatex
-paper.tex` and then `paper arxiv` for the BibTeX in case references have
-changed. There are other paper versions in the `paper_versions` directory.
-(There is a separate README there.)
-
-Besides that directory, there are two other important directories. The `figures`
-directory contains the figures for the LaTeX document, and the `code` directory
-contains the scripts. If you need to run experiments, the `code` directory has
-what you need.
-
-Any directory that is prefixed with `old` is considered legacy code. You don't
-have to worry about it.
