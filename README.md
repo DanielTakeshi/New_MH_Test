@@ -6,7 +6,7 @@ This repository containing materials for our MH test, along with supporting
 materials for our various conference submissions.
 
 The most up to date version is in the `icml2017` folder. Compile with `pdflatex
-paper.tex` and then `paper arxiv` for the BibTeX in case references have
+paper.tex` and then `bibtex paper` for the BibTeX in case references have
 changed. There are other paper versions in the `paper_versions` directory.
 (There is a separate README there.)
 
