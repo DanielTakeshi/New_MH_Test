@@ -532,31 +532,6 @@ acceptable $L_{\infty}$ norm.
 \end{algorithmic}
 \end{algorithm}
 
-% Daniel: also need to modify table, add more info?
-\begin{table}[t]
-\caption{Error ($L_\infty$) in $X_{\rm norm}+X_{\rm corr}$ versus $X_{\rm log}$.}
-\label{tab:xcorr}
-\vskip 0.15in
-\begin{center}
-\begin{small}
-\begin{sc}
-\begin{tabular}{l l l l}
-\hline
-\abovespace\belowspace
-${\bf N}$ & ${\bf \sigma}$ & ${\bf \lambda}$ & ${\bf L_{\infty}}$ {\bf error} \\
-\hline
-\abovespace
-4000 & 0.9 & 1 & 1.0e-4  \\
-\belowspace
-4000 & 0.8 & 0.03 & 5.0e-6 \\
-\hline
-\end{tabular}
-\end{sc}
-\end{small}
-\end{center}
-\vskip -0.1in
-\end{table}
-
 With this approach, there is no guarantee that $u^* \geq 0$. However, we have
 some flexibility in the choice of $\sigma$ in Equation~(\ref{eq:overall_corr_problem}).
 As we decrease the variance of $X_{\rm norm}$, the variance of $X_{\rm corr}$
@@ -564,10 +539,12 @@ grows by the same amount and is in fact the result of convolution with a
 Gaussian whose variance is the difference.  Thus as $\sigma$ decreases,
 $C_\sigma(X)$ grows and approaches the derivative of a logistic function at
 $\sigma = 0$. It retains some weak negative values for $\sigma > 0$ but removal
-of those leads to small error. Table~\ref{tab:xcorr} shows that the errors
-between $X_{\rm norm}+X_{\rm corr}$ and $X_{\rm log}$ approach single floating
-precision (about $10^{-7}$), and Algorithm~\ref{alg:our_algorithm} describes our
-procedure. A few points:
+of those leads to small error. \textbf{Daniel: I moved this to
+Appendix~\ref{app:correction} so that we can have more detailed results. For the
+main text, let's state the value $\sigma$ and its error. Originally, we said:
+Table~\ref{tab:xcorr} shows that the errors between $X_{\rm norm}+X_{\rm corr}$
+and $X_{\rm log}$ approach single floating precision (about $10^{-7}$).}
+Algorithm~\ref{alg:our_algorithm} describes our procedure. A few points:
 
 \begin{itemize}[noitemsep]
     \item It uses an adaptive step size so as to use the smallest possible
@@ -808,8 +785,8 @@ samples for the three methods, with darker regions indicating a greater density
 of points. There are no obvious differences, so we measure the similarity
 between each set of samples and the actual posterior. \textbf{Daniel: I think
 this was taking up too much space so I put it in Appendix~\ref{app:gaussians}.
-Let's state the result (Table~\ref{tab:poissons}) and prioritize other stuff.
-TODO}
+Let's state the result (in Table~\ref{tab:poissons}) and prioritize other stuff
+here.  TODO}
 
 Figure~\ref{fig:gauss_mix_2} shows that the new method dominates in
 terms of speed and efficiency. The histograms of the (final) minibatch sizes
@@ -842,30 +819,6 @@ they all consume linear time in data consumed.
     }
 	\label{fig:logistic_minibatch}
 \end{figure*}
-
-\begin{table}[t]
-\caption{Gaussian Mixture Model Statistics}
-\label{tab:poissons}
-\vskip 0.15in
-\begin{center}
-\begin{small}
-\begin{sc}
-\begin{tabular}{l l l l}
-\hline
-\abovespace\belowspace
-Metric & Ours & Korat.'14 & Barde.'14 \\
-\hline
-\abovespace
-Equation~\ref{eq:log_prob_poissons} & -1430.0 & -1578.9 & -1232.7 \\
-\belowspace
-Chi-Squared & 3313.9 & 3647.7 & 2444.1 \\
-\hline
-\end{tabular}
-\end{sc}
-\end{small}
-\end{center}
-\vskip -0.1in
-\end{table}
 
 We next test logistic regression for the binary classification of 1s versus 7s
 on a subset of the MNIST8M dataset, a larger version of
@@ -938,8 +891,9 @@ MCMC~\cite{conf/uai/AngelinoKWSA14,conf/icml/AhnSW14} concepts.
 
 This appendix is divided into two main parts. Appendix~\ref{app:proofs} provides
 the proofs that we omitted from the main text due to space constraints.
-Appendix~\ref{app:experiments} provides further details on our experiments to
-assist understanding and reproducibility.
+Appendix~\ref{app:experiments} provides further details on the correction
+distribution derivation and on our three main experiments to assist
+understanding and reproducibility.
 
 
 \section{Proofs of Lemmas and Corollaries}\label{app:proofs}
@@ -1147,9 +1101,86 @@ table. We leave further analysis and experiments with $g(x,y)$ as future work.
 
 
 \section{Additional Experiment Details}\label{app:experiments}
-% Daniel: all three experiments should be described in more detail here.
+% Daniel: all three experiments should be described in more detail here. And
+% also the deconvolution step to get the correction distribution.
+
+\subsection{Obtaining the Correction Distribution (Section~\ref{sec:correction})}\label{app:correction}
+
+% Daniel: moved to appendix so we can expand it. Originally we had only two
+% lines, and it looked pretty awkward. So let's add more. Note: this also
+% depends on whether we use [-10,10] for the X_c range, or [-20,20], etc...
+\begin{table}[t]
+\caption{Error ($L_\infty$) in $X_{\rm norm}+X_{\rm corr}$ versus $X_{\rm log}$.}
+\label{tab:xcorr}
+\vskip 0.15in
+\begin{center}
+\begin{small}
+\begin{sc}
+\begin{tabular}{l l l l}
+\hline
+\abovespace\belowspace
+${\bf N}$ & ${\bf \sigma}$ & ${\bf \lambda}$ & ${\bf L_{\infty}}$ {\bf error} \\
+\hline
+\abovespace
+4000 & 1.0 & 100    & 1.9e-3  \\
+4000 & 1.0 & 10     & 8.9e-4  \\
+4000 & 1.0 & 1      & 1.6e-3  \\
+4000 & 1.0 & 0.1    & 2.8e-3  \\
+4000 & 1.0 & 0.01   & 5.2e-3  \\
+4000 & 1.0 & 0.001  & 9.9e-3  \\
+2000 & 1.0 & 10     & 1.3e-3  \\
+8000 & 1.0 & 10     & 1.3e-3  \\
+\belowspace
+4000 & 1.0 & 10 & 6.6e-4 \\
+\hline
+\end{tabular}
+\quad
+\begin{tabular}{l l l l}
+\hline
+\abovespace\belowspace
+${\bf N}$ & ${\bf \sigma}$ & ${\bf \lambda}$ & ${\bf L_{\infty}}$ {\bf error} \\
+\hline
+\abovespace
+4000 & 0.9 & 1 & 1.0e-4  \\
+\belowspace
+4000 & 0.8 & 0.03 & 5.0e-6 \\
+\hline
+\end{tabular}
+\end{sc}
+\end{small}
+\end{center}
+\vskip -0.1in
+\end{table}
+
+\textbf{Daniel: TODO, figure out what values to test, put optimal values in bold
+face here, etc., note that these are with the range $[-20,20]$ except for the
+best value in $[-10,10]$; maybe we should decrease the range?}
 
 \subsection{Gaussian Mixture Model Experiment (Section~\ref{ssec:gaussians})}\label{app:gaussians}
+
+\begin{table}[t]
+\caption{Gaussian Mixture Model Statistics}
+\label{tab:poissons}
+\vskip 0.15in
+\begin{center}
+\begin{small}
+\begin{sc}
+\begin{tabular}{l l l l}
+\hline
+\abovespace\belowspace
+Metric & Ours & Korat.'14 & Barde.'14 \\
+\hline
+\abovespace
+Equation~\ref{eq:log_prob_poissons} & -1430.0 & -1578.9 & -1232.7 \\
+\belowspace
+Chi-Squared & 3313.9 & 3647.7 & 2444.1 \\
+\hline
+\end{tabular}
+\end{sc}
+\end{small}
+\end{center}
+\vskip -0.1in
+\end{table}
 
 We discretize the posterior coordinates into bins with respect to the two
 components of $\theta$.  The probability $P_i$ of a sample falling into bin $i$
