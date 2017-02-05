@@ -18,7 +18,7 @@
  * [path_to_bidmach]./bidmach logisticRegressionModel.ssc | tee output.txt
  *
  * The output.txt should ideally be named something informative. Note that this
- * script *needs the other .ssc methods and other files* that are in this 'code'
+ * script needs the other .ssc methods and other files that are in this 'code'
  * directory.
  */
 
@@ -28,14 +28,14 @@
 
 // IMPORTANT STUFF! AT LEAST CHECK THESE EVERY TIME YOU RUN SOMETHING!
 val nsamps = 3000           // The number of \theta values to sample (i.e., number of iterations).
-val test_to_use = "bard"    // Three options: "ours", "kora", or "bard". Use one of these.
+val test_to_use = "ours"    // Three options: "ours", "kora", or "bard". Use one of these.
 val ntrain = 100000         // Number of training data (affects output name).
 val ntest = 20000           // Number of testing data (affects output name).
-val temperature = 1.0       // This was 1000.0 for the previous MNIST (not 8M) experiment.
+val temperature = 1000.0    // This was 1000.0 for the previous MNIST (not 8M) experiment.
 val batchsize = 100         // I'm also experimenting with changing minibatch sizes.
 val cutMHeps = 0.05         // Set this here (to keep all modifiable parameters here).
 val adapt_gamma = 2.00      // The gamma value for the adaptive MH test.
-val sigma_proposer = 0.0005 // The step size for the proposal.
+val sigma_proposer = 0.05   // The step size for the proposal.
 
 // Change the data path depending on your machine!
 val train_data_dir = "/home/daniel/data/FINAL_MNIST8M_TRAIN_" +ntrain+ ".fmat.lz4"
@@ -95,7 +95,7 @@ class LogisticRegression(n:Int, sigma:Double, pscale: Double) extends MHmodel (1
      *      regression.
      *
      * @return The log likelihood of each element in this minibatch, w.r.t this
-     *      particular \theta.
+     *      particular \theta (i.e. it doesn't combine into a scalar).
      */
     def evalfn(batch:Mat, theta:Mat):Mat = {
         val X = batch(0 until batch.dims(0)-1, ?)
@@ -103,7 +103,8 @@ class LogisticRegression(n:Int, sigma:Double, pscale: Double) extends MHmodel (1
         val z = Y dot (theta.t * X);
         val sig = 1/(1 + exp(-1.0 * z));
         val log_sig = ln(sig);
-        val scale_and_temp = 1.0 * (n/temp); // TODO where do we scale down 1/b?
+        // NOTE: we scale 1/b in the test function method, not here.
+        val scale_and_temp = 1.0 * (n/temp); 
         scale_and_temp * log_sig;
     };
 }

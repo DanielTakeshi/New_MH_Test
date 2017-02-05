@@ -27,58 +27,77 @@ def normcdfinv(a:DMat):DMat = {
 
 
 /**
+ * Computes the correction variable X_c.
  *
+ * Note: Like other methods in the BIDMat library, (m,n) indicate the size of
+ * the matrix to return; just use (1,1) for our experiments.
  */
 def normlogrnd(m:Int, n:Int):DMat = {
     val rr = drand(m, n);
     var i = 0;
     while (i < rr.length) {
-	val rv = rr.data(i);
-	var top = n2ld.nrows;
-	var bottom = 0;
-	while (top - bottom > 1) {
-	    val mid = (top + bottom) / 2;
-	    if (rv > n2ld(mid, 1)) {
-		bottom = mid;
-	    } else {
-		top = mid;
-	    }
-	}
-	val y0 = n2ld(bottom, 1);
-	val y1 = n2ld(math.min(top, n2ld.nrows-1), 1);
-	val alpha = if (y1 != y0) ((rv - y0) / (y1 - y0)) else 0.0;
-	val x0 = n2ld(bottom, 0);
-	val x1 = n2ld(math.min(top, n2ld.nrows-1), 0);
-	val newx = alpha * x1 + (1-alpha) * x0;
-	rr.data(i) = newx;
-	i += 1;
+        val rv = rr.data(i);
+        var top = n2ld.nrows;
+        var bottom = 0;
+        while (top - bottom > 1) {
+            val mid = (top + bottom) / 2;
+            if (rv > n2ld(mid, 1)) {
+                bottom = mid;
+            } else {
+                top = mid;
+            }
+        }
+        val y0 = n2ld(bottom, 1);
+        val y1 = n2ld(math.min(top, n2ld.nrows-1), 1);
+        val alpha = if (y1 != y0) ((rv - y0) / (y1 - y0)) else 0.0;
+        val x0 = n2ld(bottom, 0);
+        val x1 = n2ld(math.min(top, n2ld.nrows-1), 0);
+        val newx = alpha * x1 + (1-alpha) * x0;
+        rr.data(i) = newx;
+        i += 1;
     }
     rr;
 };
 
 
-/**
- *
- */
+/** Our major contribution. See `testfn` documentation for details. */
 class NewTest extends MHtestType {
 
     /**
-     * This is our major MH test contribution and partly listed in Algorithm 1
-     * of the arXiv 2016 paper. Returns a boolean (b1,b2) where b1=True
-     * indicates we're finished, otherwise need to get more data (from outside
-     * this method), and b2=True indicates that we move to ttheta (new theta),
-     * otherwise stick with old theta.
+     * This is our major MH test contribution. See Algorithm 1 of the arXiv 2016
+     * paper. Returns a boolean (b1,b2) where b1=True indicates we're finished,
+     * otherwise need to increase minibatch size and b2=True indicates that we
+     * move to ttheta (new theta), otherwise stick with old theta. A couple of
+     * notes on terms:
      *
-     * @param diff
+     * > tvar is the sample variance of the minibatch, indicated by
+     *      s_{\Delta*}^2 in our arXiv 2016 paper. Note that we take the
+     *      variance of the sample of IID terms, and the variance of the SUM of
+     *      these (i.e. the \Delta* we care about) has the same variance but
+     *      **divided** by b, due to CLT properties.
+     * > targvar is by default 0.9*0.9. This is described as 1 in the paper but
+     *      we set it to be smaller, perhaps for numerical stability?
+     * > x is the \Delta* term. Yes, after we take the mean it is correct to my
+     *      knowledge (so long as the models include the N/T scaling term).
+     *      Whew, that's a relief to know ...
+     * > ns TODO I don't understand this? According to the println's it's a
+     *      measure of standard deviations. It seems like a heuristic for the
+     *      "goodness" of a sample. So if it's really large (say 5 as we have
+     *      here?) then we know our proposed \theta is really good so let's move
+     *      over there right away, etc. TODO double check.
+     * > xn is the extra (univariate) normal variable used for convenience.
+     * > xc is drawn from the correction distribution, implemented with our
+     *      special normlogrnd method.
+     *
+     * @param diff A vector containing scaled log likelihood ratios for each
+     *      element in the minibatch.
      * @param logu The \psi(u,theta,theta') term, which is log(u) for symmetric
      *      proposals that we use.
      * @param nsig
      */
     def testfn(diff:Mat, logu:Double, nsig:Double):(Boolean, Boolean) = {
 
-        // AH Maybe this is where (1/b) happens! Investigate more ...
         val tvar = variance(diff).dv/diff.length; 
-
         val targvar = n2lsigma * n2lsigma;
         val x = mean(diff).dv;
         val ns = x / math.sqrt(tvar);
@@ -91,7 +110,8 @@ class NewTest extends MHtestType {
             }
         } else {
             if (tvar >= targvar) {
-                if (nsig == 0) {
+                if (nsig == 0) { 
+                    // Only happens if minibatch is full data. Also, keepon=True.
                     if (keepon) {
                         println("Warning: New test failed variance condition, var=%f nstd = %f" format (tvar, ns));
                         if (x > 0) {
@@ -103,6 +123,7 @@ class NewTest extends MHtestType {
                         throw new RuntimeException("New test failed variance condition, var=%f, nstd = %f" format (tvar, ns));
                     }
                 } else {
+                    // Most common case, return False so we get more data.
                     (false, false);
                 }
             } else {
@@ -148,9 +169,8 @@ class OldTest extends MHtestType {
 
 
 /**
- * Obtains a minibatch of data of `size` elements. TODO It looks like it doesn't
- * shuffle! The original data is shuffled, but we always take elements in the
- * same order!
+ * Obtains a minibatch of data of `size` elements. Technically it doesn't
+ * shuffle but that's for performance reasons.
  *
  * @param data The *full* training data.
  * @param here The "starting point" for the minibatch.
@@ -174,20 +194,19 @@ def getbatch(data:Mat, here:Int, size:Int):Mat = {
  * Performs a step in the simulation, where we check to see if we should accept
  * our proposed theta. Returns (there, ntheta, ll) where `there` is the final
  * minibatch size needed for this process, `ntheta` is the next theta we should
- * add (either theta or ttheta), and `ll` is the final minibatch log likelihood
- * with respect to theta (should that be the new theta?).
- *
- * TODO Understand test.testfn(...) along with nsig.
+ * add (either theta or ttheta), and `ll` is the final average (possibly
+ * tempered) log likelihood with respect to theta (should that be the new theta
+ * instead?).
  *
  * @param mod The model we're using, augmented with a proposer function.
  * @param test The MH test we're using (new or old, use the new one).
  * @param data The *full* training data matrix, accessible from the model.
  * @param size The starting minibatch size, and how much we increment (the
  *      latter only if test.explin=false).
- * @param here
+ * @param here The "starting point" for the minibatch.
  * @param theta The current theta.
  * @param ttheta The proposed theta.
- * @param acc
+ * @param acc Used to determine nsig later for our test.
  */
 def dostep(mod:MHmodel, test:MHtestType, data:Mat, size:Int, here:Int, theta:Mat, ttheta:Mat, acc:Double):(Int, Mat, Double) = {
     var step = size;
@@ -201,16 +220,18 @@ def dostep(mod:MHmodel, test:MHtestType, data:Mat, size:Int, here:Int, theta:Mat
     var logu = ln(rand(1,1)).v;
 
     // Compute log likelihood ratios into `diff`, which is a *vector* containing
-    // each term (i.e. (N/bT)*log_fraction)) in the \Lambda*(theta,theta') term in
-    // our arXiv 2016 paper (Equation 4), though it doesn't have the `T` factor
-    // for temperature. TODO I think missing a (1/b) factor.
+    // each term:
+    //      (N / (b*T)) * log(p(xi|theta') / p(xi|theta))
+    // in the \Lambda*(theta,theta') term in our arXiv 2016 paper (Equation 4),
+    // though we didn't list the `T` for temperature in the paper, and also, we
+    // don't do the 1/b scaling until we call mean(diff) in test.testfn().
 
     while (! done) {
         val batch = getbatch(mod.data, here, step);
         ll = mod.evalfn(batch, theta);
         val diff = mod.evalfn(batch, ttheta) - ll;
 
-        // We use a discount factor of 0.05 (test.discount simply returns `acc`)
+        // We use discount factor 0.05; test.discount(a,b) just returns `a`.
         val nsig = if (step == data.ncols) 0.0 else (- normcdfinv(drow(test.discount(acc, istep))).dv);
         val (moved, takestep) = test.testfn(diff, logu, nsig);
         done = moved;
@@ -219,7 +240,8 @@ def dostep(mod:MHmodel, test:MHtestType, data:Mat, size:Int, here:Int, theta:Mat
             there = (here + step) % data.ncols;
             ntheta = if (takestep) ttheta else theta;
         } else {
-            // Our results in arXiv 2016 used test.explin = false.
+            // Our results in arXiv 2016 used test.explin = false. Thus we just
+            // increment by the same amount each time (we used 100).
             step = math.min(if (test.explin) (step*2) else (step + size), data.ncols);
         }
         istep += 1;
@@ -238,7 +260,9 @@ def dostep(mod:MHmodel, test:MHtestType, data:Mat, size:Int, here:Int, theta:Mat
  * that here represents the starting point and there the ending point, and the
  * distance is the number of samples chosen. However, here continually updates
  * to be where there started, so it may "wrap around" the data matrix so that
- * special case of (there<here) is needed.
+ * special case of (there<here) is needed. Downside is that this means the
+ * minibatches aren't truly random; however, this is actually what we do in all
+ * algorithms in BIDMach so I guess John argued for this tradeoff.
  *
  * @param mod A subclass of the abstract MHModel class, so it has init,
  *      proposal, and evaluation functions. More accurately, it represents
@@ -250,7 +274,7 @@ def dostep(mod:MHmodel, test:MHtestType, data:Mat, size:Int, here:Int, theta:Mat
  *      latter only if test.explin=false).
  * @param nsamps The number of \thetas to sample (we did 3000 for our AISTATS
  *      submission).
- * @param acc
+ * @param acc Used to determine nsig later for our test.
  */
 def dosimm(mod:MHmodel, test:MHtestType, size:Int, nsamps:Int, acc:Double):(DMat,LMat,DMat) = {
     var theta = mod.initfn();
