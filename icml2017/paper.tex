@@ -1110,40 +1110,156 @@ table. We leave further analysis and experiments with $g(x,y)$ as future work.
 % lines, and it looked pretty awkward. So let's add more. Note: this also
 % depends on whether we use [-10,10] for the X_c range, or [-20,20], etc...
 \begin{table}[t]
-\caption{Error ($L_\infty$) in $X_{\rm norm}+X_{\rm corr}$ versus $X_{\rm log}$.}
+\caption{Errors ($L_\infty$) in $X_{\rm norm}+X_{\rm corr}$ versus $X_{\rm
+log}$, with $N=4000$ (top row) and $N=2000$ (bottom row).}
 \label{tab:xcorr}
 \vskip 0.15in
 \begin{center}
 \begin{small}
 \begin{sc}
-\begin{tabular}{l l l l}
+%% ----------------------- START OF TABLE
+\begin{tabular}{l l}
 \hline
 \abovespace\belowspace
-${\bf N}$ & ${\bf \sigma}$ & ${\bf \lambda}$ & ${\bf L_{\infty}}$ {\bf error} \\
+$N=4000$ & $\sigma=1.1$ \\
+\hline
+\abovespace\belowspace
+$\lambda$ & $L_{\infty}$ error \\
 \hline
 \abovespace
-4000 & 1.0 & 100    & 1.9e-3  \\
-4000 & 1.0 & 10     & 8.9e-4  \\
-4000 & 1.0 & 1      & 1.6e-3  \\
-4000 & 1.0 & 0.1    & 2.8e-3  \\
-4000 & 1.0 & 0.01   & 5.2e-3  \\
-4000 & 1.0 & 0.001  & 9.9e-3  \\
-2000 & 1.0 & 10     & 1.3e-3  \\
-8000 & 1.0 & 10     & 1.3e-3  \\
+100    & \textbf{4.3e-3}  \\
+10     & 6.0e-3  \\
+1      & 1.0e-2  \\
+0.1    & 1.2e-2  \\
 \belowspace
-4000 & 1.0 & 10 & 6.6e-4 \\
+0.01   & 3.5e-2  \\
 \hline
 \end{tabular}
-\quad
-\begin{tabular}{l l l l}
+\quad %% ----------------------- START OF TABLE
+\begin{tabular}{l l}
 \hline
 \abovespace\belowspace
-${\bf N}$ & ${\bf \sigma}$ & ${\bf \lambda}$ & ${\bf L_{\infty}}$ {\bf error} \\
+$N=4000$ & $\sigma=1.0$ \\
+\hline
+\abovespace\belowspace
+$\lambda$ & $L_{\infty}$ error \\
 \hline
 \abovespace
-4000 & 0.9 & 1 & 1.0e-4  \\
+100    & 1.9e-3  \\
+10     & \textbf{8.9e-4}  \\
+1      & 1.6e-3  \\
+0.1    & 2.8e-3  \\
 \belowspace
-4000 & 0.8 & 0.03 & 5.0e-6 \\
+0.01   & 5.2e-3  \\
+\hline
+\end{tabular}
+\quad %% ----------------------- START OF TABLE
+\begin{tabular}{l l}
+\hline
+\abovespace\belowspace
+$N=4000$ & $\sigma=0.9$ \\
+\hline
+\abovespace\belowspace
+$\lambda$ & $L_{\infty}$ error \\
+\hline
+\abovespace
+100    & 1.2e-3  \\
+10     & 2.6e-4  \\
+1      & \textbf{1.0e-4}  \\
+0.1    & 2.0e-4  \\
+\belowspace
+0.01   & 3.9e-4  \\
+\hline
+\end{tabular}
+\quad %% ----------------------- START OF TABLE
+\begin{tabular}{l l}
+\hline
+\abovespace\belowspace
+$N=4000$ & $\sigma=0.8$ \\
+\hline
+\abovespace\belowspace
+$\lambda$ & $L_{\infty}$ error \\
+\hline
+\abovespace
+100    & 8.3e-4  \\
+10     & 1.3e-4  \\
+1      & 2.5e-5  \\
+0.1    & \textbf{6.7e-6}  \\
+\belowspace
+0.01   & 7.4e-6  \\
+\hline
+\end{tabular}
+%% ---- NEW ROW ----
+\vskip 0.2in %% OH this works!
+\begin{tabular}{l l}
+\hline
+\abovespace\belowspace
+$N=2000$ & $\sigma=1.1$ \\
+\hline
+\abovespace\belowspace
+$\lambda$ & $L_{\infty}$ error \\
+\hline
+\abovespace
+100    & 6.8e-3  \\
+10     & \textbf{4.6e-3}  \\
+1      & 7.5e-3  \\
+0.1    & 1.3e-2  \\
+\belowspace
+0.01   & 2.4e-2  \\
+\hline
+\end{tabular}
+\quad %% ----------------------- START OF TABLE
+\begin{tabular}{l l}
+\hline
+\abovespace\belowspace
+$N=2000$ & $\sigma=1.0$ \\
+\hline
+\abovespace\belowspace
+$\lambda$ & $L_{\infty}$ error \\
+\hline
+\abovespace
+100    & 4.4e-3  \\
+10     & 1.3e-3  \\
+1      & \textbf{1.1e-3}  \\
+0.1    & 2.0e-3  \\
+\belowspace
+0.01   & 3.6e-3  \\
+\hline
+\end{tabular}
+\quad %% ----------------------- START OF TABLE
+\begin{tabular}{l l}
+\hline
+\abovespace\belowspace
+$N=2000$ & $\sigma=0.9$ \\
+\hline
+\abovespace\belowspace
+$\lambda$ & $L_{\infty}$ error \\
+\hline
+\abovespace
+100    & 3.3e-3  \\
+10     & 6.4e-4  \\
+1      & 1.6e-4  \\
+0.1    & \textbf{1.3e-4}  \\
+\belowspace
+0.01   & 2.7e-4  \\
+\hline
+\end{tabular}
+\quad %% ----------------------- START OF TABLE
+\begin{tabular}{l l}
+\hline
+\abovespace\belowspace
+$N=2000$ & $\sigma=0.8$ \\
+\hline
+\abovespace\belowspace
+$\lambda$ & $L_{\infty}$ error \\
+\hline
+\abovespace
+100    & 2.6e-3  \\
+10     & 4.0e-4  \\
+1      & 6.7e-5  \\
+0.1    & 1.4e-5  \\
+\belowspace
+0.01   & \textbf{5.0e-6}  \\
 \hline
 \end{tabular}
 \end{sc}
@@ -1151,6 +1267,7 @@ ${\bf N}$ & ${\bf \sigma}$ & ${\bf \lambda}$ & ${\bf L_{\infty}}$ {\bf error} \\
 \end{center}
 \vskip -0.1in
 \end{table}
+
 
 \textbf{Daniel: TODO, figure out what values to test, put optimal values in bold
 face here, etc., note that these are with the range $[-20,20]$ except for the
