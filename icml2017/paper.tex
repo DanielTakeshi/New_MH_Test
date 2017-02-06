@@ -112,7 +112,7 @@ over the full dataset to produce a new sample.  Recent results
 from~\cite{cutting_mh_2014} and~\cite{icml2014c1_bardenet14} perform
 approximate (bounded error) acceptance tests using subsets of the full dataset.
 The amount of data consumed for each test varies significantly from one
-minibatch to the next. By contrast,~\cite{conf/uai/MaclaurinA14,TallData15}
+minibatch to the next. By contrast,~\cite{conf/uai/MaclaurinA14,TallData16}
 perform exact tests but require a lower bound on the parameter distribution across
 its domain.  The amount of data reduction depends on the accuracy of this bound,
 and such bounds are only available for relatively simple distributions.
@@ -122,9 +122,9 @@ statistics as {\em a natural part of the test} and requires less data per
 iteration than prior work. We use a Barker test function~\cite{Barker65}, which
 makes our test naturally error tolerant. The idea of using a noise-tolerant
 Barker's test function was suggested but not explored empirically
-in~\cite{TallData15} section 6.3. But the asymptotic test statistic CDF and the
+in~\cite{TallData16} section 6.3. But the asymptotic test statistic CDF and the
 Barker function are different, which leads to fixed errors for the approach
-in~\cite{TallData15}. Here, we show that the difference between the
+in~\cite{TallData16}. Here, we show that the difference between the
 distributions can be corrected with an additive random variable. This leads to a
 test which is fast, and whose error can be made arbitrarily small.
 
@@ -430,7 +430,7 @@ we can write
 where $\mathcal{\bar{N}}(0, \sigma^2(\Delta^*))$ denotes a distribution which is
 approximately normal with variance $\sigma^2(\Delta^*)$.  But to perform the
 test in Equation~(\ref{eq:the_exact_test}) we want $\Delta + X$ for a logistic
-random variable $X$ (call it $X_{\rm log}$ from now on). In~\cite{TallData15} it
+random variable $X$ (call it $X_{\rm log}$ from now on). In~\cite{TallData16} it
 was proposed to use $\Delta^*$ in a Barker test, and tolerate the fixed
 error between the logistic and normal distributions. 
 
@@ -863,8 +863,8 @@ the undiscounted implementation of~\cite{cutting_mh_2014}.
 \section{Conclusions}\label{sec:conclusion}
 
 \textbf{Daniel: need to revise this to take into account reviewer suggestion,
-with future work ideas. This will add some 2016 references so that'll be good
-(makes it current)}
+with future work ideas. One reviewer suggested
+using~\cite{DBLP:conf/icml/ChenG16}.}
 
 We have derived an M-H test for minibatch MCMC which approximates full data
 tests. We present theoretical results and experimentally show the benefits of

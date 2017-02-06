@@ -23,3 +23,11 @@ the three experiments.
 
 3. A new collaborative filtering experiment; it should be the third thing we do
 (up to debate).
+
+4. I put in a *lot* more values tested for the L_infty error for the correction
+distribution. One of the reviewers asked for more detail on this, and I agree,
+we want more. I put this in the Appendix; we should state the value we used and
+then refer the reader to the appendix for details.
+
+5. Added reference from one of the reviewers so that we can treat it as a future
+work possibility.
