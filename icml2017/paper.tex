@@ -862,18 +862,17 @@ the undiscounted implementation of~\cite{cutting_mh_2014}.
 
 \section{Conclusions}\label{sec:conclusion}
 
-\textbf{Daniel: need to revise this to take into account reviewer suggestion,
-with future work ideas. One reviewer suggested
-using~\cite{DBLP:conf/icml/ChenG16}.}
+\textbf{Daniel: double check this in case we add a third experiment.}
 
 We have derived an M-H test for minibatch MCMC which approximates full data
 tests. We present theoretical results and experimentally show the benefits of
-our test on Gaussian mixtures and logistic regression. Directions for future
-work include running more experiments with a particular focus on controlling
-variances, testing on neural networks, combining our results with Hamiltonian
-Monte Carlo methods, providing a recipe for how to use our algorithm (following
-the framework of~\cite{sgmcmc_2015}), or integrating parallel
-MCMC~\cite{conf/uai/AngelinoKWSA14,conf/icml/AhnSW14} concepts.
+our test on Gaussian mixtures and logistic regression.  Directions for future
+work include integrating our algorithm with~\cite{cutting_mh_2014} by applying
+both tests each iteration or utilizing the variance reduction techniques
+suggested in~\cite{DBLP:conf/icml/ChenG16}.  More elaborate extensions involve
+running more experiments on other models such as neural networks and providing a
+recipe for how to use our algorithm (following the framework
+of~\cite{sgmcmc_2015}).
 
 \bibliography{paper}
 \bibliographystyle{icml2017}
@@ -1121,109 +1120,18 @@ log}$, with $N=4000$ (top row) and $N=2000$ (bottom row).}
 \begin{tabular}{l l}
 \hline
 \abovespace\belowspace
-$N=4000$ & $\sigma=1.1$ \\
+$N=2000$ & $\sigma=0.8$ \\
 \hline
 \abovespace\belowspace
 $\lambda$ & $L_{\infty}$ error \\
 \hline
 \abovespace
-100    & \textbf{4.3e-3}  \\
-10     & 6.0e-3  \\
-1      & 1.0e-2  \\
-0.1    & 1.2e-2  \\
+100    & 2.6e-3  \\
+10     & 4.0e-4  \\
+1      & 6.7e-5  \\
+0.1    & 1.4e-5  \\
 \belowspace
-0.01   & 3.5e-2  \\
-\hline
-\end{tabular}
-\quad %% ----------------------- START OF TABLE
-\begin{tabular}{l l}
-\hline
-\abovespace\belowspace
-$N=4000$ & $\sigma=1.0$ \\
-\hline
-\abovespace\belowspace
-$\lambda$ & $L_{\infty}$ error \\
-\hline
-\abovespace
-100    & 1.9e-3  \\
-10     & \textbf{8.9e-4}  \\
-1      & 1.6e-3  \\
-0.1    & 2.8e-3  \\
-\belowspace
-0.01   & 5.2e-3  \\
-\hline
-\end{tabular}
-\quad %% ----------------------- START OF TABLE
-\begin{tabular}{l l}
-\hline
-\abovespace\belowspace
-$N=4000$ & $\sigma=0.9$ \\
-\hline
-\abovespace\belowspace
-$\lambda$ & $L_{\infty}$ error \\
-\hline
-\abovespace
-100    & 1.2e-3  \\
-10     & 2.6e-4  \\
-1      & \textbf{1.0e-4}  \\
-0.1    & 2.0e-4  \\
-\belowspace
-0.01   & 3.9e-4  \\
-\hline
-\end{tabular}
-\quad %% ----------------------- START OF TABLE
-\begin{tabular}{l l}
-\hline
-\abovespace\belowspace
-$N=4000$ & $\sigma=0.8$ \\
-\hline
-\abovespace\belowspace
-$\lambda$ & $L_{\infty}$ error \\
-\hline
-\abovespace
-100    & 8.3e-4  \\
-10     & 1.3e-4  \\
-1      & 2.5e-5  \\
-0.1    & \textbf{6.7e-6}  \\
-\belowspace
-0.01   & 7.4e-6  \\
-\hline
-\end{tabular}
-%% ---- NEW ROW ----
-\vskip 0.2in %% OH this works!
-\begin{tabular}{l l}
-\hline
-\abovespace\belowspace
-$N=2000$ & $\sigma=1.1$ \\
-\hline
-\abovespace\belowspace
-$\lambda$ & $L_{\infty}$ error \\
-\hline
-\abovespace
-100    & 6.8e-3  \\
-10     & \textbf{4.6e-3}  \\
-1      & 7.5e-3  \\
-0.1    & 1.3e-2  \\
-\belowspace
-0.01   & 2.4e-2  \\
-\hline
-\end{tabular}
-\quad %% ----------------------- START OF TABLE
-\begin{tabular}{l l}
-\hline
-\abovespace\belowspace
-$N=2000$ & $\sigma=1.0$ \\
-\hline
-\abovespace\belowspace
-$\lambda$ & $L_{\infty}$ error \\
-\hline
-\abovespace
-100    & 4.4e-3  \\
-10     & 1.3e-3  \\
-1      & \textbf{1.1e-3}  \\
-0.1    & 2.0e-3  \\
-\belowspace
-0.01   & 3.6e-3  \\
+0.01   & \textbf{5.0e-6}  \\
 \hline
 \end{tabular}
 \quad %% ----------------------- START OF TABLE
@@ -1248,18 +1156,109 @@ $\lambda$ & $L_{\infty}$ error \\
 \begin{tabular}{l l}
 \hline
 \abovespace\belowspace
-$N=2000$ & $\sigma=0.8$ \\
+$N=2000$ & $\sigma=1.0$ \\
 \hline
 \abovespace\belowspace
 $\lambda$ & $L_{\infty}$ error \\
 \hline
 \abovespace
-100    & 2.6e-3  \\
-10     & 4.0e-4  \\
-1      & 6.7e-5  \\
-0.1    & 1.4e-5  \\
+100    & 4.4e-3  \\
+10     & 1.3e-3  \\
+1      & \textbf{1.1e-3}  \\
+0.1    & 2.0e-3  \\
 \belowspace
-0.01   & \textbf{5.0e-6}  \\
+0.01   & 3.6e-3  \\
+\hline
+\end{tabular}
+\quad %% ----------------------- START OF TABLE
+\begin{tabular}{l l}
+\hline
+\abovespace\belowspace
+$N=2000$ & $\sigma=1.1$ \\
+\hline
+\abovespace\belowspace
+$\lambda$ & $L_{\infty}$ error \\
+\hline
+\abovespace
+100    & 6.8e-3  \\
+10     & \textbf{4.6e-3}  \\
+1      & 7.5e-3  \\
+0.1    & 1.3e-2  \\
+\belowspace
+0.01   & 2.4e-2  \\
+\hline
+\end{tabular}
+%% ---- NEW ROW ----
+\vskip 0.2in %% OH this works!
+\begin{tabular}{l l}
+\hline
+\abovespace\belowspace
+$N=4000$ & $\sigma=0.8$ \\
+\hline
+\abovespace\belowspace
+$\lambda$ & $L_{\infty}$ error \\
+\hline
+\abovespace
+100    & 8.3e-4  \\
+10     & 1.3e-4  \\
+1      & 2.5e-5  \\
+0.1    & \textbf{6.7e-6}  \\
+\belowspace
+0.01   & 7.4e-6  \\
+\hline
+\end{tabular}
+\quad %% ----------------------- START OF TABLE
+\begin{tabular}{l l}
+\hline
+\abovespace\belowspace
+$N=4000$ & $\sigma=0.9$ \\
+\hline
+\abovespace\belowspace
+$\lambda$ & $L_{\infty}$ error \\
+\hline
+\abovespace
+100    & 1.2e-3  \\
+10     & 2.6e-4  \\
+1      & \textbf{1.0e-4}  \\
+0.1    & 2.0e-4  \\
+\belowspace
+0.01   & 3.9e-4  \\
+\hline
+\end{tabular}
+\quad %% ----------------------- START OF TABLE
+\begin{tabular}{l l}
+\hline
+\abovespace\belowspace
+$N=4000$ & $\sigma=1.0$ \\
+\hline
+\abovespace\belowspace
+$\lambda$ & $L_{\infty}$ error \\
+\hline
+\abovespace
+100    & 1.9e-3  \\
+10     & \textbf{8.9e-4}  \\
+1      & 1.6e-3  \\
+0.1    & 2.8e-3  \\
+\belowspace
+0.01   & 5.2e-3  \\
+\hline
+\end{tabular}
+\quad %% ----------------------- START OF TABLE
+\begin{tabular}{l l}
+\hline
+\abovespace\belowspace
+$N=4000$ & $\sigma=1.1$ \\
+\hline
+\abovespace\belowspace
+$\lambda$ & $L_{\infty}$ error \\
+\hline
+\abovespace
+100    & \textbf{4.3e-3}  \\
+10     & 6.0e-3  \\
+1      & 1.0e-2  \\
+0.1    & 1.2e-2  \\
+\belowspace
+0.01   & 3.5e-2  \\
 \hline
 \end{tabular}
 \end{sc}
@@ -1268,10 +1267,28 @@ $\lambda$ & $L_{\infty}$ error \\
 \vskip -0.1in
 \end{table}
 
+In Section~\ref{sec:correction}, we described our derivation of the correction
+distribution $C_\sigma$ for random variable $X_{\rm corr}$.
+Table~\ref{tab:xcorr} shows our $L_\infty$ error results for the convolution
+(Equation~(\ref{eq:overall_corr_problem})) based on various hyperparameter
+choices.  We test using $N=2000$ and $N=4000$ points for discretization within
+a range of $X_{\rm corr} \in [-20,20]$, covering essentially all the probability
+mass. We also vary $\sigma$ from 0.8 to 1.1. 
 
-\textbf{Daniel: TODO, figure out what values to test, put optimal values in bold
-face here, etc., note that these are with the range $[-20,20]$ except for the
-best value in $[-10,10]$; maybe we should decrease the range?}
+We observe a tradeoff. With smaller $\sigma$, our $C_\sigma$ is closer to the
+ideal distribution (as judged by $L_\infty$ error), but this imposes a stricter
+upper bound on the sample variance of $\Delta^*$ before our test can be applied,
+which thus results in larger minibatch sizes. Conversely, a more liberal upper
+bound means we avail ourselves of smaller minibatch sizes, but at the cost of a
+less stable derivation for $C_\sigma$.
+
+\textbf{We chose XXXX to use in our experiments, which empirically provided an
+acceptable tradeoff to us.} This is reflected in
+Algorithm~\ref{alg:our_algorithm}, which assumes that we used \textbf{TODO TODO
+TODO TODO TODO} but we reiterate that the choice is arbitrary so long as $0 <
+\sigma < \sqrt{\pi^2/3} \approx 1.814$, the standard deviation of the standard
+logistic distribution, since there must be some variance left over for $X_{\rm
+corr}$.
 
 \subsection{Gaussian Mixture Model Experiment (Section~\ref{ssec:gaussians})}\label{app:gaussians}
 
