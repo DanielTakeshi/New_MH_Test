@@ -3,6 +3,12 @@
 :load cutMHTest.ssc
 :load adaptiveMHTest.ssc
 
+val seed:IMat = loadIMat("seed.imat")
+val seed2:IMat = seed(1) to 100
+saveIMat("seed.imat", seed2)
+
+setseed(seed(0))
+
 class GaussianMixture(n:Int, sigma:Double, pscale:Double) extends MHmodel(2, n, sigma, pscale) {
 
 	val sigma1_sq = 10.0;	
@@ -44,7 +50,7 @@ def acceptrate(theta:Mat):Double = {
 
 
 
-val nsamps = 5000
+val nsamps = 2
 val n = 1000000
 val sigma = math.sqrt(2)
 val pscale = 1.0
@@ -83,4 +89,5 @@ val bard_size = FMat(size_bard);
 
 println("Saving results to gaussiandata.mat");
 
-saveAs("gaussiandata.mat", samples_our, "newtestsamples", samples_cutmh, "cutmhsamples", samples_bard, "adaptivemhsamples", our_size, "newtestsize", cutmh_size, "cutmhsize", bard_size, "adaptivemhsize", lls_our, "newtestll", lls_cutmh, "cutmhll", lls_bard, "adaptivemhll");
+val name = "/media/xinleipan/DC1A-EA60/github/New_MH_Test/code/" + "gaussiandata" + seed(0).toString + ".mat"
+saveAs(name, samples_our, "newtestsamples", samples_cutmh, "cutmhsamples", samples_bard, "adaptivemhsamples", our_size, "newtestsize", cutmh_size, "cutmhsize", bard_size, "adaptivemhsize", lls_our, "newtestll", lls_cutmh, "cutmhll", lls_bard, "adaptivemhll");
