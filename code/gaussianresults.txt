@@ -1,0 +1,16 @@
+From the experiments of gaussian mixture model, the following results are obtained.
+
+(1) Using "norm2log2000_20_0.9.txt" with the following parameters:
+
+nsamps = 3000, batchsize=100, sigma_proposer = 0.15, temperature = 1000000/100 = 10000
+cutMHtest.eps = 0.005, adaptiveMHtest.gamma = 2.00. Just using different seed.
+
+seed = 1,2,3,46,47
+Average Minibatch Size
+---------------------------------------
+  Ours  ||  CutMH || AdaptiveMH 
+  217   || 14920  || 67099
+  200   || 13647  || 62862
+  207   || 16532  || 58240
+  211   || 14062  || 66148
+  213   || 11432  || 64493
