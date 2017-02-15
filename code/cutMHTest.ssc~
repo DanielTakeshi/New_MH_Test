@@ -1,0 +1,128 @@
+:load simulator.ssc
+import org.apache.commons.math3.distribution._
+
+class cutMHTest{
+	var N = 100000;  // number of data points
+	var eps = 0.005; // error bound
+	var error_bound = true; // true means use fixed error bound
+	def testfn(diff_in:Mat, u: Double, nsig:Double):(Boolean, Boolean) = {
+		// diff: N / temp * \sum_{i=1}^m (log(p(x,ttheta)) - log(p(x,theta)))
+		val diff = diff_in / (N * 1.0);
+		val diff_sq = diff dot diff;
+		val lsq_bar = mean(diff_sq).dv
+		val l_bar = mean(diff).dv
+		val l_bar_sq = l_bar * l_bar
+		
+		val n = diff.size     		
+		val sl = math.sqrt((lsq_bar - l_bar_sq) * n * 1.0 /(n-1.0));
+		val s = sl/math.sqrt(n*1.0) * math.sqrt(1.0 - (n-1.0)/(N-1.0));
+		val t = abs( (l_bar  - u)/s );
+		val TD = new TDistribution(n-1)
+		val tcdf = TD.cumulativeProbability(t.dv)
+		val delta = (1.0 - tcdf).dv
+
+		if (delta < nsig || diff.size >= N){
+			if( l_bar > u){
+				return (true, true)
+			}
+			else{
+				return (true, false)
+			}
+		}else{
+			return (false, false);
+		}
+	};
+};
+
+def cutMHTest_dostep(mod:MHmodel, test:cutMHTest, data:Mat, size:Int, here:Int, theta:Mat, ttheta:Mat, acc:Double):(Int, Mat, Double) = {
+	var step = size;   // initial batchsize
+	var done = false;
+	var ntheta:Mat = null;
+	var there = 0;
+	var istep = 0;
+	var ll:Mat = null;
+	var batchsize = size;
+
+	val u = 1.0/test.N * ln(rand(1,1)).dv;
+
+	while(!done) {
+		val batch = getbatch(mod.data, here, batchsize);
+		ll = mod.evalfn(batch, theta);
+		val diff = mod.evalfn(batch, ttheta) - ll;
+		val nsig = test.eps;
+		val (moved, takestep) = test.testfn(diff, u, nsig);
+		done = moved;
+		if (done) {
+			there = (here + batchsize) % data.ncols;
+			ntheta = if (takestep) ttheta else theta;
+		} else {
+			step = min(size, test.N - batchsize).v;
+			batchsize = batchsize + step;
+		}
+		istep += 1;
+	}
+	(there, ntheta, mean(ll).dv/(test.N*1.0) );
+}
+
+
+def cutMHTest_dosimm(mod:MHmodel, test:cutMHTest, size:Int, nsamps:Int, acc:Double):(DMat,LMat,DMat) = {
+    var theta = mod.initfn();
+    val samples = dzeros(theta.length, nsamps);
+    val sizes = lzeros(1, nsamps);
+    val lls = dzeros(1, nsamps);
+    var here = 0;
+    var i = 0;
+    
+    tic;
+    println("")
+    while (i < nsamps) {
+    	if (i % 100 == 0){
+            val t = toc;
+    		println("cut mh test iteration = %d, elapsed time = %f secs" format(i, t));
+    	}
+    	if (! test.error_bound){
+    		val epsi = 0.01 * pow((0.01 + i), -0.55).dv;
+    		test.eps = epsi;
+    	}
+		val ttheta = mod.proposalfn(theta);
+		val (there, nth, ll) = cutMHTest_dostep(mod, test, mod.data, size, here, theta, ttheta, acc);
+		sizes(i) = if (there > here) (there - here) else (there - here + mod.data.ncols);
+		lls(i) = ll;
+		here = there;
+		theta = nth;
+		samples(?, i) = DMat(theta);
+		i += 1;
+    }
+    println("")
+    (samples, sizes, lls);
+};
+
+
+/*
+val nsamps = 10000
+val n = 100000
+val sigma = math.sqrt(2)
+val pscale = 1
+val batchsize = 50
+val sigma_proposer = 0.5;
+val nn = new GaussianMixture(n = n, sigma = sigma, pscale=pscale);
+
+
+nn.temp = 100.0;
+nn.sigma_proposer = sigma_proposer;   // 0.4 is optimal for nsamps = 2000, minibatch size = 200	
+val newtest2 = new cutMHTest;
+newtest2.N = n;
+
+tic; 
+val (samples, sizes, lls) = dosimm(mod= nn, test=newtest2, size=batchsize, nsamps = nsamps, acc = 0.05);
+toc;
+
+val t1 = toc;
+
+scatter(samples(0,?), samples(1,?));
+val size1 = FMat(sizes)
+hist(size1, 50);
+
+val accept = acceptrate(samples)
+println("accept rate is %f" format(accept));
+*/
