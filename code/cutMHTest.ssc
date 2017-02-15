@@ -1,4 +1,5 @@
 :load simulator.ssc
+import org.apache.commons.math3.distribution._
 
 class cutMHTest{
 	var N = 100000;  // number of data points
@@ -11,12 +12,14 @@ class cutMHTest{
 		val lsq_bar = mean(diff_sq).dv
 		val l_bar = mean(diff).dv
 		val l_bar_sq = l_bar * l_bar
-
+		
 		val n = diff.size     		
 		val sl = math.sqrt((lsq_bar - l_bar_sq) * n * 1.0 /(n-1.0));
 		val s = sl/math.sqrt(n*1.0) * math.sqrt(1.0 - (n-1.0)/(N-1.0));
 		val t = abs( (l_bar  - u)/s );
-		val delta = (1.0 - normcdf(drow(t.dv))).dv
+		val TD = new TDistribution(n-1)
+		val tcdf = TD.cumulativeProbability(t.dv)
+		val delta = (1.0 - tcdf).dv
 
 		if (delta < nsig || diff.size >= N){
 			if( l_bar > u){

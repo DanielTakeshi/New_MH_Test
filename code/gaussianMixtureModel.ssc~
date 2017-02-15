@@ -1,0 +1,93 @@
+// This script runs our MH test and standard MH test on Gaussian Mixture Model
+:load simulator.ssc
+:load cutMHTest.ssc
+:load adaptiveMHTest.ssc
+
+val seed:IMat = loadIMat("seed.imat")
+val seed2:IMat = seed(1) to 100
+saveIMat("seed.imat", seed2)
+
+setseed(seed(0))
+
+class GaussianMixture(n:Int, sigma:Double, pscale:Double) extends MHmodel(2, n, sigma, pscale) {
+
+	val sigma1_sq = 10.0;	
+	val sigma2_sq = 1.0;
+	var sigma_proposer = 0.5;
+	val theta1 = 0.0;
+	val theta2 = 1.0;
+	val u = rand(1,n);
+	val data:DMat = load("gaussianPureData.mat", "data");
+	var temp = 1.0;
+
+	def initfn():Mat = {
+		// Initialize parameters
+		val res = dones(2,1);
+		res(0) = 0.5;
+		res(1) = 0.0;
+		res;
+	};
+
+	def proposalfn(theta:Mat):Mat ={
+		theta +  dnormrnd(0, sigma_proposer, 2, 1);
+	};
+
+	def evalfn(batch:Mat, theta:Mat) : Mat = {
+		val dd1 = batch - theta(0);
+		val dd2 = batch - theta(0) - theta(1);
+		val scale_and_temp = 1.0 * (n/temp);
+		val log_term = ln( exp( -0.5 / (sigma * sigma) * ( dd1 dot dd1) ) + exp( -0.5 / (sigma * sigma) * (dd2 dot dd2) ) );
+		scale_and_temp * log_term;
+	};
+
+};
+
+
+def acceptrate(theta:Mat):Double = {
+	val diff = abs(theta(?,1->(theta.ncols)) - theta(?,0->(theta.ncols-1)));
+	return mean(sum(diff)>0.0).dv;
+};		
+
+
+
+val nsamps = 2
+val n = 1000000
+val sigma = math.sqrt(2)
+val pscale = 1.0
+val batchsize = 100
+val sigma_proposer = 0.15;
+val nn = new GaussianMixture(n = n, sigma = sigma, pscale=pscale);
+
+nn.temp = nn.n/100.0;
+nn.sigma_proposer = sigma_proposer;   
+val newtest = new NewTest;
+newtest.explin = false;
+val oldtest = new OldTest;
+oldtest.explin = true;
+val cutMHtest = new cutMHTest;
+val adaptiveMHtest = new adaptiveMHTest;
+adaptiveMHtest.N = n;
+cutMHtest.N = n;
+cutMHtest.eps = 0.005;
+adaptiveMHtest.gamma = 2.00;
+
+println("Doing Our Test");
+val (samples_our, size_our, lls_our) = dosimm(mod=nn, test=newtest, size=batchsize, nsamps=nsamps, acc = 0.05);
+println("Finished Our Test");
+
+println("Doing cut mh test");
+val (samples_cutmh, size_cutmh, lls_cutmh) = cutMHTest_dosimm(mod=nn, test=cutMHtest, size=batchsize, nsamps=nsamps, acc=0.05);
+println("Finished cut mh test");
+
+println("Doing adaptive (bardenet's ) test")
+val (samples_bard, size_bard, lls_bard) = adaptiveMH_dosimm(mod=nn, test=adaptiveMHtest, size=batchsize, nsamps = nsamps, acc=0.05);
+println("Finished adaptive (bardenet's) test")
+
+val our_size = FMat(size_our)	
+val cutmh_size = FMat(size_cutmh);
+val bard_size = FMat(size_bard);
+
+println("Saving results to gaussiandata.mat");
+
+val name = "/media/xinleipan/DC1A-EA60/github/New_MH_Test/code/" + "gaussiandata" + seed(0).toString + ".mat"
+saveAs(name, samples_our, "newtestsamples", samples_cutmh, "cutmhsamples", samples_bard, "adaptivemhsamples", our_size, "newtestsize", cutmh_size, "cutmhsize", bard_size, "adaptivemhsize", lls_our, "newtestll", lls_cutmh, "cutmhll", lls_bard, "adaptivemhll");
