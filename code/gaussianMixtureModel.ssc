@@ -50,7 +50,7 @@ def acceptrate(theta:Mat):Double = {
 
 
 
-val nsamps = 2
+val nsamps = 3000
 val n = 1000000
 val sigma = math.sqrt(2)
 val pscale = 1.0
