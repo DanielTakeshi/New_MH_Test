@@ -1,4 +1,4 @@
-January 24, 2017
+February 19, 2017
 
 File naming convention for logisic regression:
 
