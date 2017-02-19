@@ -34,10 +34,11 @@
 %
 %   CHECK THE OUTPUT FILE NAMES! Be careful to avoid over-writing stuff.
 
-K = 30;
-D = 20000;
-ratio = 100 / 100000;  % ratio: use 100/100000 for MNIST8M, 100/13000 for MNIST.
-max_tests = 1. / ratio;  % inverse of the ratio
+% ratio: use 100/100000 for MNIST8M, 100/13000 for MNIST.
+ratio = 100 / 13000; 
+K = 20;
+D = 15000;
+max_tests = 1. / ratio;
 assert(K > 0);
 epsilons = [0.001, 0.005, 0.01, 0.05, 0.1, 0.2];
 mu_std_values = linspace(-K, K, D);
@@ -45,7 +46,8 @@ mu_std_values = linspace(-K, K, D);
 for e = 1:length(epsilons)
     result = zeros(D, 3);
     eps = epsilons(e);
-    outfile_name = sprintf('mu_std_K30_D20000_mnist8m_eps%.4f.mat', eps) % CHECK!!
+    % CHECK for mnist, mnist8m, etc., in the file name!
+    outfile_name = sprintf('mu_std_K%d_D%d_mnist_eps%.4f.mat', K, D, eps)
     fprintf('\tRunning tabulate_values using K = %d, D = %d\n', K, D);
     fprintf('\tratio = %f, max_tests = %d, eps = %f\n', ratio, max_tests, eps);
 
@@ -60,7 +62,7 @@ for e = 1:length(epsilons)
          result(i, 3) = mean_j;
     end
 
-    save(outfile_name, 'result');
+    save(outfile_name, 'result', '-v7.3');
 end
 
 fprintf('Done!\n');
