@@ -98,31 +98,146 @@ def cutMHTest_dosimm(mod:MHmodel, test:cutMHTest, size:Int, nsamps:Int, acc:Doub
 };
 
 
-/*
-val nsamps = 10000
-val n = 100000
-val sigma = math.sqrt(2)
-val pscale = 1
-val batchsize = 50
-val sigma_proposer = 0.5;
-val nn = new GaussianMixture(n = n, sigma = sigma, pscale=pscale);
+/**
+ * Helper method for the optimization problem of Korattikara et al, where we
+ * compute the \mu_std value.
+ *
+ * @param mod The MH Test model, which we use to compute \mu_std. Note that we
+ *      need the _full_ batch of data.
+ * @param N the number of training data points total.
+ * @param diff The vector of log proposer - log current terms (same as in other
+ *      code here).
+ * @param ttheta The proposed theta value.
+ * @param mu_0 The current mu_0 value (usually it's (log u)/N for us).
+ * @param mu_std_array The array (well, matrix) of mu_std values.
+ * @return The value mu_std according to their paper.
+ */
+def find_mu_std(mod:MHmodel, N:Int, diff:Mat, mu_0:Float) = {
+    val stdev_l = sqrt( variance(diff) ).dv
+    val mu = sum(diff) / N.dv
+    var mu_std = (((mu - mu_0) * sqrt(N-1.0).dv) / stdev_l).dv.toFloat
+    mu_std
+}
 
 
-nn.temp = 100.0;
-nn.sigma_proposer = sigma_proposer;   // 0.4 is optimal for nsamps = 2000, minibatch size = 200	
-val newtest2 = new cutMHTest;
-newtest2.N = n;
+/**
+ * Helper method for the optimization problem of Korattikara et al, where we
+ * binary-search into the generated matlab matrix. Given a mu_std value, we need
+ * to find the closest mu_value that exists in our matrix. Here, low and high
+ * represent indices, so [mu_std_array(low), ..., mu_std_array(high)]. Note that
+ * we include both low and high in this array range. This _should_ be working;
+ * I tested it on our mu arrays after borrowing from an online implementation.
+ *
+ * @param mu_std The computed mu_std value, our "target" value.
+ * @param mu_std_array The array (well, matrix) of mu_std values.
+ * @return The index `i` into the mu_std_array such that mu_std_array(i) is
+ *      closer to mu_std than any other element in mu_std_array.
+ */
+def find_closest(mu_std:Float, mu_std_array:DMat) = {
+    var low = 0
+    var high = mu_std_array.length - 1
+    var i = -1
+    while (low < high) {
+        i = (low + high) / 2
+        val d1 = math.abs(mu_std_array(i) - mu_std)
+        val d2 = math.abs(mu_std_array(i+1) - mu_std)
+        if (d2 <= d1) { 
+            // closest value to mu_std is in the second half
+            low = i+1
+        } else { 
+            // closest value to mu_std is in the first half
+            high = i
+        }
+    }
+    i
+}
 
-tic; 
-val (samples, sizes, lls) = dosimm(mod= nn, test=newtest2, size=batchsize, nsamps = nsamps, acc = 0.05);
-toc;
 
-val t1 = toc;
+/**
+ * Performs an optimization problem (via search over epsilon values) to
+ * determine which epsilon is the best to use, given a fixed minibatch size of
+ * 100. This isn't exactly what the Korattikara et al paper did, since they also
+ * optimize over m, but it's close enough (and is similar to one of the
+ * strategies they mention). We use a fixed m to make algorithm comparisons
+ * easier.
+ * 
+ * The first step involves sampling \theta_i and \log u values, since these are
+ * needed to approximate the expectations. The second step is to iterate through
+ * epsilons to find the epsilon which results in lowest expected data usage,
+ * _provided_ that the resulting error is bounded by the provided error bound.
+ *
+ * Call this code _before_ we run the simulator! And you should also ensure that
+ * the file names are correct ...
+ *
+ * @param mod The MH Test model, which we use to invoke the proposer since we
+ *      need the correct proposer to get a reasonable \theta_i sample for the
+ *      empirical expectations.
+ * @param test The CutMH test model, so we can get the exact N value.
+ * @param dirStem The directory stem. We will append epsilon values after this
+ *      and then the .mat extension. This will depend on the data we use!
+ * @param K The number of (\theta_i, \theta_i') pairs to use for approximating
+ *      the outer expectation in the objective and the constraints. Don't
+ *      confuse this with test.N, which is the number of \thetas we sample
+ *      during the MCMC algorithm. This is _also_ the number of \log u values to
+ *      sample. This also applies for the inner expectation, even though the
+ *      paper didn't report that.
+ * @param size The batch size we are using.
+ * @param deltaStar The constraint on error, so we check that the error we get
+ *      from the pre-computed MATLAB code is bounded by this. It follows the the
+ *      Korattikara paper notation; it is NOT the Delta used in OUR paper.
+ * @return The best epsilon to use, or throws a runtime exception if no epsilon
+ *      satisfies the constraint.
+ */
+def determine_epsilon(mod:MHmodel, test:cutMHTest, dirStem:String, K:Int, 
+                      size:Int, deltaStar:Float) = {
+    var bestEps = 0.001     // (best) per-test error rate
+    var bestPi = test.N.dv  // (best) average data usage (<= test.N, hopefully <<)
+    var epsilons = row(0.001, 0.005, 0.01, 0.05, 0.1, 0.2)
+    var thetas = zeros(784,K+1)
+    var logus = zeros(1,K+1)
+    
+    thetas(?,0) = FMat(mod.initfn())
+    for (i <- 1 to K) {
+        thetas(?,i) = FMat( mod.proposalfn(thetas(?,i-1)) )
+        logus(i) = 1.0f/test.N * ln(rand(1,1)).v // Note division by N
+    }
 
-scatter(samples(0,?), samples(1,?));
-val size1 = FMat(sizes)
-hist(size1, 50);
+    // Pre-compute the scores to take advantage of vectorization.
+    // size(thetas) = (model_dim, K+1), e.g. model_dim = 784 for MNIST(8M).
+    // size(scores) = (K+1, test.N)
+    // size(diff_matrix) = (K, test.N) // Has "proposer minus current" pairs
+    val scores = mod.evalfn(mod.data, thetas)
+    val diff_matrix = scores(1 -> (K+1), ?) - scores(0 -> K, ?)
 
-val accept = acceptrate(samples)
-println("accept rate is %f" format(accept));
-*/
+    for (i <- 0 until epsilons.length) {
+        val epsStr = "%.4f" format epsilons(i)
+        val matlab:DMat = load(dirStem + epsStr + ".mat", "result")
+        val mu_std_array = matlab(?, 0)
+        val errors_array = matlab(?, 1)
+        val pis_array = matlab(?, 2) // Expected _iterations_, not data!
+
+        var expectedPi = 0.0
+        var expectedDelta = 0.0
+        for (j <- 1 to K) {
+            val mu_std = find_mu_std(mod, test.N, diff_matrix(j-1,?), logus(j))
+            val mu_std_index = find_closest(mu_std, mu_std_array)
+            expectedPi += (pis_array(mu_std_index) * size)
+            expectedDelta += math.abs(errors_array(mu_std_index))
+        }
+        expectedPi /= K
+        expectedDelta /= K
+
+        println("\ndone with eps = " + epsilons(i))
+        println("expectedPi = " + expectedPi)
+        println("expectedDelta = " + expectedDelta)
+
+        if (expectedDelta < deltaStar && expectedPi < bestPi) {
+            bestEps = epsilons(i)
+            bestPi = expectedPi
+        }
+
+        println("bestEps = " + bestEps)
+        println("bestPi = " + bestPi)
+    }
+    bestEps
+}
