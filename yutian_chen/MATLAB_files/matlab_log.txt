@@ -1,0 +1,168 @@
+
+# Daniel: here are the two matrices in my directory, also on github
+These ONLY have mu_std = 0.
+
+>> ls
+mu_std_K10_D1_mnist8m.mat  mu_std_K10_D1_mnist.mat
+
+
+
+
+# Now let's load in the data from the MNIST version with 13000 training data points.
+There is only one mu_std, hence result's first dimension is just size 1. The second
+dimension is 6 because I tested with (in order):
+
+epsilons = [0.001, 0.005, 0.01, 0.05, 0.1, 0.2];
+
+The third dimension is 10 because I tested with (in order):
+
+sizes = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500];
+
+Thus, if I call
+
+table1.result(1,1,1,:)
+
+That will give me the mu_std, the error, and the mean_j corresponding to the first
+index of mu_std, the first index of epsilons (i.e. eps=0.001) and the first index
+of sizes (i.e. sizes=50). You can see that mean_j is about 251 here, hence we need
+roughly that amount of minibatches (and thus, 251*50 data points, which is almost 
+the full data) before we make a decision. Here the error is 0.0313. Thus roughly 3
+percent of the time, we will make a decision that differs from what the full batch
+version would have made (i.e. rejecting when the full batch would have accepted, or
+vice versa).
+
+Let's do the same thing, but with the minibatch index set at 10, thus the MB size 
+is 500. We see now that the number mean_j reduces by 10 to 25, which makes sense
+since that gives us roughly the same amoutn of data.
+
+Increasing epsilon to 0.2 (with mb size of 50) means we only need to use 6.1591
+minibatches per iteration. Unfortunately, we get an error of 0.5, bleh!
+
+
+
+
+>> table1 = load('mu_std_K10_D1_mnist.mat')
+
+table1 = 
+
+  struct with fields:
+
+    result: [1×6×10×3 double]
+
+>> table1.result(1,1,1,:)
+
+ans(:,:,1,1) =
+
+     0
+
+
+ans(:,:,1,2) =
+
+    0.0313
+
+
+ans(:,:,1,3) =
+
+  251.3457
+
+>> table1.result(1,1,10,:)
+
+ans(:,:,1,1) =
+
+     0
+
+
+ans(:,:,1,2) =
+
+    0.0128
+
+
+ans(:,:,1,3) =
+
+   25.6478
+
+>> table1.result(1,6,1,:) 
+
+ans(:,:,1,1) =
+
+     0
+
+
+ans(:,:,1,2) =
+
+    0.5000
+
+
+ans(:,:,1,3) =
+
+    6.1591
+
+
+
+
+
+
+
+
+# Same as before, except this time it's for preparation of the MNIST8M data,
+with 100k points. We see similar stuff as earlier, mostly with the need to
+use more data points.
+
+>> table2 = load('mu_std_K10_D1_mnist8m.mat')
+
+table2 = 
+
+  struct with fields:
+
+    result: [1×6×10×3 double]
+
+>> table2.result(1,1,1,:)                    
+
+ans(:,:,1,1) =
+
+     0
+
+
+ans(:,:,1,2) =
+
+    0.0501
+
+
+ans(:,:,1,3) =
+
+   1.8934e+03
+
+>> table2.result(1,1,10,:)
+
+ans(:,:,1,1) =
+
+     0
+
+
+ans(:,:,1,2) =
+
+    0.0290
+
+
+ans(:,:,1,3) =
+
+  193.8219
+
+>> table2.result(1,6,1,:) 
+
+ans(:,:,1,1) =
+
+     0
+
+
+ans(:,:,1,2) =
+
+    0.5000
+
+
+ans(:,:,1,3) =
+
+    7.3517
+
+>> 
+
