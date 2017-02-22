@@ -28,8 +28,8 @@
 // -------------------------------- //
 
 // IMPORTANT STUFF! AT LEAST CHECK THESE EVERY TIME YOU RUN SOMETHING!
-val nsamps = 3000           // The number of \theta values to sample (i.e., number of iterations).
-val test_to_use = "kora"    // Three options: "ours", "kora", or "bard". Use one of these.
+val nsamps = 5000           // The number of \theta values to sample (i.e., number of iterations).
+val test_to_use = "bard"    // Three options: "ours", "kora", or "bard". Use one of these.
 val ntrain = 13000          // Number of training data (affects output name).
 val temperature = 100.0     // This was 1000.0 for the previous MNIST (not 8M) experiment.
 val batchsize = 100         // I'm also experimenting with changing minibatch sizes.
@@ -135,7 +135,7 @@ class LogisticRegression(n:Int, sigma:Double, pscale: Double) extends MHmodel (1
  */
 def eval_cost(X:DMat, Y:DMat, theta:DMat): (DMat, DMat) = {
     val z = Y *@ (theta.t * X);
-    val sig = 1.0/ (1.0 + exp(-1.0 * z));
+    val sig = DMat(max( 1/(1 + exp(-1.0 * z)) , 1e-20)) // Numerically robust
     var accuracy = dzeros(sig.dims(0),1);
     var ll = dzeros(sig.dims(0),1);
     for (i<- 0 until sig.dims(0)) {
@@ -212,7 +212,7 @@ def run_experiment(exp:String, nn:LogisticRegression) = {
         val (accuracy, ll_test) = eval_cost(X, Y, samples)
         val cum_size = cumsum(DMat(mb_size))
 
-        saveAs("testLR_bard_" +ntrain+ "_" +nsamps+ "_" +temperature+ ".mat", 
+        saveAs("lr_mnist_bard_" +ntrain+ "_" +nsamps+ "_" +temperature.toInt+ ".mat", 
                  samples,       "samples_bard", 
                  cum_size,      "cum_size_bard",
                  DMat(mb_size), "mb_size_bard",

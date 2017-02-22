@@ -1,4 +1,10 @@
 // This script implements the Bardenet's 2014 ICML Paper
+// Daniel's note: this is really annoying. I had to set the seed OUT HERE in
+// order for things to change ...
+val seed = 14
+println("\n\tin adaptivemh sim with seed = " +seed+ ".\n")
+setseed(seed)
+
 
 def std(A:DMat):Double = {
     val a = (mean(A *@ A) - mean(A) * mean(A)).dv
@@ -59,7 +65,6 @@ def adaptiveMH_dostep(mod:MHmodel, test:adaptiveMHTest, data:Mat, size:Int, here
     test.N = data.ncols;
     val psi = 1.0/test.N * ln(rand(1,1)).dv;
 
-    //println("inside adaptiveMH_dostep, size=" +size+ ", now starting while loop...")
     while(!done) {
     	val temp_step = b.toInt;
     	step = temp_step;
@@ -93,7 +98,6 @@ def adaptiveMH_dostep(mod:MHmodel, test:adaptiveMHTest, data:Mat, size:Int, here
 		}
 		istep += 1;
    	}
-    //println("finished with adaptiveMH_dostep, \'there\'="+there+".")
     (there, ntheta, mean(ll).dv/(test.N * 1.0));
 };
 
