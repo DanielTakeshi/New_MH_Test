@@ -803,22 +803,64 @@ they all consume linear time in data consumed.
 % the positioning if needed.
 \begin{figure*}[t]
 	\centering
-	\includegraphics[width=0.9\linewidth]{logistic_regression_ll_acc_results.png}
+	\includegraphics[width=1.0\linewidth]{logistic_regression_error_regions.png}
 	\caption{
-    Logistic regression performance (accuracy/log likelihood) based on
-    cumulative data usage.
+    TODO
     }
 	\label{fig:logistic_performance}
 \end{figure*}
+
 \begin{figure*}[t]
 	\centering
-	\includegraphics[width=0.9\linewidth]{logistic_regression_histograms_results.png}
+    \includegraphics[width=0.75\linewidth]{logistic_regression_histograms_mnist.png}
 	\caption{
-    Counts of minibatch sizes in the logistic regression experiment (analogous
-    to Figure~\ref{fig:gauss_mix_2}).
+    Minibatch sizes used for one representative trial in
+    Section~\ref{ssec:logistic} using MNIST-13k (analogous to
+    Figure~\ref{fig:gauss_mix_2}).
     }
-	\label{fig:logistic_minibatch}
+	\label{fig:logistic_histograms_mnist}
 \end{figure*}
+
+\begin{figure*}[t]
+	\centering
+    \includegraphics[width=0.75\linewidth]{logistic_regression_histograms_mnist8m.png}
+	\caption{
+    Minibatch sizes used for one representative trial in
+    Section~\ref{ssec:logistic} using MNIST8M-100k (similar to
+    Figure~\ref{fig:logistic_histograms_mnist}).
+    }
+	\label{fig:logistic_histograms_mnist8m}
+\end{figure*}
+
+\begin{table}[t]
+\caption{Log. Regression Average Minibatch Size (10 Trials)}
+\label{tab:logistic}
+\vskip 0.15in
+\begin{center}
+\begin{small}
+\begin{sc}
+\begin{tabular}{l l l l}
+\hline
+\abovespace\belowspace
+Method/Data & MNIST-13k & MNIST8M-100k  \\
+\hline
+\abovespace
+Our Method & $129.8\pm 3.4$ & \textbf{TODO} \\
+AustereMH  & \textbf{TODO} & \textbf{TODO} \\
+\belowspace
+MHSubLhd   & $10752.8\pm 92.9$ & \textbf{TODO} \\
+\hline
+\end{tabular}
+\end{sc}
+\end{small}
+\end{center}
+\vskip -0.1in
+\end{table}
+
+\textbf{Daniel: TODO this section is badly out of date but I will re-write it
+and it should be much better than what we had earlier. Also, define a trial
+since I say it in the table and figures. Finally, define AustereMH and MHSubLhd,
+and come up with a name for our method.}
 
 We next test logistic regression for the binary classification of 1s versus 7s
 on a subset of the MNIST8M dataset, a larger version of
@@ -852,6 +894,7 @@ three methods on a log-log scale. With an initial size of 100, we achieve an
 average minibatch size of 393, more than two orders of magnitude smaller
 than~\cite{icml2014c1_bardenet14}, and almost an order of magnitude faster than
 the undiscounted implementation of~\cite{cutting_mh_2014}.
+
 
 
 
