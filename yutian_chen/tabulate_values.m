@@ -32,29 +32,29 @@
 %   CHECK THE OUTPUT FILE NAMES! Be careful to avoid over-writing stuff.
 
 % number_total_data: use 100000 for MNIST8M, 13000 for MNIST. Change file name!!
-number_total_data = 13000;
+number_total_data = 100000;
 K = 10;
 epsilons = [0.001, 0.005, 0.01, 0.05, 0.1, 0.2];
-sizes = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500];
+sizes = [100, 200, 300, 400, 500];
 
 % If running for all mu_std values, set this to 0. Else, 1. This is mainly in
 % case I want to try finer-grained sizes and/or epsilons for the single mu_std=0
 % case. Otherwise with all the mu_std's, we can't afford to have too many
 % epsilon and size options for computational reasons.
-do_only_one = 1;
+do_only_one = 0;
 
 if do_only_one == 1
     D = 1;
     mu_std_values = [0];
     result = zeros(1, length(epsilons), length(sizes), 3);
 else 
-    D = 5000;
+    D = 4000;
     mu_std_values = linspace(-K, K, D);
     result = zeros(D, length(epsilons), length(sizes), 3);
 end
 
 % CHANGE FILE NAME IF NEEDED!!
-outfile_name = sprintf('mu_std_K%d_D%d_mnist.mat', K, D)
+outfile_name = sprintf('mu_std_K%d_D%d_mnist8m.mat', K, D)
 
 fprintf('\tRunning tabulate_values using K = %d, D = %d\n', K, D);
 for e = 1:length(epsilons)
