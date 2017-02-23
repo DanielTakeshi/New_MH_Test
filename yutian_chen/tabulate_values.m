@@ -34,19 +34,20 @@
 % number_total_data: use 100000 for MNIST8M, 13000 for MNIST. Change file name!!
 number_total_data = 100000;
 K = 10;
+sizes = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500];
 epsilons = [0.001, 0.005, 0.01, 0.05, 0.1, 0.2];
-sizes = [100, 200, 300, 400, 500];
 
 % If running for all mu_std values, set this to 0. Else, 1. This is mainly in
 % case I want to try finer-grained sizes and/or epsilons for the single mu_std=0
 % case. Otherwise with all the mu_std's, we can't afford to have too many
 % epsilon and size options for computational reasons.
-do_only_one = 0;
+do_only_one = 1;
 
 if do_only_one == 1
     D = 1;
     mu_std_values = [0];
-    result = zeros(1, length(epsilons), length(sizes), 3);
+    result_error = zeros(length(epsilons), length(sizes));
+    result_meanj = zeros(length(epsilons), length(sizes));
 else 
     D = 4000;
     mu_std_values = linspace(-K, K, D);
@@ -57,29 +58,34 @@ end
 outfile_name = sprintf('mu_std_K%d_D%d_mnist8m.mat', K, D)
 
 fprintf('\tRunning tabulate_values using K = %d, D = %d\n', K, D);
-for e = 1:length(epsilons)
-    eps = epsilons(e);
-
-    for j = 1:length(sizes)
-        m = sizes(j);
-
-        ratio = m / number_total_data; 
-        max_tests = ceil(1. / ratio);
-        fprintf('ratio = %f, max_tests = %d, eps = %f, m = %d\n', ...
-            ratio, max_tests, eps, m);
-
-        for i = 1:length(mu_std_values)
-            if mod(i,100) == 0
-                fprintf('i = %d, mu_std = %f\n', i, mu_std_values(i));
-            end
+for i = 1:length(mu_std_values)
+    if mod(i,100) == 0
+        fprintf('i = %d, mu_std = %f\n', i, mu_std_values(i));
+    end
+    for e = 1:length(epsilons)
+        eps = epsilons(e);
+        for j = 1:length(sizes)
+            m = sizes(j);
+            ratio = m / number_total_data; 
+            max_tests = ceil(1. / ratio);
             [err, mean_j, p_pos, p_neg, p_j] = seq_test_dynprog(mu_std_values(i), ...
                 ratio, max_tests, norminv(1 - eps));
-            result(i, e, j, 1) = mu_std_values(i);
-            result(i, e, j, 2) = err;
-            result(i, e, j, 3) = mean_j;
+            if do_only_one == 1
+                result_error(e, j) = err;
+                result_meanj(e, j) = mean_j;
+            else
+                result(i, e, j, 1) = mu_std_values(i);
+                result(i, e, j, 2) = err;
+                result(i, e, j, 3) = mean_j;
+            end
         end
     end
 end
-save(outfile_name, 'result', '-v7.3');
+
+if do_only_one == 1
+    save(outfile_name, 'result_error', 'result_meanj', '-v7.3');
+else
+    save(outfile_name, 'result', '-v7.3');
+end
 
 fprintf('Done!\n');
