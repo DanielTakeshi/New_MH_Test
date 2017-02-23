@@ -29,12 +29,13 @@
 
 // IMPORTANT STUFF! AT LEAST CHECK THESE EVERY TIME YOU RUN SOMETHING!
 val nsamps = 5000           // The number of \theta values to sample (i.e., number of iterations).
-val test_to_use = "bard"    // Three options: "ours", "kora", or "bard". Use one of these.
+val test_to_use = "kora"    // Three options: "ours", "kora", or "bard". Use one of these.
 val ntrain = 13000          // Number of training data (affects output name).
 val temperature = 100.0     // This was 1000.0 for the previous MNIST (not 8M) experiment.
-val batchsize = 100         // I'm also experimenting with changing minibatch sizes.
+var batchsize = 100         // I'm also experimenting with changing minibatch sizes.
 val adapt_gamma = 2.00      // The gamma value for the adaptive MH test.
 val sigma_proposer = 0.05   // The step size for the proposal.
+val conservative = true     // For Korattikara.
 
 /* 
  * Change the data path! This is for Daniel's personal machine:
@@ -159,8 +160,11 @@ def run_experiment(exp:String, nn:LogisticRegression) = {
 
     // TEST #1: OUR METHOD ("ours")
     if (exp == "ours") {
-
-        val (samples, mb_size, ll_train) = dosimm(mod=nn, test=newtest, size=batchsize, nsamps=nsamps, acc=0.05)
+        val (samples, mb_size, ll_train) = dosimm(mod=nn, 
+                    test=newtest, 
+                    size=batchsize, 
+                    nsamps=nsamps, 
+                    acc=0.05)
         val testdata = loadFMat(test_data_dir)
         val X = testdata(0 until testdata.dims(0)-1, ?)
         var Y = testdata(testdata.dims(0)-1, ?)
@@ -176,19 +180,24 @@ def run_experiment(exp:String, nn:LogisticRegression) = {
     }
     // TEST #2: KORATTIKARA ("kora")
     else if (exp == "kora") {
-
         // NEW! We will now be running some grid search first.
         println("default epsilon for cutmh is = " + cutMHtest.eps)
-        cutMHtest.eps = determine_epsilon(mod=nn,
-                                          test=cutMHtest,
-                                          dirStem="../yutian_chen/MATLAB_files/mu_std_K20_D15000_mnist_eps",
-                                          K=200,
-                                          size=batchsize,
-                                          deltaStar=0.5f)
+        if (conservative) {
+            val (ep,mb) = get_conservative_mb_eps(mod=nn,
+                test=cutMHtest,
+                path="../yutian_chen/MATLAB_files/mu_std_K10_D1_mnist.mat",
+                deltaStar=0.1f) 
+            cutMHtest.eps = ep
+            batchsize = mb
+        }
         println("chosen epsilon = " + cutMHtest.eps)
-        sys.exit // debugging for now
+        println("chosen size = " + batchsize)
 
-        val (samples, mb_size, ll_train) = cutMHTest_dosimm(mod=nn, test=cutMHtest, size=batchsize, nsamps=nsamps, acc=0.05)
+        val (samples, mb_size, ll_train) = cutMHTest_dosimm(mod=nn, 
+                    test=cutMHtest, 
+                    size=batchsize, 
+                    nsamps=nsamps, 
+                    acc=0.05)
         val testdata = loadFMat(test_data_dir)
         val X = testdata(0 until testdata.dims(0)-1, ?)
         var Y = testdata(testdata.dims(0)-1, ?)
@@ -204,8 +213,11 @@ def run_experiment(exp:String, nn:LogisticRegression) = {
     }
     // TEST #3: BARDENET ("bard")
     else if (exp == "bard") {
-
-        val (samples, mb_size, ll_train) = adaptiveMH_dosimm(mod=nn, test=adaptiveMHtest, size=batchsize, nsamps=nsamps, acc=0.05)
+        val (samples, mb_size, ll_train) = adaptiveMH_dosimm(mod=nn, 
+                 test=adaptiveMHtest, 
+                 size=batchsize, 
+                 nsamps=nsamps, 
+                 acc=0.05)
         val testdata = loadFMat(test_data_dir)
         val X = testdata(0 until testdata.dims(0)-1, ?)
         var Y = testdata(testdata.dims(0)-1, ?)

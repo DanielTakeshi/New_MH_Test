@@ -1,6 +1,11 @@
 :load simulator.ssc
 import org.apache.commons.math3.distribution._
 
+val seed = 00
+println("\n\tin CUTTING-MH with seed = " +seed+ ".\n")
+setseed(seed)
+
+
 class cutMHTest{
 	var N = 100000;  // number of data points
 	var eps = 0.005; // error bound
@@ -154,90 +159,58 @@ def find_closest(mu_std:Float, mu_std_array:DMat) = {
 
 
 /**
- * Performs an optimization problem (via search over epsilon values) to
- * determine which epsilon is the best to use, given a fixed minibatch size of
- * 100. This isn't exactly what the Korattikara et al paper did, since they also
- * optimize over m, but it's close enough (and is similar to one of the
- * strategies they mention). We use a fixed m to make algorithm comparisons
- * easier.
+ * Performs an optimization problem via grid search over (epsilon,minibatch)
+ * size values to determine which epsilon to use. This is their "conservative"
+ * strategy, which automatically assumes \mu_std = 0. See Equation 8 in their
+ * paper. This can be done entirely before we start collecting samples of
+ * \theta. Once we set a desired error rate (via deltaStar) there is nothing
+ * else for us to check so we can use that same minibatch size and epsilon for
+ * each iteration, where "iteration" here is defined as the process of deciding
+ * one accept or reject decision.
  * 
- * The first step involves sampling \theta_i and \log u values, since these are
- * needed to approximate the expectations. The second step is to iterate through
- * epsilons to find the epsilon which results in lowest expected data usage,
- * _provided_ that the resulting error is bounded by the provided error bound.
- *
  * Call this code _before_ we run the simulator! And you should also ensure that
- * the file names are correct ...
+ * all relevant file names are correct ...
  *
  * @param mod The MH Test model, which we use to invoke the proposer since we
  *      need the correct proposer to get a reasonable \theta_i sample for the
  *      empirical expectations.
- * @param test The CutMH test model, so we can get the exact N value.
- * @param dirStem The directory stem. We will append epsilon values after this
- *      and then the .mat extension. This will depend on the data we use!
- * @param K The number of (\theta_i, \theta_i') pairs to use for approximating
- *      the outer expectation in the objective and the constraints. Don't
- *      confuse this with test.N, which is the number of \thetas we sample
- *      during the MCMC algorithm. This is _also_ the number of \log u values to
- *      sample. This also applies for the inner expectation, even though the
- *      paper didn't report that.
- * @param size The batch size we are using.
+ * @param test The CutMH test model, e.g., so we can get the exact N value.
+ * @param path The path to the MATLAB file we need.
  * @param deltaStar The constraint on error, so we check that the error we get
  *      from the pre-computed MATLAB code is bounded by this. It follows the the
  *      Korattikara paper notation; it is NOT the Delta used in OUR paper.
- * @return The best epsilon to use, or throws a runtime exception if no epsilon
- *      satisfies the constraint.
+ * @return The best (epsilon,minibatch) pairing to use.
  */
-def determine_epsilon(mod:MHmodel, test:cutMHTest, dirStem:String, K:Int, 
-                      size:Int, deltaStar:Float) = {
-    var bestEps = 0.001     // (best) per-test error rate
-    var bestPi = test.N.dv  // (best) average data usage (<= test.N, hopefully <<)
+def get_conservative_mb_eps(mod:MHmodel, test:cutMHTest, path:String, deltaStar:Float) = {
+    // I used these for the conservative case, forming a (6,10) matrix.
     var epsilons = row(0.001, 0.005, 0.01, 0.05, 0.1, 0.2)
-    var thetas = zeros(784,K+1)
-    var logus = zeros(1,K+1)
-    
-    thetas(?,0) = FMat(mod.initfn())
-    for (i <- 1 to K) {
-        thetas(?,i) = FMat( mod.proposalfn(thetas(?,i-1)) )
-        logus(i) = 1.0f/test.N * ln(rand(1,1)).v // Note division by N
+    var sizes = irow(50, 100, 150, 200, 250, 300, 350, 400, 450, 500)
+    var bestEps = epsilons(0)
+    var bestSize = sizes(0)
+    var bestDataUsage = test.N.dv  
+
+    val mat_error:DMat = load(path, "result_error")
+    val mat_meanj:DMat = load(path, "result_meanj")
+    if (mat_error.nrows != epsilons.length || mat_meanj.nrows != epsilons.length) {
+        throw new RuntimeException("Error in number of epsilons.")
+    }
+    if (mat_error.ncols != sizes.length || mat_meanj.ncols != sizes.length) {
+        throw new RuntimeException("Error in number of sizes.")
     }
 
-    // Pre-compute the scores to take advantage of vectorization.
-    // size(thetas) = (model_dim, K+1), e.g. model_dim = 784 for MNIST(8M).
-    // size(scores) = (K+1, test.N)
-    // size(diff_matrix) = (K, test.N) // Has "proposer minus current" pairs
-    val scores = mod.evalfn(mod.data, thetas)
-    val diff_matrix = scores(1 -> (K+1), ?) - scores(0 -> K, ?)
-
-    for (i <- 0 until epsilons.length) {
-        val epsStr = "%.4f" format epsilons(i)
-        val matlab:DMat = load(dirStem + epsStr + ".mat", "result")
-        val mu_std_array = matlab(?, 0)
-        val errors_array = matlab(?, 1)
-        val pis_array = matlab(?, 2) // Expected _iterations_, not data!
-
-        var expectedPi = 0.0
-        var expectedDelta = 0.0
-        for (j <- 1 to K) {
-            val mu_std = find_mu_std(mod, test.N, diff_matrix(j-1,?), logus(j))
-            val mu_std_index = find_closest(mu_std, mu_std_array)
-            expectedPi += (pis_array(mu_std_index) * size)
-            expectedDelta += math.abs(errors_array(mu_std_index))
+    for (e <- 0 until epsilons.length) {
+        for (m <- 0 until sizes.length) {
+            val dataUsage = mat_meanj(e,m) * sizes(m)
+            if (dataUsage < bestDataUsage && mat_error(e,m) < deltaStar) {
+                bestDataUsage = dataUsage
+                bestEps = epsilons(e)
+                bestSize = sizes(m)
+            }
         }
-        expectedPi /= K
-        expectedDelta /= K
-
-        println("\ndone with eps = " + epsilons(i))
-        println("expectedPi = " + expectedPi)
-        println("expectedDelta = " + expectedDelta)
-
-        if (expectedDelta < deltaStar && expectedPi < bestPi) {
-            bestEps = epsilons(i)
-            bestPi = expectedPi
-        }
-
-        println("bestEps = " + bestEps)
-        println("bestPi = " + bestPi)
     }
-    bestEps
+
+    if (bestDataUsage == test.N.dv) {
+        throw new RuntimeException("bestDataUsage is still at " +test.N.dv)
+    }
+    (bestEps, bestSize)
 }

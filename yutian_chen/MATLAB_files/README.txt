@@ -30,6 +30,8 @@ b: BIDMat.DMat =
   37.260  25.563  20.425  17.358  15.287  13.815 12.660  11.693  10.876  10.205
   6.1591  5.6047  5.2510  4.9892  4.7812  4.6096 4.4629  4.3340  4.2188  4.1158
 
+Here, the rows represent epsilons, going from 0.001 at the top row to 0.2 at the
+bottom. The sizes are similar except they're across columns.
 
 
 The others with "D4000" in them are for the slower test which has to recompute
