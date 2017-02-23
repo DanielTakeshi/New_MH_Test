@@ -31,13 +31,13 @@
 // IMPORTANT STUFF! AT LEAST CHECK THESE EVERY TIME YOU RUN SOMETHING!
 val nsamps = 5000           // The number of \theta values to sample (i.e., number of iterations).
 val test_to_use = "kora"    // Three options: "ours", "kora", or "bard". Use one of these.
-val ntrain = 13000          // Number of training data (affects output name).
+val ntrain = 100000         // Number of training data (affects output name).
 val temperature = 100.0     // This was 1000.0 for the previous MNIST (not 8M) experiment.
 var batchsize = 100         // I'm also experimenting with changing minibatch sizes.
 val adapt_gamma = 2.00      // The gamma value for the adaptive MH test.
 val sigma_proposer = 0.05   // The step size for the proposal.
 val conservative = true     // For Korattikara's test.
-val deltaStar = 0.10f       // Upper bound on \mathcal{E} (I think) in Korattikara paper.
+val deltaStar = 0.20f       // Upper bound on \mathcal{E} (I think) in Korattikara paper.
 
 /* 
  * Change the data path! This is for Daniel's personal machine:
@@ -45,7 +45,7 @@ val deltaStar = 0.10f       // Upper bound on \mathcal{E} (I think) in Korattika
  * Training MNIST8M, use: "/data/MNIST8M/MNIST8M_XandY_train_1_7_shuf_100k.fmat.lz4"
  */
 
-val train_data_dir = "/data/MNIST/MNIST_XandY_train_1_7_shuf.fmat.lz4"
+val train_data_dir = "/data/MNIST8M/MNIST8M_XandY_train_1_7_shuf_100k.fmat.lz4"
 val test_data_dir  = "/data/MNIST/MNIST_XandY_test_1_7_shuf.fmat.lz4"
 
 // Create the different tests we will be using.
@@ -187,7 +187,7 @@ def run_experiment(exp:String, nn:LogisticRegression) = {
         if (conservative) {
             val (ep,mb) = get_conservative_mb_eps(mod=nn,
                 test=cutMHtest,
-                path="../yutian_chen/MATLAB_files/mu_std_K10_D1_mnist.mat",
+                path="../yutian_chen/MATLAB_files/mu_std_K10_D1_mnist8m.mat",
                 deltaStar=deltaStar) 
             cutMHtest.eps = ep
             batchsize = mb
@@ -206,7 +206,7 @@ def run_experiment(exp:String, nn:LogisticRegression) = {
         val (accuracy, ll_test) = eval_cost(X, Y, samples)
         val cum_size = cumsum(DMat(mb_size))
 
-        saveAs("lr_mnist_kora_" +ntrain+ "_" +nsamps+ "_" +temperature.toInt+ "_" +thisSeed+ ".mat", 
+        saveAs("lr_mnist8m_kora_" +ntrain+ "_" +nsamps+ "_" +temperature.toInt+ "_" +thisSeed+ ".mat", 
                     samples,       "samples_kora", 
                     cum_size,      "cum_size_kora",
                     DMat(mb_size), "mb_size_kora",
