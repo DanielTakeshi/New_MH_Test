@@ -1,0 +1,42 @@
+:load logisticRegressionModel.ssc
+:reset
+
+:load /home/daniel/BIDMach/lib/bidmach_init.scala
+:load logisticRegressionModel.ssc
+:reset
+
+:load /home/daniel/BIDMach/lib/bidmach_init.scala
+:load logisticRegressionModel.ssc
+:reset
+
+:load /home/daniel/BIDMach/lib/bidmach_init.scala
+:load logisticRegressionModel.ssc
+:reset
+
+:load /home/daniel/BIDMach/lib/bidmach_init.scala
+:load logisticRegressionModel.ssc
+:reset
+
+:load /home/daniel/BIDMach/lib/bidmach_init.scala
+:load logisticRegressionModel.ssc
+:reset
+
+:load /home/daniel/BIDMach/lib/bidmach_init.scala
+:load logisticRegressionModel.ssc
+:reset
+
+:load /home/daniel/BIDMach/lib/bidmach_init.scala
+:load logisticRegressionModel.ssc
+:reset
+
+:load /home/daniel/BIDMach/lib/bidmach_init.scala
+:load logisticRegressionModel.ssc
+:reset
+
+:load /home/daniel/BIDMach/lib/bidmach_init.scala
+:load logisticRegressionModel.ssc
+:reset
+
+// Reset after each time
+:load /home/daniel/BIDMach/lib/bidmach_init.scala
+saveIMat("seed_lr.imat", IMat(0 to 100))

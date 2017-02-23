@@ -1,9 +1,12 @@
 :load simulator.ssc
 import org.apache.commons.math3.distribution._
 
-val seed = 00
-println("\n\tin CUTTING-MH with seed = " +seed+ ".\n")
-setseed(seed)
+val seed:IMat = loadIMat("seed_lr.imat")
+val seed2:IMat = seed(1) to 100
+saveIMat("seed_lr.imat", seed2)
+val thisSeed = seed(0)
+println("\n\tin CUTTING-MH with seed = " +thisSeed+ ".\n")
+setseed(thisSeed)
 
 
 class cutMHTest{
@@ -70,7 +73,8 @@ def cutMHTest_dostep(mod:MHmodel, test:cutMHTest, data:Mat, size:Int, here:Int, 
 }
 
 
-def cutMHTest_dosimm(mod:MHmodel, test:cutMHTest, size:Int, nsamps:Int, acc:Double):(DMat,LMat,DMat) = {
+def cutMHTest_dosimm(mod:MHmodel, test:cutMHTest, size:Int, 
+                     nsamps:Int, acc:Double):(DMat,LMat,DMat,Int) = {
     var theta = mod.initfn();
     val samples = dzeros(theta.length, nsamps);
     val sizes = lzeros(1, nsamps);
@@ -99,7 +103,7 @@ def cutMHTest_dosimm(mod:MHmodel, test:cutMHTest, size:Int, nsamps:Int, acc:Doub
 		i += 1;
     }
     println("")
-    (samples, sizes, lls);
+    (samples, sizes, lls, thisSeed);
 };
 
 

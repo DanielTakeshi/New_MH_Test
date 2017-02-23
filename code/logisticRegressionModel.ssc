@@ -3,6 +3,7 @@
 :load cutMHTest.ssc
 :load adaptiveMHTest.ssc
 
+
 /**
  * Code for running Logistic Regression results. Make sure you check all of the
  * important parameters at the start, including the path to the training and
@@ -35,7 +36,8 @@ val temperature = 100.0     // This was 1000.0 for the previous MNIST (not 8M) e
 var batchsize = 100         // I'm also experimenting with changing minibatch sizes.
 val adapt_gamma = 2.00      // The gamma value for the adaptive MH test.
 val sigma_proposer = 0.05   // The step size for the proposal.
-val conservative = true     // For Korattikara.
+val conservative = true     // For Korattikara's test.
+val deltaStar = 0.10f       // Upper bound on \mathcal{E} (I think) in Korattikara paper.
 
 /* 
  * Change the data path! This is for Daniel's personal machine:
@@ -186,14 +188,14 @@ def run_experiment(exp:String, nn:LogisticRegression) = {
             val (ep,mb) = get_conservative_mb_eps(mod=nn,
                 test=cutMHtest,
                 path="../yutian_chen/MATLAB_files/mu_std_K10_D1_mnist.mat",
-                deltaStar=0.1f) 
+                deltaStar=deltaStar) 
             cutMHtest.eps = ep
             batchsize = mb
         }
         println("chosen epsilon = " + cutMHtest.eps)
         println("chosen size = " + batchsize)
 
-        val (samples, mb_size, ll_train) = cutMHTest_dosimm(mod=nn, 
+        val (samples, mb_size, ll_train, thisSeed) = cutMHTest_dosimm(mod=nn, 
                     test=cutMHtest, 
                     size=batchsize, 
                     nsamps=nsamps, 
@@ -204,7 +206,7 @@ def run_experiment(exp:String, nn:LogisticRegression) = {
         val (accuracy, ll_test) = eval_cost(X, Y, samples)
         val cum_size = cumsum(DMat(mb_size))
 
-        saveAs("testLR_kora_" +ntrain+ "_" +nsamps+ "_" +temperature+ ".mat", 
+        saveAs("lr_mnist_kora_" +ntrain+ "_" +nsamps+ "_" +temperature.toInt+ "_" +thisSeed+ ".mat", 
                     samples,       "samples_kora", 
                     cum_size,      "cum_size_kora",
                     DMat(mb_size), "mb_size_kora",
