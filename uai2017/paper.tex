@@ -1,8 +1,9 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%% ICML 2017 EXAMPLE LATEX SUBMISSION FILE %%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Sample LaTeX file for creating a paper in the Morgan Kaufmannn two
+% column, 8 1/2 by 11 inch proceedings format.
 
-\documentclass{article}
+\documentclass[letterpaper]{article}
+\usepackage{proceed2e}
+\usepackage[margin=1in]{geometry}
 \usepackage{times,graphicx,subfigure,natbib,algorithm,algorithmic,hyperref}
 \usepackage{amsmath,amsthm,amssymb,enumitem,verbatim}
 % Packages hyperref and algorithmic misbehave sometimes.  We can fix
@@ -16,68 +17,46 @@
 \newtheorem{corollary}{Corollary}
 \graphicspath{{figures/}{../figures/}}
 
-% Employ the following version of the ``usepackage'' statement for
-% submitting the draft version of the paper for review.  This will set
-% the note in the first column to ``Under review.  Do not distribute.''
-\usepackage{icml2017} 
 
-% Employ this version of the ``usepackage'' statement after the paper has
-% been accepted, when creating the final version.  This will set the
-% note in the first column to ``Proceedings of the...''
-%\usepackage[accepted]{icml2017}
+\title{An Efficient Minibatch Acceptance Test for Metropolis-Hastings}
 
-% The \icmltitle you define below is probably too long as a header.
-% Therefore, a short form for the running title is supplied here:
-\icmltitlerunning{Submission and Formatting Instructions for ICML 2017}
+% Daniel Seita: upon submission, comment out all authors, un-comment the
+% following two lines:
+%\author{} % LEAVE BLANK FOR ORIGINAL SUBMISSION.
+%          % UAI  reviewing is double-blind.
+ 
+% The author names and affiliations should appear only in the accepted paper.
+%% \author{ {\bf Daniel Seita\thanks{Footnote for author to give an
+%% alternate address.}} \\
+%% Computer Science Dept. \\
+%% Cranberry University\\
+%% Pittsburgh, PA 15213 \\
+%% \And
+%% {\bf Xinlei Pan}  \\
+%% Affiliation          \\
+%% Address \\
+%% \And
+%% {\bf Haoyu Chen}   \\
+%% Affiliation \\
+%% Address    \\
+%% \And
+%% {\bf John Canny}   \\
+%% Affiliation \\
+%% Address    \\
+%% }
+\author{
+Daniel Seita$^1$, 
+Xinlei Pan$^1$,
+Haoyu Chen$^1$,
+John Canny$^{1,2}$ \\
+$^1$ University of California, Berkeley, CA \\
+$^2$ Google Research, Mountain View, CA\\ 
+\texttt{\{seita,xinleipan,haoyuchen,canny\}@berkeley.edu}
+}
 
-\begin{document} 
+\begin{document}
 
-\twocolumn[
-\icmltitle{An Efficient Minibatch Acceptance Test for Metropolis-Hastings}
-
-% It is OKAY to include author information, even for blind submissions: the
-% style file will automatically remove it for you unless you've provided the
-% [accepted] option to the icml2017 package.
-
-% list of affiliations. the first argument should be a (short) identifier you
-% will use later to specify author affiliations
-% Academic affiliations should list Department, University, City, Region, Country
-% Industry affiliations should list Company, City, Region, Country
-
-% you can specify symbols, otherwise they are numbered in order
-% ideally, you should not use this facility. affiliations will be numbered
-% in order of appearance and this is the preferred way.
-% \icmlsetsymbol{equal}{*}
-\begin{icmlauthorlist}
-\icmlauthor{Daniel Seita}{berkeley}
-\icmlauthor{Xinlei Pan}{berkeley}
-\icmlauthor{Haoyu Chen}{berkeley}
-\icmlauthor{John Canny}{berkeley,google}
-\end{icmlauthorlist}
-\icmlaffiliation{berkeley}{University of California, Berkeley, CA}
-\icmlaffiliation{google}{Google Research, Mountain View, CA}
-\icmlcorrespondingauthor{Daniel Seita}{seita@berkeley.edu}
-
-% You may provide any keywords that you 
-% find helpful for describing your paper; these are used to populate 
-% the "keywords" metadata in the PDF but will not be shown in the document
-\icmlkeywords{boring formatting information, machine learning, ICML}
-
-\vskip 0.3in
-]
-
-% this must go after the closing bracket ] following \twocolumn[ ...
-
-% This command actually creates the footnote in the first column
-% listing the affiliations and the copyright notice.
-% The command takes one argument, which is text to display at the start of the footnote.
-% The \icmlEqualContribution command is standard text for equal contribution.
-% Remove it (just {}) if you do not need this facility.
-
-\printAffiliationsAndNotice{}  % leave blank if no need to mention equal contribution
-%\printAffiliationsAndNotice{\icmlEqualContribution} % otherwise use the standard text.
-%\footnotetext{hi}
-
+\maketitle
 
 \begin{abstract}
   We present a novel Metropolis-Hastings method for large datasets that
@@ -93,7 +72,9 @@
   speedups over previous work.
 \end{abstract}
 
-\section{Introduction}\label{sec:introduction}
+
+
+\section{INTRODUCTION}\label{sec:introduction}
 
 Markov chain Monte Carlo (MCMC) sampling is a powerful method for computation on
 intractable distributions. We are interested in large dataset applications,
@@ -188,8 +169,7 @@ The contributions of this paper are as follows:
 
 
 
-
-\section{Preliminaries}\label{sec:related_work}
+\section{PRELIMINARIES}\label{sec:related_work}
 
 In the Metropolis-Hastings method~\cite{gilks1996markov,brooks2011handbook}, a
 difficult-to-compute probability distribution $p(\theta)$ is sampled using a
@@ -273,7 +253,7 @@ $\Lambda^*(\theta,\theta')$ is substantially larger than
 $\psi(u,\theta,\theta')$.
 
 
-\subsection{A Worst-Case Gaussian Example}\label{ssec:gaussian_example}
+\subsection{A WORST-CASE GAUSSIAN EXAMPLE}\label{ssec:gaussian_example}
 
 Let $x_1,\ldots,x_N$ be i.i.d. $\mathcal{N}(\theta,1)$ with known variance
 $\sigma^2=1$ and (unknown) mean $\theta=0.5$. We use a uniform prior on
@@ -318,7 +298,7 @@ from zero; for certain input/random $u$ combinations, this difference can be
 arbitrarily close to zero. We avoid this by using the {\em approximately normal}
 variation in $\Lambda^*$ to {\em replace} the variation due to $u$. 
 
-\subsection{MCMC Posterior Inference}
+\subsection{MCMC POSTERIOR INFERENCE}
 There is a separate line of MCMC work drawing principles from statistical
 physics. One can apply
 Hamiltonian Monte Carlo (HMC)~\cite{mcmc_hamiltonian_2010} methods which
@@ -340,9 +320,9 @@ of accuracy.
 
 
 
-\section{A New MH Acceptance Test}\label{sec:our_algorithm}
+\section{A NEW MH ACCEPTANCE TEST}\label{sec:our_algorithm}
 
-\subsection{Log-Likelihood Ratios}\label{ssec:log_likelihood_ratios}
+\subsection{LOG-LIKELIHOOD RATIOS}\label{ssec:log_likelihood_ratios}
 
 For our new M-H test, we denote the exact and approximate log likelihood ratios
 as $\Delta$ and $\Delta^*$, respectively. First, $\Delta$ is defined as
@@ -382,7 +362,7 @@ functions is specified as follows:
 
 This result is used in~\cite{Barker65} to define the Barker acceptance test.
 
-\subsection{Barker (Logistic) Acceptance Function}\label{ssec:barker_function}
+\subsection{BARKER (LOGISTIC) ACCEPTANCE FUNCTION}\label{ssec:barker_function}
 For our new MH test we use the Barker logistic~\cite{Barker65}
 function: $g(s)=(1+\exp(-s))^{-1}$. Straightforward arithmetic shows
 that it satisfies the condition in Lemma~\ref{lem:detailed_balance}.
@@ -410,7 +390,7 @@ whether
 for a logistic random variable $X$.
 
 
-\subsection{A Minibatch Acceptance Test}\label{ssec:deltas_minibatch}
+\subsection{A MINIBATCH ACCEPTANCE TEST}\label{ssec:deltas_minibatch}
 
 We now describe acceptance testing using the minibatch estimator
 $\Delta^*(\theta,\theta')$. From Equation~(\ref{eq:delta3}),
@@ -462,8 +442,7 @@ to the full batch version.
 
 
 
-
-\section{Computing the Correction Distribution}\label{sec:correction}
+\section{THE CORRECTION DISTRIBUTION}\label{sec:correction}
 
 Our test in Equation~(\ref{eq:criteria}) requires knowing the distribution of
 $X_{\rm corr}$. In Section~\ref{sec:analysis}, we show that the test accuracy
@@ -570,7 +549,7 @@ Algorithm~\ref{alg:our_algorithm} describes our procedure. A few points:
 
 
 
-\section{Analysis}\label{sec:analysis}
+\section{ANALYSIS}\label{sec:analysis}
 
 We now derive error bounds for our M-H test and the target distribution it
 generates. In the most similar prior works,~\cite{cutting_mh_2014} use CLT
@@ -596,7 +575,7 @@ are preserved after the addition of other random variables (e.g., $X_{\rm nc}$
 and $X_{\rm corr}$). It then follows that the acceptance test has the same error
 bound.
 
-\subsection{Bounding the Error of $\Delta^*$ from Gaussian}\label{ssec:delta_star_distribution}
+\subsection{BOUNDING THE ERROR OF $\Delta^*$ FROM A GAUSSIAN}\label{ssec:delta_star_distribution}
 
 We use the following quantitative central-limit result:
   
@@ -654,7 +633,7 @@ hundreds of points, but otherwise bootstrap CIs can be computed.
 
 % Daniel: Lame, I know, but it saves one line.
 %\subsection{Error Bounds are Preserved After Adding Random Variables}\label{ssec:preserve_bounds}
-\subsection{Adding Random Variables}\label{ssec:preserve_bounds}
+\subsection{ADDING RANDOM VARIABLES}\label{ssec:preserve_bounds}
 
 We next relate the CDFs of distributions and show that bounds are preserved
 after adding random variables.
@@ -696,7 +675,7 @@ variables, so our test remains accurate.  In fact we can do better ($O(n^{-1})$
 instead of $O(n^{-1/2})$) by using a more precise limit distribution under an
 additional assumption. We review this in Appendix~\ref{app:better_error_bound}.
 
-\subsection{Bounds on the Stationary Distribution}
+\subsection{BOUNDS ON THE STATIONARY DISTRIBUTION}
 Bounds on the error of an M-H test imply bounds on the stationary distribution
 of the Markov chain under appropriate conditions. Such bounds were derived in
 both~\cite{cutting_mh_2014} and~\cite{icml2014c1_bardenet14}. We include the
@@ -720,9 +699,9 @@ where $\epsilon$ is the bound on the error in the acceptance test.
 
 
 
-\section{Experiments}\label{sec:experiments}
+\section{EXPERIMENTS}\label{sec:experiments}
 
-\subsection{Mixture of Gaussians}\label{ssec:gaussians}
+\subsection{MIXTURE OF GAUSSIANS}\label{ssec:gaussians}
 
 % Daniel: moving this here so figures don't overflow to next pages. We can tune
 % the positioning if needed.
@@ -797,7 +776,7 @@ magnitude better compared to the other two methods (averages are 15562 and
 they all consume linear time in data consumed. 
 
 
-\subsection{Logistic Regression}\label{ssec:logistic}
+\subsection{LOGISTIC REGRESSION}\label{ssec:logistic}
 
 % Daniel: moving this here so figures don't overflow to next pages. We can tune
 % the positioning if needed.
@@ -833,26 +812,17 @@ they all consume linear time in data consumed.
 \end{figure*}
 
 \begin{table}[t]
-\caption{Log. Regression Average Minibatch Size (10 Trials)}
+\caption{Logistic Regression Average Minibatch Size}
 \label{tab:logistic}
 \vskip 0.15in
 \begin{center}
-\begin{small}
-\begin{sc}
 \begin{tabular}{l l l l}
-\hline
-\abovespace\belowspace
-Method/Data & MNIST-13k & MNIST8M-100k  \\
-\hline
-\abovespace
+\textbf{Method/Data} & \textbf{MNIST-13k} & \textbf{MNIST-100k}  \\
+\hline \\
 Our Method & $129.8\pm 3.4$ & $2059.9\pm 135.5$ \\
 AustereMH  & $1924.3\pm 52.4$ & \textbf{TODO} \\
-\belowspace
 MHSubLhd   & $10783.4\pm 78.9$ & \textbf{TODO} \\
-\hline
 \end{tabular}
-\end{sc}
-\end{small}
 \end{center}
 \vskip -0.1in
 \end{table}
@@ -898,12 +868,12 @@ the undiscounted implementation of~\cite{cutting_mh_2014}.
 
 
 
-\subsection{Collaborative Filtering}\label{ssec:collab_filtering}
+\subsection{SPARSE MATRIX FACTORIZATION}\label{ssec:collab_filtering}
 
 \textbf{Daniel: TODO we wanted a third experiment, right?}
 
 
-\section{Conclusions}\label{sec:conclusion}
+\section{CONCLUSIONS}\label{sec:conclusion}
 
 \textbf{Daniel: double check this in case we add a third experiment.}
 
@@ -917,8 +887,11 @@ running more experiments on other models such as neural networks and providing a
 recipe for how to use our algorithm (following the framework
 of~\cite{sgmcmc_2015}).
 
+
+
+
 \bibliography{paper}
-\bibliographystyle{icml2017}
+\bibliographystyle{plain}
 
 \clearpage
 \appendix
@@ -938,9 +911,9 @@ distribution derivation and on our three main experiments to assist
 understanding and reproducibility.
 
 
-\section{Proofs of Lemmas and Corollaries}\label{app:proofs}
+\section{PROOFS OF LEMMAS AND COROLLARIES}\label{app:proofs}
 
-\subsection{Proof of Lemma~\ref{lem:worst_case}}\label{app:worst_case_proof}
+\subsection{PROOF OF LEMMA~\ref{lem:worst_case}}\label{app:worst_case_proof}
 
 Choose $(\theta' - \theta) \in \pm\frac{1}{\sqrt{N}}[0.5,1]$ (event 1) and
 $(\theta -0.5) \in \pm\frac{1}{\sqrt{N}}[0.5,1]$ filtered for  matching sign
@@ -953,16 +926,14 @@ latter event, because we restrict signs, occurs with probability $p_1 =
 \Phi(1)-\Phi(0.5) \approx 0.14988$. 
 
 These events together guarantee that $\Lambda^*(\theta,\theta')$ is negative by
-inspection of equation (\ref{eq:whyneg}) below.  This implies that we can find a
+inspection of Equation (\ref{eq:whyneg}) below.  This implies that we can find a
 $u \in (0,1)$ so that $\psi(u,\theta,\theta') = \log u < 0$ equals
 $\mE[\Lambda^*(\theta,\theta')]$.  Specifically, choose $u_0$ to satisfy $\log u_0
 = \mE[\Lambda^*(\theta,\theta')]$.  Using $\mE[x_i^*] = 0.5$ and
 Equation~(\ref{eq:lemma_ll_ratio}), we see that
-\begin{equation}
-  \log u_0 = N(\theta'-\theta)\frac{1}{b} \cdot \mE\left[\sum_{i=1}^b x_i^*-\theta-\frac{\theta'-\theta}{2}\right]
-\end{equation}
 \begin{equation}\label{eq:whyneg}
-    \log u_0 = -N(\theta'-\theta)\left(\theta-0.5+\frac{\theta'-\theta}{2}\right).
+    \log u_0 = N(\theta'-\theta)\frac{1}{b} \cdot \mE\left[\sum_{i=1}^b x_i^*-\theta-\frac{\theta'-\theta}{2}\right]
+    = -N(\theta'-\theta)\left(\theta-0.5+\frac{\theta'-\theta}{2}\right).
 \end{equation}
 Next, consider the minibatch acceptance test $\Lambda^*(\theta,\theta')
 \not\approx \psi(u,\theta,\theta')$ used in ~\cite{cutting_mh_2014}
@@ -1013,7 +984,7 @@ The samples $\theta$, $\theta'$ and $u$ are drawn independently and so the
 probability of the conjunction of these events is $c = p_0 p_1 p_2 = 0.0085$.
 
 
-\subsection{Proof of Lemma~\ref{lem:quant_clt}}\label{app:quant_clt}
+\subsection{PROOF OF LEMMA~\ref{lem:quant_clt}}\label{app:quant_clt}
 
 The following bound is given immediately after Corollary 2 from~\cite{explicit-clt05}:
 \begin{equation}
@@ -1025,7 +996,7 @@ and combining with $x>0$, we obtain the weaker but unqualified bound
 in Equation~(\ref{eq:clt-bounds}).
 
 
-\subsection{Proof of Lemma~\ref{lem:cdf_bounds}}\label{app:proof_cdf_bounds}
+\subsection{PROOF OF LEMMA~\ref{lem:cdf_bounds}}\label{app:proof_cdf_bounds}
 
 We first observe that
 \[
@@ -1044,7 +1015,7 @@ and since $\sup_x|P(x)-Q(x)|\leq \epsilon$ it follows that $\forall z$:
 as desired.
 
 
-\subsection{Proof of Corollary~\ref{cor:bounds_preserved}}\label{app:bounds_preserved}
+\subsection{PROOF OF COROLLARY~\ref{cor:bounds_preserved}}\label{app:bounds_preserved}
 
 We apply Lemma~\ref{lem:cdf_bounds} twice. First take:
 \begin{equation}
@@ -1071,7 +1042,7 @@ nc}+X_{\rm corr} > 0)$ differs from the exact test ${\rm Pr}(\Delta+X_{\rm log} 
 by at most $\epsilon$.
 
 
-\subsection{Improved Error Bounds Based on Skew Estimation}\label{app:better_error_bound}
+\subsection{IMPROVED ERROR BOUNDS BASED ON SKEW ESTIMATION}\label{app:better_error_bound}
 
 We show that the CLT error bound can be improved to $O(n^{-1})$ using a more
 precise limit distribution under an additional assumption. Let $\mu_i$ denote
@@ -1142,15 +1113,15 @@ table. We leave further analysis and experiments with $g(x,y)$ as future work.
 
 
 
-\section{Additional Experiment Details}\label{app:experiments}
+\section{ADDITIONAL EXPERIMENT DETAILS}\label{app:experiments}
 % Daniel: all three experiments should be described in more detail here. And
 % also the deconvolution step to get the correction distribution.
 
-\subsection{Obtaining the Correction Distribution (Section~\ref{sec:correction})}\label{app:correction}
+\subsection{OBTAINING THE CORRECTION DISTRIBUTION (SECTION~\ref{sec:correction})}\label{app:correction}
 
-% Daniel: moved to appendix so we can expand it. Originally we had only two
-% lines, and it looked pretty awkward. So let's add more. Note: this also
-% depends on whether we use [-10,10] for the X_c range, or [-20,20], etc...
+%% % Daniel: moved to appendix so we can expand it. Originally we had only two
+%% % lines, and it looked pretty awkward. So let's add more. Note: this also
+%% % depends on whether we use [-10,10] for the X_c range, or [-20,20], etc...
 \begin{table}[t]
 \caption{Errors ($L_\infty$) in $X_{\rm norm}+X_{\rm corr}$ versus $X_{\rm
 log}$, with $N=4000$ (top row) and $N=2000$ (bottom row).}
@@ -1158,76 +1129,59 @@ log}$, with $N=4000$ (top row) and $N=2000$ (bottom row).}
 \vskip 0.15in
 \begin{center}
 \begin{small}
-\begin{sc}
 %% ----------------------- START OF TABLE
 \begin{tabular}{l l}
 \hline
-\abovespace\belowspace
 $N=2000$ & $\sigma=0.8$ \\
 \hline
-\abovespace\belowspace
 $\lambda$ & $L_{\infty}$ error \\
 \hline
-\abovespace
 100    & 2.6e-3  \\
 10     & 4.0e-4  \\
 1      & 6.7e-5  \\
 0.1    & 1.4e-5  \\
-\belowspace
 0.01   & \textbf{5.0e-6}  \\
 \hline
 \end{tabular}
 \quad %% ----------------------- START OF TABLE
 \begin{tabular}{l l}
 \hline
-\abovespace\belowspace
 $N=2000$ & $\sigma=0.9$ \\
 \hline
-\abovespace\belowspace
 $\lambda$ & $L_{\infty}$ error \\
 \hline
-\abovespace
 100    & 3.3e-3  \\
 10     & 6.4e-4  \\
 1      & 1.6e-4  \\
 0.1    & \textbf{1.3e-4}  \\
-\belowspace
 0.01   & 2.7e-4  \\
 \hline
 \end{tabular}
 \quad %% ----------------------- START OF TABLE
 \begin{tabular}{l l}
 \hline
-\abovespace\belowspace
 $N=2000$ & $\sigma=1.0$ \\
 \hline
-\abovespace\belowspace
 $\lambda$ & $L_{\infty}$ error \\
 \hline
-\abovespace
 100    & 4.4e-3  \\
 10     & 1.3e-3  \\
 1      & \textbf{1.1e-3}  \\
 0.1    & 2.0e-3  \\
-\belowspace
 0.01   & 3.6e-3  \\
 \hline
 \end{tabular}
 \quad %% ----------------------- START OF TABLE
 \begin{tabular}{l l}
 \hline
-\abovespace\belowspace
 $N=2000$ & $\sigma=1.1$ \\
 \hline
-\abovespace\belowspace
 $\lambda$ & $L_{\infty}$ error \\
 \hline
-\abovespace
 100    & 6.8e-3  \\
 10     & \textbf{4.6e-3}  \\
 1      & 7.5e-3  \\
 0.1    & 1.3e-2  \\
-\belowspace
 0.01   & 2.4e-2  \\
 \hline
 \end{tabular}
@@ -1235,76 +1189,59 @@ $\lambda$ & $L_{\infty}$ error \\
 \vskip 0.2in %% OH this works!
 \begin{tabular}{l l}
 \hline
-\abovespace\belowspace
 $N=4000$ & $\sigma=0.8$ \\
 \hline
-\abovespace\belowspace
 $\lambda$ & $L_{\infty}$ error \\
 \hline
-\abovespace
 100    & 8.3e-4  \\
 10     & 1.3e-4  \\
 1      & 2.5e-5  \\
 0.1    & \textbf{6.7e-6}  \\
-\belowspace
 0.01   & 7.4e-6  \\
 \hline
 \end{tabular}
 \quad %% ----------------------- START OF TABLE
 \begin{tabular}{l l}
 \hline
-\abovespace\belowspace
 $N=4000$ & $\sigma=0.9$ \\
 \hline
-\abovespace\belowspace
 $\lambda$ & $L_{\infty}$ error \\
 \hline
-\abovespace
 100    & 1.2e-3  \\
 10     & 2.6e-4  \\
 1      & \textbf{1.0e-4}  \\
 0.1    & 2.0e-4  \\
-\belowspace
 0.01   & 3.9e-4  \\
 \hline
 \end{tabular}
 \quad %% ----------------------- START OF TABLE
 \begin{tabular}{l l}
 \hline
-\abovespace\belowspace
 $N=4000$ & $\sigma=1.0$ \\
 \hline
-\abovespace\belowspace
 $\lambda$ & $L_{\infty}$ error \\
 \hline
-\abovespace
 100    & 1.9e-3  \\
 10     & \textbf{8.9e-4}  \\
 1      & 1.6e-3  \\
 0.1    & 2.8e-3  \\
-\belowspace
 0.01   & 5.2e-3  \\
 \hline
 \end{tabular}
 \quad %% ----------------------- START OF TABLE
 \begin{tabular}{l l}
 \hline
-\abovespace\belowspace
 $N=4000$ & $\sigma=1.1$ \\
 \hline
-\abovespace\belowspace
 $\lambda$ & $L_{\infty}$ error \\
 \hline
-\abovespace
 100    & \textbf{4.3e-3}  \\
 10     & 6.0e-3  \\
 1      & 1.0e-2  \\
 0.1    & 1.2e-2  \\
-\belowspace
 0.01   & 3.5e-2  \\
 \hline
 \end{tabular}
-\end{sc}
 \end{small}
 \end{center}
 \vskip -0.1in
@@ -1333,28 +1270,19 @@ TODO TODO TODO} but we reiterate that the choice is arbitrary so long as $0 <
 logistic distribution, since there must be some variance left over for $X_{\rm
 corr}$.
 
-\subsection{Gaussian Mixture Model Experiment (Section~\ref{ssec:gaussians})}\label{app:gaussians}
+\subsection{GAUSSIAN MIXTURE MODEL EXPERIMENT (SECTION~\ref{ssec:gaussians})}\label{app:gaussians}
 
 \begin{table}[t]
 \caption{Gaussian Mixture Model Statistics}
 \label{tab:poissons}
 \vskip 0.15in
 \begin{center}
-\begin{small}
-\begin{sc}
 \begin{tabular}{l l l l}
-\hline
-\abovespace\belowspace
-Metric & Ours & Korat.'14 & Barde.'14 \\
-\hline
-\abovespace
+\textbf{Metric} & \textbf{Ours} & \textbf{AustereMH} & \textbf{MHSubLhd} \\
+\hline \\
 Equation~\ref{eq:log_prob_poissons} & -1430.0 & -1578.9 & -1232.7 \\
-\belowspace
 Chi-Squared & 3313.9 & 3647.7 & 2444.1 \\
-\hline
 \end{tabular}
-\end{sc}
-\end{small}
 \end{center}
 \vskip -0.1in
 \end{table}
@@ -1387,103 +1315,15 @@ the range of samples generated.
 
 \textbf{Daniel: TODO improve this}
 
-\subsection{Logistic Regression Experiment (Section~\ref{ssec:logistic})}\label{app:logistic}
+\subsection{LOGISTIC REGRESSION EXPERIMENT (SECTION~\ref{ssec:logistic})}\label{app:logistic}
 
 \textbf{Daniel: TODO}
 
-\subsection{Collaborative Filtering Experiment (Section~\ref{ssec:collab_filtering})}\label{app:collab_filtering}
+\subsection{SPARSE MATRIX FACTORIZATION EXPERIMENT (SECTION~\ref{ssec:collab_filtering})}\label{app:collab_filtering}
 
 \textbf{Daniel: TODO}
 
 
 
 
-\end{document} 
-
-% Daniel: some notes to keep in mind to standardize to ICML format.
-
-%% \begin{figure}[ht]
-%% \vskip 0.2in
-%% \begin{center}
-%% \centerline{\includegraphics[width=\columnwidth]{icml_numpapers}}
-%% \caption{Historical locations and number of accepted papers for International
-%%   Machine Learning Conferences (ICML 1993 -- ICML 2008) and
-%%   International Workshops on Machine Learning (ML 1988 -- ML
-%%   1992). At the time this figure was produced, the number of
-%%   accepted papers for ICML 2008 was unknown and instead estimated.}
-%% \label{icml-historical}
-%% \end{center}
-%% \vskip -0.2in
-%% \end{figure} 
-%% 
-%% \subsection{Figures}
-%%  
-%% You may want to include figures in the paper to help readers visualize
-%% your approach and your results. Such artwork should be centered,
-%% legible, and separated from the text. Lines should be dark and at
-%% least 0.5~points thick for purposes of reproduction, and text should
-%% not appear on a gray background.
-%% 
-%% Label all distinct components of each figure. If the figure takes the
-%% form of a graph, then give a name for each axis and include a legend
-%% that briefly describes each curve. Do not include a title inside the
-%% figure; instead, the caption should serve this function.
-%% 
-%% Number figures sequentially, placing the figure number and caption
-%% {\it after\/} the graphics, with at least 0.1~inches of space before
-%% the caption and 0.1~inches after it, as in
-%% Figure~\ref{icml-historical}.  The figure caption should be set in
-%% 9~point type and centered unless it runs two or more lines, in which
-%% case it should be flush left.  You may float figures to the top or
-%% bottom of a column, and you may set wide figures across both columns
-%% (use the environment {\tt figure*} in \LaTeX), but always place
-%% two-column figures at the top or bottom of the page.
-%% 
-%% \subsection{Tables} 
-%%  
-%% You may also want to include tables that summarize material. Like 
-%% figures, these should be centered, legible, and numbered consecutively. 
-%% However, place the title {\it above\/} the table with at least 
-%% 0.1~inches of space before the title and the same after it, as in 
-%% Table~\ref{sample-table}. The table title should be set in 9~point 
-%% type and centered unless it runs two or more lines, in which case it
-%% should be flush left.
-%% 
-%% % Note use of \abovespace and \belowspace to get reasonable spacing 
-%% % above and below tabular lines. 
-%% 
-%% \begin{table}[t]
-%% \caption{Classification accuracies for naive Bayes and flexible 
-%% Bayes on various data sets.}
-%% \label{sample-table}
-%% \vskip 0.15in
-%% \begin{center}
-%% \begin{small}
-%% \begin{sc}
-%% \begin{tabular}{lcccr}
-%% \hline
-%% \abovespace\belowspace
-%% Data set & Naive & Flexible & Better? \\
-%% \hline
-%% \abovespace
-%% Breast    & 95.9$\pm$ 0.2& 96.7$\pm$ 0.2& $\surd$ \\
-%% Cleveland & 83.3$\pm$ 0.6& 80.0$\pm$ 0.6& $\times$\\
-%% Glass2    & 61.9$\pm$ 1.4& 83.8$\pm$ 0.7& $\surd$ \\
-%% Credit    & 74.8$\pm$ 0.5& 78.3$\pm$ 0.6&         \\
-%% Horse     & 73.3$\pm$ 0.9& 69.7$\pm$ 1.0& $\times$\\
-%% Meta      & 67.1$\pm$ 0.6& 76.5$\pm$ 0.5& $\surd$ \\
-%% Pima      & 75.1$\pm$ 0.6& 73.9$\pm$ 0.5&         \\
-%% \belowspace
-%% Vehicle   & 44.9$\pm$ 0.6& 61.5$\pm$ 0.4& $\surd$ \\
-%% \hline
-%% \end{tabular}
-%% \end{sc}
-%% \end{small}
-%% \end{center}
-%% \vskip -0.1in
-%% \end{table}
-%%
-%% % Acknowledgements should only appear in the accepted version. 
-%% \section*{Acknowledgements} 
-%% \textbf{Do not} include acknowledgements in the initial version of
-%% the paper submitted for blind review.
+\end{document}
