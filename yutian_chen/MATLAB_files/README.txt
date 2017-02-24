@@ -34,5 +34,18 @@ Here, the rows represent epsilons, going from 0.001 at the top row to 0.2 at the
 bottom. The sizes are similar except they're across columns.
 
 
-The others with "D4000" in them are for the slower test which has to recompute
-mu_std each iteration.
+***
+
+The others with "D4001" in them (or some other number) are for the slower test
+which has to recompute mu_std each iteration. Make sure I double check that they
+are correct by comparing, for instance, the mu_std = 0 case (requires dividing
+index by half and rounding *up* due to one-indexing in MATLAB) with what I
+generated earlier "manually" for regular MNIST.
+
+I am saving them using linearized arrays. The results for the general case save
+two matrices: one is for all the mu_std values, which we can index into via
+binary search. The other is a long matrix with columns corresponding to certain
+values of mu_std and rows are 120 elements because the error and mean_j each
+take up 60 elements. It's linearized so looking at the matrices printed above,
+the top row starts off, then the second row, then the third, etc., to form one
+long row vector.

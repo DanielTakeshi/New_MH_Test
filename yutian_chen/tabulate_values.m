@@ -7,15 +7,8 @@
 %
 % What it saves:
 %
-%   result(a,b,c) = (mu_std(a), err, mean_j)
-%
-%   where:
-%       a = mu_std index
-%       b = epsilon index (note: this is the value we pick for one
-%           accept/decision trial, it is NOT the error of the overall test
-%           (which is a _sequence_ of hypothesis tets))
-%       c = minibatch size (starting *and* the increment amount)
-%   (results is 4-D, the last index is 1, 2, or 3)
+%   If do_only_one = 1, then it saves two matrices, result_meanj and
+%   result_error, which we can directly analyze in BIDMach.
 %
 % Usage: 
 %   I just run it on my command line:
@@ -36,12 +29,13 @@ number_total_data = 100000;
 K = 10;
 sizes = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500];
 epsilons = [0.001, 0.005, 0.01, 0.05, 0.1, 0.2];
+offset_meanj = length(sizes) * length(epsilons);
 
 % If running for all mu_std values, set this to 0. Else, 1. This is mainly in
 % case I want to try finer-grained sizes and/or epsilons for the single mu_std=0
 % case. Otherwise with all the mu_std's, we can't afford to have too many
 % epsilon and size options for computational reasons.
-do_only_one = 1;
+do_only_one = 0;
 
 if do_only_one == 1
     D = 1;
@@ -49,9 +43,9 @@ if do_only_one == 1
     result_error = zeros(length(epsilons), length(sizes));
     result_meanj = zeros(length(epsilons), length(sizes));
 else 
-    D = 4000;
+    D = 4001;
     mu_std_values = linspace(-K, K, D);
-    result = zeros(D, length(epsilons), length(sizes), 3);
+    result = zeros(D, 2*offset_meanj); % for ncols, need offset doubled
 end
 
 % CHANGE FILE NAME IF NEEDED!!
@@ -74,9 +68,10 @@ for i = 1:length(mu_std_values)
                 result_error(e, j) = err;
                 result_meanj(e, j) = mean_j;
             else
-                result(i, e, j, 1) = mu_std_values(i);
-                result(i, e, j, 2) = err;
-                result(i, e, j, 3) = mean_j;
+                % Stores row by row of err/mean_j matrices into a single row.
+                index = (e-1)*length(sizes) + j; % e-1 due to 1-indexing
+                result(i, index) = err;
+                result(i, index + offset_meanj) = mean_j;
             end
         end
     end
@@ -85,7 +80,7 @@ end
 if do_only_one == 1
     save(outfile_name, 'result_error', 'result_meanj', '-v7.3');
 else
-    save(outfile_name, 'result', '-v7.3');
+    save(outfile_name, 'mu_std_values', 'result', '-v7.3');
 end
 
 fprintf('Done!\n');
