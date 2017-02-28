@@ -3,7 +3,6 @@
 :load cutMHTest.ssc
 :load adaptiveMHTest.ssc
 
-
 /**
  * Code for running Logistic Regression results. Make sure you check all of the
  * important parameters at the start, including the path to the training and
@@ -29,15 +28,16 @@
 // -------------------------------- //
 
 // IMPORTANT STUFF! AT LEAST CHECK THESE EVERY TIME YOU RUN SOMETHING!
+// And you also have to check the file names too, especially for AustereMH.
 val nsamps = 5000           // The number of \theta values to sample (i.e., number of iterations).
 val test_to_use = "kora"    // Three options: "ours", "kora", or "bard". Use one of these.
-val ntrain = 100000         // Number of training data (affects output name).
+val ntrain = 13000          // Number of training data (affects output name).
 val temperature = 100.0     // This was 1000.0 for the previous MNIST (not 8M) experiment.
 var batchsize = 100         // I'm also experimenting with changing minibatch sizes.
 val adapt_gamma = 2.00      // The gamma value for the adaptive MH test.
 val sigma_proposer = 0.05   // The step size for the proposal.
-val conservative = true     // For Korattikara's test.
-val deltaStar = 0.20f       // Upper bound on \mathcal{E} (I think) in Korattikara paper.
+val conservative = false    // For Korattikara's test.
+val deltaStar = 0.05f       // Upper bound on \mathcal{E} (I think) in Korattikara paper.
 
 /* 
  * Change the data path! This is for Daniel's personal machine:
@@ -45,7 +45,7 @@ val deltaStar = 0.20f       // Upper bound on \mathcal{E} (I think) in Korattika
  * Training MNIST8M, use: "/data/MNIST8M/MNIST8M_XandY_train_1_7_shuf_100k.fmat.lz4"
  */
 
-val train_data_dir = "/data/MNIST8M/MNIST8M_XandY_train_1_7_shuf_100k.fmat.lz4"
+val train_data_dir = "/data/MNIST/MNIST_XandY_train_1_7_shuf.fmat.lz4"
 val test_data_dir  = "/data/MNIST/MNIST_XandY_test_1_7_shuf.fmat.lz4"
 
 // Create the different tests we will be using.
@@ -71,7 +71,7 @@ adaptiveMHtest.gamma = adapt_gamma
  */
 class LogisticRegression(n:Int, sigma:Double, pscale: Double) extends MHmodel (1, n, sigma, pscale) {
 	
-    var sigma_proposer = 0.05;
+    var sigma_proposer = 0.01;
     var temp = 1.0;
     val data = loadFMat(train_data_dir);
 
@@ -180,39 +180,46 @@ def run_experiment(exp:String, nn:LogisticRegression) = {
                     ll_test,       "ll_test_ours", 
                     accuracy,      "accuracy_ours")
     }
+
     // TEST #2: KORATTIKARA ("kora")
     else if (exp == "kora") {
         // NEW! We will now be running some grid search first.
-        println("default epsilon for cutmh is = " + cutMHtest.eps)
+        // CAREFUL! Files may change.
         if (conservative) {
+            println("default epsilon for cutmh is = " + cutMHtest.eps)
             val (ep,mb) = get_conservative_mb_eps(mod=nn,
                 test=cutMHtest,
-                path="../yutian_chen/MATLAB_files/mu_std_K10_D1_mnist8m.mat",
+                path="../yutian_chen/MATLAB_files/mu_std_K10_D1_mnist.mat",
                 deltaStar=deltaStar) 
             cutMHtest.eps = ep
             batchsize = mb
+            println("chosen epsilon = " + cutMHtest.eps)
+            println("chosen size = " + batchsize)
+        } else {
+            println("running non-conservative austereMH (i.e. cut-MH) test")
         }
-        println("chosen epsilon = " + cutMHtest.eps)
-        println("chosen size = " + batchsize)
-
         val (samples, mb_size, ll_train, thisSeed) = cutMHTest_dosimm(mod=nn, 
                     test=cutMHtest, 
-                    size=batchsize, 
                     nsamps=nsamps, 
-                    acc=0.05)
+                    size=batchsize,
+                    acc=0.05,
+                    path="../yutian_chen/MATLAB_files/mu_std_K10_D4001_mnist.mat",
+                    deltaStar=deltaStar,
+                    conservative=conservative)
         val testdata = loadFMat(test_data_dir)
         val X = testdata(0 until testdata.dims(0)-1, ?)
         var Y = testdata(testdata.dims(0)-1, ?)
         val (accuracy, ll_test) = eval_cost(X, Y, samples)
         val cum_size = cumsum(DMat(mb_size))
 
-        saveAs("lr_mnist8m_kora_" +ntrain+ "_" +nsamps+ "_" +temperature.toInt+ "_" +thisSeed+ ".mat", 
+        saveAs("lr_mnist_kora_" +ntrain+ "_" +nsamps+ "_" +temperature.toInt+ "_" +thisSeed+ ".mat", 
                     samples,       "samples_kora", 
                     cum_size,      "cum_size_kora",
                     DMat(mb_size), "mb_size_kora",
                     ll_test,       "ll_test_kora", 
                     accuracy,      "accuracy_kora")
     }
+
     // TEST #3: BARDENET ("bard")
     else if (exp == "bard") {
         val (samples, mb_size, ll_train) = adaptiveMH_dosimm(mod=nn, 

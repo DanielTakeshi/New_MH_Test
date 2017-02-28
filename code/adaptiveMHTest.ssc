@@ -1,7 +1,7 @@
 // This script implements the Bardenet's 2014 ICML Paper
 // Daniel's note: this is really annoying. I had to set the seed OUT HERE in
 // order for things to change ...
-// val seed = 19
+// val seed = 21
 // println("\n\tin adaptivemh sim with seed = " +seed+ ".\n")
 // setseed(seed)
 

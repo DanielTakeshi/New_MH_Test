@@ -42,7 +42,9 @@ class cutMHTest{
 	};
 };
 
-def cutMHTest_dostep(mod:MHmodel, test:cutMHTest, data:Mat, size:Int, here:Int, theta:Mat, ttheta:Mat, acc:Double):(Int, Mat, Double) = {
+/** New change: adding mu_0 as an input. */
+def cutMHTest_dostep(mod:MHmodel, test:cutMHTest, data:Mat, size:Int, here:Int, 
+                     theta:Mat, ttheta:Mat, acc:Double, mu_0:Double):(Int, Mat, Double) = {
 	var step = size;   // initial batchsize
 	var done = false;
 	var ntheta:Mat = null;
@@ -51,14 +53,12 @@ def cutMHTest_dostep(mod:MHmodel, test:cutMHTest, data:Mat, size:Int, here:Int, 
 	var ll:Mat = null;
 	var batchsize = size;
 
-	val u = 1.0/test.N * ln(rand(1,1)).dv;
-
 	while(!done) {
 		val batch = getbatch(mod.data, here, batchsize);
 		ll = mod.evalfn(batch, theta);
 		val diff = mod.evalfn(batch, ttheta) - ll;
 		val nsig = test.eps;
-		val (moved, takestep) = test.testfn(diff, u, nsig);
+		val (moved, takestep) = test.testfn(diff, mu_0, nsig);
 		done = moved;
 		if (done) {
 			there = (here + batchsize) % data.ncols;
@@ -73,62 +73,6 @@ def cutMHTest_dostep(mod:MHmodel, test:cutMHTest, data:Mat, size:Int, here:Int, 
 }
 
 
-def cutMHTest_dosimm(mod:MHmodel, test:cutMHTest, size:Int, 
-                     nsamps:Int, acc:Double):(DMat,LMat,DMat,Int) = {
-    var theta = mod.initfn();
-    val samples = dzeros(theta.length, nsamps);
-    val sizes = lzeros(1, nsamps);
-    val lls = dzeros(1, nsamps);
-    var here = 0;
-    var i = 0;
-    
-    tic;
-    println("")
-    while (i < nsamps) {
-    	if (i % 100 == 0){
-            val t = toc;
-    		println("cut mh test iteration = %d, elapsed time = %f secs" format(i, t));
-    	}
-    	if (! test.error_bound){
-    		val epsi = 0.01 * pow((0.01 + i), -0.55).dv;
-    		test.eps = epsi;
-    	}
-		val ttheta = mod.proposalfn(theta);
-		val (there, nth, ll) = cutMHTest_dostep(mod, test, mod.data, size, here, theta, ttheta, acc);
-		sizes(i) = if (there > here) (there - here) else (there - here + mod.data.ncols);
-		lls(i) = ll;
-		here = there;
-		theta = nth;
-		samples(?, i) = DMat(theta);
-		i += 1;
-    }
-    println("")
-    (samples, sizes, lls, thisSeed);
-};
-
-
-/**
- * Helper method for the optimization problem of Korattikara et al, where we
- * compute the \mu_std value.
- *
- * @param mod The MH Test model, which we use to compute \mu_std. Note that we
- *      need the _full_ batch of data.
- * @param N the number of training data points total.
- * @param diff The vector of log proposer - log current terms (same as in other
- *      code here).
- * @param ttheta The proposed theta value.
- * @param mu_0 The current mu_0 value (usually it's (log u)/N for us).
- * @param mu_std_array The array (well, matrix) of mu_std values.
- * @return The value mu_std according to their paper.
- */
-def find_mu_std(mod:MHmodel, N:Int, diff:Mat, mu_0:Float) = {
-    val stdev_l = sqrt( variance(diff) ).dv
-    val mu = sum(diff) / N.dv
-    var mu_std = (((mu - mu_0) * sqrt(N-1.0).dv) / stdev_l).dv.toFloat
-    mu_std
-}
-
-
 /**
  * Helper method for the optimization problem of Korattikara et al, where we
  * binary-search into the generated matlab matrix. Given a mu_std value, we need
@@ -136,6 +80,8 @@ def find_mu_std(mod:MHmodel, N:Int, diff:Mat, mu_0:Float) = {
  * represent indices, so [mu_std_array(low), ..., mu_std_array(high)]. Note that
  * we include both low and high in this array range. This _should_ be working;
  * I tested it on our mu arrays after borrowing from an online implementation.
+ * EDIT: actually, not 100% sure why but we have to add +1 to get the indices to
+ * line up.
  *
  * @param mu_std The computed mu_std value, our "target" value.
  * @param mu_std_array The array (well, matrix) of mu_std values.
@@ -158,8 +104,158 @@ def find_closest(mu_std:Float, mu_std_array:DMat) = {
             high = i
         }
     }
-    i
+    i+1
 }
+
+
+/**
+ * Performs an optimization problem via grid search over (epsilon,minibatch)
+ * size values to determine which epsilon to use. This is their
+ * "non-conservative" strategy, which depends on \mu_std.
+ *
+ * @param mod The MH Test model, which we use to invoke the proposer since we
+ *      need the correct proposer to get a reasonable \theta_i sample for the
+ *      empirical expectations.
+ * @param test The CutMH test model, e.g., so we can get the exact N value.
+ * @param path The path to the MATLAB file we need (DIFFERENT from conservative
+ *      test).
+ * @param deltaStar The constraint on error, so we check that the error we get
+ *      from the pre-computed MATLAB code is bounded by this. It follows the the
+ *      Korattikara paper notation; it is NOT the Delta used in OUR paper.
+ * @param theta The current theta.
+ * @param ttheta The proposed theta.
+ * @param mu_0 The mu_0 which is log(u)/N really.
+ * @return The best (epsilon,minibatch) pairing to use.
+ */
+def nonConservativeSearch(mod:MHmodel, test:cutMHTest, path:String,
+                          deltaStar:Float, theta:Mat, ttheta:Mat, mu_0:Double) = {
+    var epsilons = row(0.001, 0.005, 0.01, 0.05, 0.1, 0.2)
+    var sizes = irow(50, 100, 150, 200, 250, 300, 350, 400, 450, 500)
+    var bestEps = epsilons(0)
+    var bestSize = sizes(0)
+    var bestDataUsage = test.N.dv  
+
+    // I used the following two names in the non-conservative case:
+    val mu_std_values:DMat = load(path, "mu_std_values")
+    val mat_err_meanj:DMat = load(path, "result")
+    if (mat_err_meanj.ncols != (epsilons.length * sizes.length * 2)) {
+        throw new RuntimeException("Error in data dimensions: " +
+            "mat_err_meanj.ncols = " +mat_err_meanj.ncols)
+    }
+    if (mu_std_values.length != mat_err_meanj.nrows) {
+        throw new RuntimeException("Error in mu_std and result alignment.")
+    }
+
+    // Compute the mu_std value on FULL data!
+    val diff = mod.evalfn(mod.data, ttheta) - mod.evalfn(mod.data, theta)
+    val stdev_l = sqrt( variance(diff) ).dv
+    val mu = sum(diff) / test.N.dv
+    val mu_std = (((mu - mu_0) * sqrt(test.N - 1.0).dv) / stdev_l).dv.toFloat
+
+    // Find *index* of closest mu_std in our table. This gives us a 2-D slice.
+    val mu_std_index = find_closest(mu_std, mu_std_values)
+    val offset = epsilons.length * sizes.length
+    val mat_error = mat_err_meanj(mu_std_index, 0 -> offset)
+    val mat_meanj = mat_err_meanj(mu_std_index, offset -> 2*offset)
+
+    // Find the best (e,m) pairing; the dataUsage and error are computed here.
+    // Don't forget that BIDMach, unlike MATLAB, uses 0-indexing.
+    // Formula is: ``` e*(number of m's) + m ```.
+    for (e <- 0 until epsilons.length) {
+        for (m <- 0 until sizes.length) {
+
+            val dataUsage = mat_meanj(e*sizes.length + m) * sizes(m) 
+            val error = mat_error(e*sizes.length + m)
+
+            if (dataUsage < bestDataUsage && error < deltaStar) {
+                bestDataUsage = dataUsage
+                bestEps = epsilons(e)
+                bestSize = sizes(m)
+            }
+        }
+    }
+
+    if (bestDataUsage == test.N.dv) {
+        throw new RuntimeException("bestDataUsage is still at " +test.N.dv)
+    }
+    //println("mu_std="+mu_std+", bestEps="+bestEps+", bestSize="+bestSize)
+    (bestEps, bestSize)
+}
+
+
+
+/**
+ * Runs AustereMH. It uses either the conservative or non-conservative way. The
+ * only code impact should be at the start of each new iteration when it calls
+ * the grid search.
+ *
+ * @param mod The MH Test model, which we use to invoke the proposer since we
+ *      need the correct proposer to get a reasonable \theta_i sample for the
+ *      empirical expectations.
+ * @param test The CutMH test model, e.g., so we can get the exact N value.
+ * @param nsamps The number of "\theta"s to sample.
+ * @param size The minibatch size, which is fixed if conservative=True, but if
+ *      not, it will generally change often.
+ * @param acc No idea, we ignore this ...
+ * @param path The path to the MATLAB file we need for getting epsilon and
+ *      minibatch sizes each time we get a new \theta.
+ * @param deltaStar The constraint on error, so we check that the error we get
+ *      from the pre-computed MATLAB code is bounded by this. It follows the the
+ *      Korattikara paper notation; it is NOT the Delta used in OUR paper.
+ * @param conservative If False, we have to call the (epsilon,minibatch) code to
+ *      extract some choice. If True, it's set beforehand and we don't use the
+ *      path.
+ * @return The (samples, sizes, train log likelihoods, seed) information.
+ */
+def cutMHTest_dosimm(mod:MHmodel, test:cutMHTest, nsamps:Int, size:Int,
+                     acc:Double, path:String, deltaStar:Float,
+                     conservative:Boolean):(DMat,LMat,DMat,Int) = {
+    var theta = mod.initfn();
+    val samples = dzeros(theta.length, nsamps);
+    val sizes = lzeros(1, nsamps);
+    val lls = dzeros(1, nsamps);
+    var here = 0;
+    var i = 0;
+    var mbSize = size // this will contain sizes
+    
+    tic;
+    println("")
+    println("at start, mbSize=" +mbSize+ ", test.eps=" +test.eps)
+    while (i < nsamps) {
+    	if (i % 100 == 0){
+            val t = toc;
+    		println("cut mh test iteration = %d, elapsed time = %f secs" format(i, t));
+    	}
+    	if (! test.error_bound){
+    		val epsi = 0.01 * pow((0.01 + i), -0.55).dv;
+    		test.eps = epsi;
+    	}
+		val ttheta = mod.proposalfn(theta);
+
+        // MAJOR NEW CHANGES, to modify eps and size before doing the test step.
+        // This _should_ be the correct location ... I'm also putting mu_0.
+	    val mu_0 = 1.0/test.N * ln(rand(1,1)).dv;
+
+        if (!conservative) {
+            val (thisEps, thisSize) = nonConservativeSearch(mod, test, 
+                                                            path, deltaStar, 
+                                                            theta, ttheta, mu_0)
+            test.eps = thisEps
+            mbSize = thisSize
+            //println("i="+i+", mbSize=" +mbSize+ ", test.eps=" +test.eps)
+        }
+
+		val (there, nth, ll) = cutMHTest_dostep(mod, test, mod.data, mbSize, here, theta, ttheta, acc, mu_0);
+		sizes(i) = if (there > here) (there - here) else (there - here + mod.data.ncols);
+		lls(i) = ll;
+		here = there;
+		theta = nth;
+		samples(?, i) = DMat(theta);
+		i += 1;
+    }
+    println("")
+    (samples, sizes, lls, thisSeed);
+};
 
 
 /**
