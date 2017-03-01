@@ -17,6 +17,8 @@
 \newtheorem{corollary}{Corollary}
 \graphicspath{{figures/}{../figures/}}
 
+\newcommand\T{\rule{0pt}{2.6ex}}       % Top strut
+\newcommand\B{\rule[-1.2ex]{0pt}{0pt}} % Bottom strut
 
 \title{An Efficient Minibatch Acceptance Test for Metropolis-Hastings}
 
@@ -479,7 +481,7 @@ acceptable $L_{\infty}$ norm.
 
 % Daniel: use this algorithm style instead
 \begin{algorithm}[tb]
-\caption{Our acceptance test for MCMC.}
+\caption{Our acceptance test, {\sc MCminibatch}.}
 \label{alg:our_algorithm}
 \begin{algorithmic}
     \STATE {\bfseries Input:} number of samples $T$, minibatch size $m$, error
@@ -512,18 +514,18 @@ acceptable $L_{\infty}$ norm.
 \end{algorithm}
 
 With this approach, there is no guarantee that $u^* \geq 0$. However, we have
-some flexibility in the choice of $\sigma$ in Equation~(\ref{eq:overall_corr_problem}).
-As we decrease the variance of $X_{\rm norm}$, the variance of $X_{\rm corr}$
-grows by the same amount and is in fact the result of convolution with a
-Gaussian whose variance is the difference.  Thus as $\sigma$ decreases,
-$C_\sigma(X)$ grows and approaches the derivative of a logistic function at
-$\sigma = 0$. It retains some weak negative values for $\sigma > 0$ but removal
-of those leads to small error. \textbf{Daniel: I moved this to
-Appendix~\ref{app:correction} so that we can have more detailed results. For the
-main text, let's state the value $\sigma$ and its error. Originally, we said:
-Table~\ref{tab:xcorr} shows that the errors between $X_{\rm norm}+X_{\rm corr}$
-and $X_{\rm log}$ approach single floating precision (about $10^{-7}$).}
-Algorithm~\ref{alg:our_algorithm} describes our procedure. A few points:
+some flexibility in the choice of $\sigma$ in
+Equation~(\ref{eq:overall_corr_problem}).  As we decrease the variance of
+$X_{\rm norm}$, the variance of $X_{\rm corr}$ grows by the same amount and is
+in fact the result of convolution with a Gaussian whose variance is the
+difference.  Thus as $\sigma$ decreases, $C_\sigma(X)$ grows and approaches the
+derivative of a logistic function at $\sigma = 0$. It retains some weak negative
+values for $\sigma > 0$ but removal of those leads to small error. We use
+$N=4000$ and $\lambda=10$ for our experiments, which empirically provided
+excellent performance. See Table~\ref{tab:xcorr} in
+Appendix~\ref{app:correction} for detailed $L_{\rm \infty}$ errors for different
+settings. Algorithm~\ref{alg:our_algorithm} describes our procedure, {\sc
+MHminibatch}. A few points:
 
 \begin{itemize}[noitemsep]
     \item It uses an adaptive step size so as to use the smallest possible
@@ -550,6 +552,10 @@ Algorithm~\ref{alg:our_algorithm} describes our procedure. A few points:
 
 
 \section{ANALYSIS}\label{sec:analysis}
+
+\textbf{Daniel: TODO this should be where we mention that AustereMH still
+requires computation of all likelihoods, and we should explain John's complaint
+about Gaussianity here.}
 
 We now derive error bounds for our M-H test and the target distribution it
 generates. In the most similar prior works,~\cite{cutting_mh_2014} use CLT
@@ -701,6 +707,18 @@ where $\epsilon$ is the bound on the error in the acceptance test.
 
 \section{EXPERIMENTS}\label{sec:experiments}
 
+In Sections~\ref{ssec:gaussians} and~\ref{ssec:logistic}, we benchmark our test,
+{\sc MHminibatch}, against the test from~\cite{icml2014c1_bardenet14} ({\sc
+MHSubLhd}) and from~\cite{cutting_mh_2014}. As highlighted in
+Section~\ref{sec:analysis}, the test from~\cite{cutting_mh_2014} can be
+implemented using a conservative or a non-conservative variant; we name these
+{\sc AustereMH(c)}, and {\sc AustereMH(nc)}, respectively, and they use the
+grid-search over minibatch sizes $m$ and per-test thresholds $\epsilon$
+described in Appendix~\ref{sssec:grid_search}. Throughout our descriptions, we
+refer to a \emph{trial} as the period when an algorithm collects all its desired
+samples $\{\theta_1,\ldots,\theta_T\}$, with $T$ usually several thousand.
+\textbf{Daniel: better call temperature something other than $T$ ...}
+
 \subsection{MIXTURE OF GAUSSIANS}\label{ssec:gaussians}
 
 % Daniel: moving this here so figures don't overflow to next pages. We can tune
@@ -724,9 +742,9 @@ where $\epsilon$ is the bound on the error in the acceptance test.
     \label{fig:gauss_mix_2}
 \end{figure*}
 
-This model is adapted from~\cite{langevin_2011} by increasing the number
-of samples to 1 million.  The parameters are $\theta = \langle \theta_1,\theta_2 \rangle$, and the
-generation process is
+This model is adapted from~\cite{langevin_2011} by increasing the number of
+samples to 1 million.  The parameters are $\theta = \langle \theta_1,\theta_2
+\rangle$, and the generation process is
 \begin{equation}\label{eq:data_generation}
 \begin{split}
     \theta &\sim \mathcal{N}(0, {\rm diag}(\sigma_1^2,\sigma_2^2)) \\
@@ -743,37 +761,28 @@ two very narrow peaks.  Our goal is to reproduce the original posterior, so we
 adjust the temperature to $T=10,000$.  Taking logs, we get the target as shown
 in the far left of Figure~\ref{fig:gauss_mix_1}.
 
-We ran MCMC with with our test against the test
-from~\cite{icml2014c1_bardenet14} and a simplified version
-of~\cite{cutting_mh_2014}. Both methods use repeated testing which must be
-discounted to bound overall test accuracy. ~\cite{icml2014c1_bardenet14}
-conservatively partitions the test error, while~\cite{cutting_mh_2014} used a
-complex dynamic programming heuristic to estimate the overall test error. We did
-not implement this heuristic and instead set the individual test error equal to
-the overall test error. Thus our results for~\cite{cutting_mh_2014} should be
-treated as lower bounds. All methods were initialized with minibatch size 100.
-For~\cite{cutting_mh_2014} we increment sizes by 100 and set the tolerance
-$\epsilon=0.005$ to control overall test error.
-For~\cite{icml2014c1_bardenet14}, we increase sizes geometrically with $\gamma =
-1.5$ and use parameters $p = 2, \delta = 0.01$.  All methods collect 5000
-samples using a random walk proposer with covariance ${\rm diag}(0.15, 0.15)$,
-which means the M-H test is responsible for shaping the sample distribution.
+We benchmark with {\sc AustereMH(c)} and {\sc MHSubLhd}. {\sc MHminibatch} and
+{\sc MHSubLhd} were initialized with $m=100$. For {\sc MHSubLhd}, we increase
+sizes geometrically with $\gamma = 1.5$ and use parameters $p = 2, \delta =
+0.01$.  All methods collect 5000 samples using a random walk proposer with
+covariance ${\rm diag}(0.15, 0.15)$, which means the M-H test is responsible for
+shaping the sample distribution.
 
 Figure~\ref{fig:gauss_mix_1} shows scatter plots of the resulting $\theta$
 samples for the three methods, with darker regions indicating a greater density
-of points. There are no obvious differences, so we measure the similarity
-between each set of samples and the actual posterior. \textbf{Daniel: I think
-this was taking up too much space so I put it in Appendix~\ref{app:gaussians}.
-Let's state the result (in Table~\ref{tab:poissons}) and prioritize other stuff
-here.  TODO}
+of points. There are no obvious differences, showing that {\sc MHminibatch}
+reaches an acceptable posterior. We further measure the similarity between each
+set of samples and the actual posterior. Due to space constraints, results are
+in Appendix~\ref{app:gaussians}.
 
-Figure~\ref{fig:gauss_mix_2} shows that the new method dominates in
-terms of speed and efficiency. The histograms of the (final) minibatch sizes
-used each iteration show that our method consumes significantly less data; the
+Figure~\ref{fig:gauss_mix_2} shows that {\sc MHminibatch} dominates in terms of
+speed and efficiency. The histograms of the (final) minibatch sizes used each
+iteration show that our method consumes significantly less data; the
 distribution is short-tailed and the mean is 210, more than an order of
 magnitude better compared to the other two methods (averages are 15562 and
-16857). The sizes correspond to the running times of the methods, since
-they all consume linear time in data consumed. 
+16857). The sizes correspond to the running times of the methods, excluding the
+likelihood computation of all data points for {\sc MHSubLhd}, which would
+drastically increase running time.
 
 
 \subsection{LOGISTIC REGRESSION}\label{ssec:logistic}
@@ -784,7 +793,13 @@ they all consume linear time in data consumed.
 	\centering
 	\includegraphics[width=1.0\linewidth]{logistic_regression_error_regions.png}
 	\caption{
-    TODO
+    Binary classification accuracy of the MCMC methods on the 1s vs 7s logistic
+    regression task for MNIST-13k (left plot) and MNIST-100k (middle plot) as a
+    function of cumulative data usage.  The right plot reports performance of
+    {\sc MHminibatch} on both datasets when the temperature starts at $T=100$
+    and drops to $T=1$ after a ``burn-in'' period of 200 samples of $\theta$.
+    For all three plots, one standard deviation is indicated by the shaded error
+    regions.
     }
 	\label{fig:logistic_performance}
 \end{figure*}
@@ -793,9 +808,10 @@ they all consume linear time in data consumed.
 	\centering
     \includegraphics[width=0.75\linewidth]{logistic_regression_histograms_mnist.png}
 	\caption{
-    Minibatch sizes used for one representative trial in
-    Section~\ref{ssec:logistic} using MNIST-13k (analogous to
-    Figure~\ref{fig:gauss_mix_2}).
+    Minibatch sizes for a representative trial of logistic regression on
+    MNIST-13k (analogous to Figure~\ref{fig:gauss_mix_2}). Both axes are on a
+    log scale and have the same ranges across the three histograms. See
+    Section~\ref{ssec:logistic} for details.
     }
 	\label{fig:logistic_histograms_mnist}
 \end{figure*}
@@ -804,88 +820,125 @@ they all consume linear time in data consumed.
 	\centering
     \includegraphics[width=0.75\linewidth]{logistic_regression_histograms_mnist8m.png}
 	\caption{
-    Minibatch sizes used for one representative trial in
-    Section~\ref{ssec:logistic} using MNIST8M-100k (similar to
-    Figure~\ref{fig:logistic_histograms_mnist}).
+    Minibatch sizes for a representative trial of logistic regression on
+    MNIST-100k (similar to Figure~\ref{fig:logistic_histograms_mnist}). Both
+    axes are on a log scale and have the same ranges across the three
+    histograms.  See Section~\ref{ssec:logistic} for details.
     }
 	\label{fig:logistic_histograms_mnist8m}
 \end{figure*}
 
 \begin{table}[t]
-\caption{Logistic Regression Average Minibatch Size}
+\caption{
+Average minibatch sizes ($\pm$ one standard deviation) for the methods on the
+logistic regression tasks of binary classification on MNIST-13k and MNIST-100k.
+The averages are taken over 10 independent trials (5000 samples each) for
+MNIST-13k and 5 independent trials (3000 samples each) for MNIST-100k.
+}
+\small % Daniel: yeah, sorry, but otherwise it doesn't fit in a column
 \label{tab:logistic}
 \vskip 0.15in
 \begin{center}
 \begin{tabular}{l l l l}
 \textbf{Method/Data} & \textbf{MNIST-13k} & \textbf{MNIST-100k}  \\
 \hline \\
-Our Method & $129.8\pm 3.4$ & $2059.9\pm 135.5$ \\
-AustereMH  & $1924.3\pm 52.4$ & \textbf{TODO} \\
-MHSubLhd   & $10783.4\pm 78.9$ & \textbf{TODO} \\
+{\sc MHminibatch}   & $129.8\pm 3.4$    & $202.5 \pm 13.6$ \\
+{\sc AustereMH(nc)} & $973.8\pm 49.8$   & N/A \\
+{\sc AustereMH(c)}  & $1924.3\pm 52.4$  & $2795.6 \pm 364.0$ \\
+{\sc MHSubLhd}      & $10783.4\pm 78.9$ & $14977.3 \pm 582.0$ \\
 \end{tabular}
 \end{center}
 \vskip -0.1in
 \end{table}
 
-\textbf{Daniel: TODO this section is badly out of date but I will re-write it
-and it should be much better than what we had earlier. Also, define a trial
-since I say it in the table and figures. Finally, define AustereMH and MHSubLhd,
-and come up with a name for our method.}
-
 We next test logistic regression for the binary classification of 1s versus 7s
-on a subset of the MNIST8M dataset, a larger version of
-MNIST~\cite{lecun-mnisthandwrittendigit-2010}. We randomly subsampled 450k
-training and 192k testing points.  We impose a uniform prior on $\theta$ and
-again use a random walk proposer, this time with covariance matrix $0.05I$. The
-temperature is set at $T=1000$. We run the three tests for 3000 samples and
-again use 100 as the starting minibatch size. Our undiscounted implementation
-of~\cite{cutting_mh_2014} used per-test error of $\epsilon=0.05$.
-For~\cite{icml2014c1_bardenet14}, we use their recommended discounting factor
-value of $\gamma=2.0$. We tried to use the symbolic bound for
-$C_{\theta,\theta'}$ for Logistic regression from~\cite{icml2014c1_bardenet14},
-but found it to be too high. Instead we use the empirical $C_{\theta,\theta'}$
-from the entire dataset and do not add its computation time when considering
-runtime, so again our results represent a lower bound for this method.
+on the MNIST~\cite{lecun-mnisthandwrittendigit-2010} dataset and (a subset of)
+infinite MNIST~\cite{loosli-canu-bottou-2006}. For the former, extracting all 1s
+and 7s resulted in 13,000 training samples, and for the latter, we used 87,000
+additional (augmented) 1s and 7s to get 100,000 training samples. Both datasets
+use the same test set, with 2,163 samples. Henceforth, we call them MNIST-13k
+and MNIST-100k, respectively.
 
-Figure~\ref{fig:logistic_performance} shows the test log likelihood and
-prediction accuracy as a function of the cumulative training points
-processed.\footnote{The curves do not span the same length over the x-axis since
-the methods consume different amounts of data.} To generate the curves, for each
-of the sampled vectors $\theta_t$, $t\in\{1,\ldots,3000\}$, we use $\theta_t$ as
-the parameter for logistic regression.  Our minibatch MH test is more efficient
-in terms of accuracy, achieving convergence roughly twice as fast compared
-to~\cite{cutting_mh_2014} and about 1.5 orders of magnitude faster
-than~\cite{icml2014c1_bardenet14}, though its log likelihood results lag
-slightly behind the former algorithm during the very early stages of
-exploration.
+For all methods, we impose a uniform prior on $\theta$ and again use a random
+walk proposer, with covariance matrix $0.05I$ for MNIST-13k and $0.01I$ for
+MNIST-100k. The default temperature setting is a constant at $T=100$ for
+MNIST-13k and MNIST-100k. Performance of all methods implicitly relies on the
+step size and temperature. Setting temperature too low or step size too high
+will generally result in worse performance for all methods. For MNIST-13k, each
+method generated 5000 samples for ten independent trials; due to MNIST-100k's
+higher computational requirements, the methods generated 3000 samples for five
+independent trials.  For additional parameter settings and an investigation on
+tuning step sizes, see Appendix~\ref{app:logistic}.
 
-Figure~\ref{fig:logistic_minibatch} shows histograms of minibatch sizes for the
-three methods on a log-log scale. With an initial size of 100, we achieve an
-average minibatch size of 393, more than two orders of magnitude smaller
-than~\cite{icml2014c1_bardenet14}, and almost an order of magnitude faster than
-the undiscounted implementation of~\cite{cutting_mh_2014}.
+For {\sc MHSubLhd}, we tried to use the provided symbolic bound for
+$C_{\theta,\theta'}$ described in~\cite{icml2014c1_bardenet14}, but it was too
+high and provided no performance benefit. Instead we use the empirical
+$C_{\theta,\theta'}$ from the entire dataset. 
 
+The first two subplots of Figure~\ref{fig:logistic_performance} display the
+prediction accuracy on both datasets for all methods as a function of the
+cumulative training points processed.\footnote{The curves do not span the same
+length over the x-axis since the methods consume different amounts of data.} To
+generate the curves, for each of the sampled vectors $\theta_t$,
+$t\in\{1,\ldots,N\}$ ($N=5000$ for MNIST-13k, $N=3000$ for MNIST-100k), we use
+$\theta_t$ as the parameter for logistic regression. The results indicate that
+our test is more efficient, obtaining convergence more than an order of
+magnitude faster than {\sc AustereMH(nc)} and several orders of magnitude
+compared to {\sc AustereMH(c)} and {\sc MHSubLhd}. We also observe the advantage
+of having higher temperature from the third plot in
+Figure~\ref{fig:logistic_performance}. During the exploration period, the
+accuracy rapidly increases, and then after 200 samples, we switch the
+temperature to 1 (equivalent to ignoring temperature). {\rm MHminibatch}
+requires the step size to decrease, hence the smaller changes in accuracy.
+
+Figures~\ref{fig:logistic_histograms_mnist}
+and~\ref{fig:logistic_histograms_mnist8m} show histograms of minibatch sizes for
+the three methods on a log-log scale for MNIST-13k and MNIST-100k, respectively.
+The histograms only represent one representative trial; Table~\ref{tab:logistic}
+contains the average of the average minibatch sizes ($\pm$ one standard
+deviation) across either 10 or 5 trials. The results indicate that {\sc
+MHminibatch}, with average minibatch sizes of roughly 129.8 and 202.5 for
+MNIST-13k and MNIST-100k, respectively, consumes almost an order of magnitude
+fewer data points than the next-best method, {\sc AustereMH(nc)}.  We reiterate,
+however, that both {\sc AustereMH(nc)} and {\sc MHSubLhd} require computing
+$\log p(x_i|\theta)$ and $\log p(x_i|\theta')$ for all $x_i$ each iteration.
+These results here do not count that extra data consumption. Only our method and
+{\sc AustereMH(c)} rely solely on the minibatch of data each iteration.
 
 
 
 \subsection{SPARSE MATRIX FACTORIZATION}\label{ssec:collab_filtering}
+
+\begin{table}[t]
+\caption{\textbf{TODO TABLE WITH SMF RESULTS}}
+\small % Daniel: yeah, sorry, but otherwise it doesn't fit in a column
+\label{tab:smf}
+\vskip 0.15in
+\begin{center}
+\begin{tabular}{l l l l}
+\textbf{RMSE} & \textbf{MovieLens 10m} & \textbf{Netflix}  \\
+\hline \\
+{\sc MHminibatch} & ??? & ??? & \\
+ADAGrad           & ??? & ??? & \\
+\end{tabular}
+\end{center}
+\vskip -0.1in
+\end{table}
 
 \textbf{Daniel: TODO we wanted a third experiment, right?}
 
 
 \section{CONCLUSIONS}\label{sec:conclusion}
 
-\textbf{Daniel: double check this in case we add a third experiment.}
-
 We have derived an M-H test for minibatch MCMC which approximates full data
 tests. We present theoretical results and experimentally show the benefits of
-our test on Gaussian mixtures and logistic regression.  Directions for future
-work include integrating our algorithm with~\cite{cutting_mh_2014} by applying
-both tests each iteration or utilizing the variance reduction techniques
-suggested in~\cite{DBLP:conf/icml/ChenG16}.  More elaborate extensions involve
-running more experiments on other models such as neural networks and providing a
-recipe for how to use our algorithm (following the framework
-of~\cite{sgmcmc_2015}).
+our test on Gaussian mixtures, logistic regression, and sparse matrix
+factorization.  Directions for future work include integrating our algorithm
+with~\cite{cutting_mh_2014} by applying both tests each iteration or utilizing
+the variance reduction techniques suggested in~\cite{DBLP:conf/icml/ChenG16}.
+More elaborate extensions involve running more experiments on other models such
+as neural networks and providing a recipe for how to use our algorithm
+(following the framework of~\cite{sgmcmc_2015}).
 
 
 
@@ -908,7 +961,9 @@ This appendix is divided into two main parts. Appendix~\ref{app:proofs} provides
 the proofs that we omitted from the main text due to space constraints.
 Appendix~\ref{app:experiments} provides further details on the correction
 distribution derivation and on our three main experiments to assist
-understanding and reproducibility.
+understanding and reproducibility. Our code is open-source on
+GitHub.\footnote{\url{https://github.com/BIDData/BIDMach/blob/master/src/main/scala/BIDMach/updaters/MHTest.scala}}
+% Daniel: TODO remove for anonymous review later.
 
 
 \section{PROOFS OF LEMMAS AND COROLLARIES}\label{app:proofs}
@@ -1006,12 +1061,6 @@ and since $\sup_x|P(x)-Q(x)|\leq \epsilon$ it follows that $\forall z$:
 \begin{equation}
 -\epsilon = \int_{-\infty}^{+\infty} -\epsilon R(x) dx \leq \int_{-\infty}^{+\infty}(P(z-x)-Q(z-x))R(x) dx \leq \int_{-\infty}^{+\infty}\epsilon R(x) dx = \epsilon,
 \end{equation}
-% Daniel: this is the multi-line version, but we should use the full page.
-%\begin{align*}
-%-\epsilon &= \int_{-\infty}^{+\infty} -\epsilon R(x) dx \\
-%&\leq \int_{-\infty}^{+\infty}(P(z-x)-Q(z-x))R(x) dx \\
-%&\leq \int_{-\infty}^{+\infty}\epsilon R(x) dx = \epsilon,
-%\end{align*}
 as desired.
 
 
@@ -1035,11 +1084,11 @@ Now we convolve with the distribution of $X_{\rm corr}$:
     \quad {\rm and}\quad Q''(y) = S\left({y-\Delta}\right)
 \end{equation}
 Both steps preserve the error bound $\epsilon(\theta,\theta',b)$. Finally
-$S(y-\Delta)$ is a logistic CDF centered at $\Delta$, and so $S(y-\Delta) =
-{\rm Pr}(\Delta + X_{\rm log} < y)$ for a logistic random $X_{\rm log}$. We conclude
+$S(y-\Delta)$ is a logistic CDF centered at $\Delta$, and so $S(y-\Delta) = {\rm
+Pr}(\Delta + X_{\rm log} < y)$ for a logistic random $X_{\rm log}$. We conclude
 that the probability of acceptance for the actual test ${\rm Pr}(\Delta^*+X_{\rm
-nc}+X_{\rm corr} > 0)$ differs from the exact test ${\rm Pr}(\Delta+X_{\rm log} > 0)$
-by at most $\epsilon$.
+nc}+X_{\rm corr} > 0)$ differs from the exact test ${\rm Pr}(\Delta+X_{\rm log}
+> 0)$ by at most $\epsilon$.
 
 
 \subsection{IMPROVED ERROR BOUNDS BASED ON SKEW ESTIMATION}\label{app:better_error_bound}
@@ -1132,114 +1181,114 @@ log}$, with $N=4000$ (top row) and $N=2000$ (bottom row).}
 %% ----------------------- START OF TABLE
 \begin{tabular}{l l}
 \hline
-$N=2000$ & $\sigma=0.8$ \\
+\T\B  $N=2000$ & $\sigma=0.8$ \rule{0pt}{3ex} \\
 \hline
-$\lambda$ & $L_{\infty}$ error \\
+\T\B $\lambda$ & $L_{\infty}$ error \\
 \hline
-100    & 2.6e-3  \\
+100    & 2.6e-3 \T \\
 10     & 4.0e-4  \\
 1      & 6.7e-5  \\
 0.1    & 1.4e-5  \\
-0.01   & \textbf{5.0e-6}  \\
+0.01   & \textbf{5.0e-6} \B \\
 \hline
 \end{tabular}
 \quad %% ----------------------- START OF TABLE
 \begin{tabular}{l l}
 \hline
-$N=2000$ & $\sigma=0.9$ \\
+\T\B $N=2000$ & $\sigma=0.9$ \\
 \hline
-$\lambda$ & $L_{\infty}$ error \\
+\T\B $\lambda$ & $L_{\infty}$ error \\
 \hline
-100    & 3.3e-3  \\
+100    & 3.3e-3 \T \\
 10     & 6.4e-4  \\
 1      & 1.6e-4  \\
 0.1    & \textbf{1.3e-4}  \\
-0.01   & 2.7e-4  \\
+0.01   & 2.7e-4 \B \\
 \hline
 \end{tabular}
 \quad %% ----------------------- START OF TABLE
 \begin{tabular}{l l}
 \hline
-$N=2000$ & $\sigma=1.0$ \\
+\T\B $N=2000$ & $\sigma=1.0$ \\
 \hline
-$\lambda$ & $L_{\infty}$ error \\
+\T\B $\lambda$ & $L_{\infty}$ error \\
 \hline
-100    & 4.4e-3  \\
+100    & 4.4e-3 \T \\
 10     & 1.3e-3  \\
 1      & \textbf{1.1e-3}  \\
 0.1    & 2.0e-3  \\
-0.01   & 3.6e-3  \\
+0.01   & 3.6e-3 \B \\
 \hline
 \end{tabular}
 \quad %% ----------------------- START OF TABLE
 \begin{tabular}{l l}
 \hline
-$N=2000$ & $\sigma=1.1$ \\
+\T\B $N=2000$ & $\sigma=1.1$ \\
 \hline
-$\lambda$ & $L_{\infty}$ error \\
+\T\B $\lambda$ & $L_{\infty}$ error \\
 \hline
-100    & 6.8e-3  \\
+100    & 6.8e-3 \T \\
 10     & \textbf{4.6e-3}  \\
 1      & 7.5e-3  \\
 0.1    & 1.3e-2  \\
-0.01   & 2.4e-2  \\
+0.01   & 2.4e-2 \B \\
 \hline
 \end{tabular}
 %% ---- NEW ROW ----
 \vskip 0.2in %% OH this works!
 \begin{tabular}{l l}
 \hline
-$N=4000$ & $\sigma=0.8$ \\
+\T\B $N=4000$ & $\sigma=0.8$ \\
 \hline
-$\lambda$ & $L_{\infty}$ error \\
+\T\B $\lambda$ & $L_{\infty}$ error \\
 \hline
-100    & 8.3e-4  \\
+100    & 8.3e-4 \T \\
 10     & 1.3e-4  \\
 1      & 2.5e-5  \\
 0.1    & \textbf{6.7e-6}  \\
-0.01   & 7.4e-6  \\
+0.01   & 7.4e-6 \B \\
 \hline
 \end{tabular}
 \quad %% ----------------------- START OF TABLE
 \begin{tabular}{l l}
 \hline
-$N=4000$ & $\sigma=0.9$ \\
+\T\B $N=4000$ & $\sigma=0.9$ \\
 \hline
-$\lambda$ & $L_{\infty}$ error \\
+\T\B $\lambda$ & $L_{\infty}$ error \\
 \hline
-100    & 1.2e-3  \\
+100    & 1.2e-3 \T \\
 10     & 2.6e-4  \\
 1      & \textbf{1.0e-4}  \\
 0.1    & 2.0e-4  \\
-0.01   & 3.9e-4  \\
+0.01   & 3.9e-4 \B \\
 \hline
 \end{tabular}
 \quad %% ----------------------- START OF TABLE
 \begin{tabular}{l l}
 \hline
-$N=4000$ & $\sigma=1.0$ \\
+\T\B $N=4000$ & $\sigma=1.0$ \\
 \hline
-$\lambda$ & $L_{\infty}$ error \\
+\T\B $\lambda$ & $L_{\infty}$ error \\
 \hline
-100    & 1.9e-3  \\
+100    & 1.9e-3 \T \\
 10     & \textbf{8.9e-4}  \\
 1      & 1.6e-3  \\
 0.1    & 2.8e-3  \\
-0.01   & 5.2e-3  \\
+0.01   & 5.2e-3 \B \\
 \hline
 \end{tabular}
 \quad %% ----------------------- START OF TABLE
 \begin{tabular}{l l}
 \hline
-$N=4000$ & $\sigma=1.1$ \\
+\T\B $N=4000$ & $\sigma=1.1$ \\
 \hline
-$\lambda$ & $L_{\infty}$ error \\
+\T\B $\lambda$ & $L_{\infty}$ error \\
 \hline
-100    & \textbf{4.3e-3}  \\
+100    & \textbf{4.3e-3} \T \\
 10     & 6.0e-3  \\
 1      & 1.0e-2  \\
 0.1    & 1.2e-2  \\
-0.01   & 3.5e-2  \\
+0.01   & 3.5e-2 \B \\
 \hline
 \end{tabular}
 \end{small}
@@ -1255,17 +1304,17 @@ choices.  We test using $N=2000$ and $N=4000$ points for discretization within
 a range of $X_{\rm corr} \in [-20,20]$, covering essentially all the probability
 mass. We also vary $\sigma$ from 0.8 to 1.1. 
 
-We observe a tradeoff. With smaller $\sigma$, our $C_\sigma$ is closer to the
-ideal distribution (as judged by $L_\infty$ error), but this imposes a stricter
-upper bound on the sample variance of $\Delta^*$ before our test can be applied,
-which thus results in larger minibatch sizes. Conversely, a more liberal upper
-bound means we avail ourselves of smaller minibatch sizes, but at the cost of a
-less stable derivation for $C_\sigma$.
+We observe the expected tradeoff. With smaller $\sigma$, our $C_\sigma$ is
+closer to the ideal distribution (as judged by $L_\infty$ error), but this
+imposes a stricter upper bound on the sample variance of $\Delta^*$ before our
+test can be applied, which thus results in larger minibatch sizes. Conversely, a
+more liberal upper bound means we avail ourselves of smaller minibatch sizes,
+but at the cost of a less stable derivation for $C_\sigma$.
 
-\textbf{We chose XXXX to use in our experiments, which empirically provided an
-acceptable tradeoff to us.} This is reflected in
-Algorithm~\ref{alg:our_algorithm}, which assumes that we used \textbf{TODO TODO
-TODO TODO TODO} but we reiterate that the choice is arbitrary so long as $0 <
+We chose $N=4000, \sigma=1$, and $\lambda = 10$ to use in our experiments, which
+empirically exhibits excellent performance. This is reflected in the description
+of {\sc MHminibatch} in Algorithm~\ref{alg:our_algorithm}, which assumes that we
+used $\sigma=1$ but we reiterate that the choice is arbitrary so long as $0 <
 \sigma < \sqrt{\pi^2/3} \approx 1.814$, the standard deviation of the standard
 logistic distribution, since there must be some variance left over for $X_{\rm
 corr}$.
@@ -1274,11 +1323,12 @@ corr}$.
 
 \begin{table}[t]
 \caption{Gaussian Mixture Model Statistics}
+\small
 \label{tab:poissons}
 \vskip 0.15in
 \begin{center}
 \begin{tabular}{l l l l}
-\textbf{Metric} & \textbf{Ours} & \textbf{AustereMH} & \textbf{MHSubLhd} \\
+\textbf{Metric} & {\sc MCminibatch} & {\sc AustereMH} & {\sc MHSubLhd} \\
 \hline \\
 Equation~\ref{eq:log_prob_poissons} & -1430.0 & -1578.9 & -1232.7 \\
 Chi-Squared & 3313.9 & 3647.7 & 2444.1 \\
@@ -1287,37 +1337,106 @@ Chi-Squared & 3313.9 & 3647.7 & 2444.1 \\
 \vskip -0.1in
 \end{table}
 
+% Daniel: added this here, because it applies to both this and logistic
+% regression.
+\subsubsection{Grid Search}\label{sssec:grid_search}
+
+For the Gaussian mixture experiment, we use the conservative method
+from~\cite{cutting_mh_2014}, which avoids the need for recomputing log
+likelihoods of each data point each iteration by choosing baseline minibatch
+sizes $m$ and per-test thresholds $\epsilon$ beforehand, and then using those
+values for the entirety of the trials. We experimented with the following
+values:
+\begin{itemize}[noitemsep]
+\item $\epsilon \in \{0.001, 0.005, 0.01, 0.05, 0.1, 0.2\}$
+\item $m \in \{50, 100, 150, 200, 250, 300, 350, 400, 450, 500\}$
+\end{itemize}
+The main difference between {\sc AustereMH(c)} and {\sc
+AustereMH(nc)}\footnote{{\sc AustereMH(nc)} is used in
+Section~\ref{ssec:logistic}.}  is that the latter needs to run a grid search
+each iteration (i.e. after each time it makes an accept/reject decision for one
+sample $\theta_t$). We use the same $\epsilon$ and $m$ candidates above for {\sc
+AustereMH(nc)}.
+
+
+\subsubsection{Gaussian Mixture Model Metrics}\label{sssec:gauss_metrics}
+
+\textbf{Daniel: Xinlei, you should be in charge of checking this section and
+adding some stuff to Table~\ref{tab:poissons}, perhaps averages plus or minus
+one standard deviation.}
+
 We discretize the posterior coordinates into bins with respect to the two
 components of $\theta$.  The probability $P_i$ of a sample falling into bin $i$
 is the integral of the true posterior over the bin's area.  A single sample
 should therefore be multinomial with distribution $P$, and a set of $n$ (ideally
 independent) samples is ${\rm Multinomial}(P,n)$. This distribution is simple
 and we can use it to measure the quality of the samples rather than use general
-purpose tests like KL-divergence or likelihood-ratio, which are problematic
-with zero counts.
+purpose tests like KL-divergence or likelihood-ratio, which are problematic with
+zero counts.
 
 For large $n$, the per-bin distributions are approximated by Poissons with
 parameter $\lambda_i=P_i n$. Given samples $\{\theta_1,\ldots,\theta_T\}$, let
 $c_j$ denote the number of individual samples $\theta_i$ that fall in bin $j$
 out of $N_{\rm bins}$ total. We have
 \begin{equation}\label{eq:log_prob_poissons}
-\begin{split}
-    \log p(c_1, \ldots, c_{N_{\rm bins}} | P_1, \ldots, P_{N_{\rm bins}}) & =  \\
-    \sum_{j=1}^{N_{\rm bins}} c_j \log (n P_j) - n P_j - \log(\Gamma(c_j+1)). & \\
-\end{split}
+\log p(c_1, \ldots, c_{N_{\rm bins}} | P_1, \ldots, P_{N_{\rm bins}}) =
+\sum_{j=1}^{N_{\rm bins}} c_j \log (n P_j) - n P_j - \log(\Gamma(c_j+1)).
 \end{equation}
-Table~\ref{tab:poissons} shows the likelihoods. To facilitate
-interpretation we perform significance tests using Chi-Squared
-distribution (also in Table~\ref{tab:poissons}). Scores lie
-between~\cite{cutting_mh_2014} and~\cite{icml2014c1_bardenet14}, but
-the variance of these values is high and ordering changes depending on
-the range of samples generated.
-
-\textbf{Daniel: TODO improve this}
+Table~\ref{tab:poissons} shows the likelihoods. To facilitate interpretation we
+perform significance tests using Chi-Squared distribution (also in
+Table~\ref{tab:poissons}). Scores lie between~\cite{cutting_mh_2014}
+and~\cite{icml2014c1_bardenet14}, but the variance of these values is high and
+ordering changes depending on the range of samples generated. \textbf{Daniel:
+one reviewer had a problem with this, and I agree. The easiest fix here is to
+simply report standard deviation values. Also, we should emphasize that we are
+not aiming to get the best score by this metric but simply something that
+exhibits some form of ``correctness.''}
 
 \subsection{LOGISTIC REGRESSION EXPERIMENT (SECTION~\ref{ssec:logistic})}\label{app:logistic}
 
-\textbf{Daniel: TODO}
+\begin{figure*}[t]
+	\centering
+    \includegraphics[width=0.75\linewidth]{logistic_regression_histograms_mnist8m.png}
+	\caption{
+    \textbf{Daniel: TODO this is a wrong figure, I'll add what I want later}
+    }
+	\label{fig:logistic_histograms_appendix}
+\end{figure*}
+
+\begin{table}[t]
+\caption{Parameters for the logistic regression experiments. Unless otherwise
+stated, values apply to all methods tested. For the methods
+from~\cite{cutting_mh_2014}, we use their notation for clarity.}
+\small
+\label{tab:logistic_settings}
+\vskip 0.15in
+\begin{center}
+\begin{tabular}{l l l}
+\textbf{Value} & \textbf{MNIST-13k} & \textbf{MNIST-100k} \\
+\hline
+\T Temperature $K$       & 100 & 100 \\
+Number of samples $T$ & 5000 & 3000 \\
+Number of trials      & 10 & 5 \\
+Step size $\sigma$ for random walk proposer with covariance $\sigma I$ & 0.05 & 0.01 \\
+{\sc MHminibatch} and {\sc MHSubLhd} minibatch size $m$ & 100 & 100 \\
+{\sc AustereMH(c)} $\Delta^*$ bound & 0.1 & 0.2 \\
+{\sc AustereMH(c)} minibatch size $m$ from grid search & 450 & 300 \\
+{\sc AustereMH(c)} per-test threshold $\epsilon$ from grid search & 0.01 & 0.01\\
+{\sc AustereMH(nc)} $\Delta^*$ bound & 0.05 & 0.1 \\
+\end{tabular}
+\end{center}
+\vskip -0.1in
+\end{table}
+
+\textbf{Daniel: TODO major work in progress.}
+
+Table~\ref{tab:logistic_settings} indicates the parameter settings for the
+logistic regression experiments.
+
+Figure~\ref{fig:logistic_histograms_appendix} indicates minibatch histograms for
+one trial of {\sc MHminibatch} on MNIST-100k for proposers $\sigma I$ with
+$\sigma \in \{0.005, 0.01, 0.05\}$.
+
 
 \subsection{SPARSE MATRIX FACTORIZATION EXPERIMENT (SECTION~\ref{ssec:collab_filtering})}\label{app:collab_filtering}
 
