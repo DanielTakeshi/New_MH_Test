@@ -625,6 +625,7 @@ and displace by the mean, giving:
 
 \begin{corollary}\label{cor:our_bound_delta_prime}
 \begin{equation}
+\small
 \sup_y \left|{\rm Pr}(\Delta^*< y) -\Phi\left(\frac{y-\Delta}{s_{\Delta^*}}\right)\right| \leq \frac{6.4\mE[|X|^3]+2\mE[|X|]}{\sqrt{b}}
 \end{equation}
 \end{corollary} %\vspace{-10pt}
@@ -707,6 +708,8 @@ where $\epsilon$ is the bound on the error in the acceptance test.
 
 \section{EXPERIMENTS}\label{sec:experiments}
 
+% Daniel: NOTE, I'm calling temperature "K" so that "T" stays reserved for
+% "number of samples of \theta we draw".
 In Sections~\ref{ssec:gaussians} and~\ref{ssec:logistic}, we benchmark our test,
 {\sc MHminibatch}, against the test from~\cite{icml2014c1_bardenet14} ({\sc
 MHSubLhd}) and from~\cite{cutting_mh_2014}. As highlighted in
@@ -716,8 +719,7 @@ implemented using a conservative or a non-conservative variant; we name these
 grid-search over minibatch sizes $m$ and per-test thresholds $\epsilon$
 described in Appendix~\ref{sssec:grid_search}. Throughout our descriptions, we
 refer to a \emph{trial} as the period when an algorithm collects all its desired
-samples $\{\theta_1,\ldots,\theta_T\}$, with $T$ usually several thousand.
-\textbf{Daniel: better call temperature something other than $T$ ...}
+samples $\{\theta_1,\ldots,\theta_T\}$, generally with $T=3000$ or $T=5000$.
 
 \subsection{MIXTURE OF GAUSSIANS}\label{ssec:gaussians}
 
@@ -758,7 +760,7 @@ sampled 1,000,000 points to form the posterior of
 $p(\theta)\prod_{i=1}^{1,000,000}p(x_i | \theta)$ with the same prior from
 Equation~(\ref{eq:data_generation}). This produces a much sharper posterior with
 two very narrow peaks.  Our goal is to reproduce the original posterior, so we
-adjust the temperature to $T=10,000$.  Taking logs, we get the target as shown
+adjust the temperature to $K=10,000$.  Taking logs, we get the target as shown
 in the far left of Figure~\ref{fig:gauss_mix_1}.
 
 We benchmark with {\sc AustereMH(c)} and {\sc MHSubLhd}. {\sc MHminibatch} and
@@ -796,8 +798,8 @@ drastically increase running time.
     Binary classification accuracy of the MCMC methods on the 1s vs 7s logistic
     regression task for MNIST-13k (left plot) and MNIST-100k (middle plot) as a
     function of cumulative data usage.  The right plot reports performance of
-    {\sc MHminibatch} on both datasets when the temperature starts at $T=100$
-    and drops to $T=1$ after a ``burn-in'' period of 200 samples of $\theta$.
+    {\sc MHminibatch} on both datasets when the temperature starts at $K=100$
+    and drops to $K=1$ after a ``burn-in'' period of 200 samples of $\theta$.
     For all three plots, one standard deviation is indicated by the shaded error
     regions.
     }
@@ -806,7 +808,7 @@ drastically increase running time.
 
 \begin{figure*}[t]
 	\centering
-    \includegraphics[width=0.75\linewidth]{logistic_regression_histograms_mnist.png}
+    \includegraphics[width=0.9\linewidth]{logistic_regression_histograms_mnist.png}
 	\caption{
     Minibatch sizes for a representative trial of logistic regression on
     MNIST-13k (analogous to Figure~\ref{fig:gauss_mix_2}). Both axes are on a
@@ -818,7 +820,7 @@ drastically increase running time.
 
 \begin{figure*}[t]
 	\centering
-    \includegraphics[width=0.75\linewidth]{logistic_regression_histograms_mnist8m.png}
+    \includegraphics[width=0.9\linewidth]{logistic_regression_histograms_mnist8m.png}
 	\caption{
     Minibatch sizes for a representative trial of logistic regression on
     MNIST-100k (similar to Figure~\ref{fig:logistic_histograms_mnist}). Both
@@ -843,7 +845,7 @@ MNIST-13k and 5 independent trials (3000 samples each) for MNIST-100k.
 \textbf{Method/Data} & \textbf{MNIST-13k} & \textbf{MNIST-100k}  \\
 \hline \\
 {\sc MHminibatch}   & $129.8\pm 3.4$    & $202.5 \pm 13.6$ \\
-{\sc AustereMH(nc)} & $973.8\pm 49.8$   & N/A \\
+{\sc AustereMH(nc)} & $973.8\pm 49.8$   & $1098.3 \pm 44.9$ \\
 {\sc AustereMH(c)}  & $1924.3\pm 52.4$  & $2795.6 \pm 364.0$ \\
 {\sc MHSubLhd}      & $10783.4\pm 78.9$ & $14977.3 \pm 582.0$ \\
 \end{tabular}
@@ -861,7 +863,7 @@ and MNIST-100k, respectively.
 
 For all methods, we impose a uniform prior on $\theta$ and again use a random
 walk proposer, with covariance matrix $0.05I$ for MNIST-13k and $0.01I$ for
-MNIST-100k. The default temperature setting is a constant at $T=100$ for
+MNIST-100k. The default temperature setting is a constant at $K=100$ for
 MNIST-13k and MNIST-100k. Performance of all methods implicitly relies on the
 step size and temperature. Setting temperature too low or step size too high
 will generally result in worse performance for all methods. For MNIST-13k, each
@@ -1396,9 +1398,9 @@ exhibits some form of ``correctness.''}
 
 \begin{figure*}[t]
 	\centering
-    \includegraphics[width=0.75\linewidth]{logistic_regression_histograms_mnist8m.png}
+    \includegraphics[width=0.9\linewidth]{logistic_regression_step_size_tests.png}
 	\caption{
-    \textbf{Daniel: TODO this is a wrong figure, I'll add what I want later}
+    \textbf{Daniel: TODO describe}
     }
 	\label{fig:logistic_histograms_appendix}
 \end{figure*}
