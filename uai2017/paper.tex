@@ -725,19 +725,6 @@ where $\epsilon$ is the bound on the error in the acceptance test.
 
 \section{EXPERIMENTS}\label{sec:experiments}
 
-% Daniel: NOTE, I'm calling temperature "K" so that "T" stays reserved for
-% "number of samples of \theta we draw".
-In Sections~\ref{ssec:gaussians} and~\ref{ssec:logistic}, we benchmark {\sc
-MHminibatch} against the test from~\citep{icml2014c1_bardenet14} ({\sc
-MHSubLhd}) and from~\citep{cutting_mh_2014} ({\sc AustereMH(c)}, and {\sc
-AustereMH(nc)}). The latter two tests use a grid-search over minibatch sizes $m$
-and per-test thresholds $\epsilon$ described in
-Appendix~\ref{sssec:grid_search}. Throughout our descriptions, we refer to a
-\emph{trial} as the period when an algorithm collects all its desired samples
-$\{\theta_1,\ldots,\theta_T\}$, generally with $T=3000$ or $T=5000$.
-
-\subsection{MIXTURE OF GAUSSIANS}\label{ssec:gaussians}
-
 % Daniel: moving this here so figures don't overflow to next pages. We can tune
 % the positioning if needed.
 \begin{figure*}[t]
@@ -758,6 +745,19 @@ $\{\theta_1,\ldots,\theta_T\}$, generally with $T=3000$ or $T=5000$.
     }
     \label{fig:gauss_mix_2}
 \end{figure*}
+
+
+% Daniel: NOTE, I'm calling temperature "K" so that "T" stays reserved for
+% "number of samples of \theta we draw".
+In Sections~\ref{ssec:gaussians} and~\ref{ssec:logistic}, we benchmark {\sc
+MHminibatch} against the tests from~\citep{icml2014c1_bardenet14}
+and~\citep{cutting_mh_2014}, with the latter using a grid-search over minibatch
+sizes $m$ and per-test thresholds $\epsilon$ described in
+Appendix~\ref{sssec:grid_search}. Throughout our descriptions, we refer to a
+\emph{trial} as the period when an algorithm collects all its desired samples
+$\{\theta_1,\ldots,\theta_T\}$, generally with $T=3000$ or $T=5000$.
+
+\subsection{MIXTURE OF GAUSSIANS}\label{ssec:gaussians}
 
 This model is adapted from~\citep{langevin_2011} by increasing the number of
 samples to 1 million.  The parameters are $\theta = \langle \theta_1,\theta_2
@@ -797,10 +797,9 @@ speed and efficiency. The histograms of the (final) minibatch sizes used each
 iteration show that our method consumes significantly less data; the
 distribution is short-tailed and the mean is 210, more than an order of
 magnitude better compared to the other two methods (averages are 15562 and
-16857). \textbf{Daniel: Xinlei, you should change these numbers as you see fit,
-and also describe the number of trials you ran.} The sizes correspond to the
-running times of the methods, excluding the likelihood computation of all data
-points for {\sc MHSubLhd}, which would drastically increase running time.
+16857). Sizes correspond to the running times of the methods, excluding the
+likelihood computation of all data points for {\sc MHSubLhd}, which would
+drastically increase running time.
 
 
 \subsection{LOGISTIC REGRESSION}\label{ssec:logistic}
@@ -814,60 +813,26 @@ points for {\sc MHSubLhd}, which would drastically increase running time.
     Binary classification accuracy of the MCMC methods on the 1s vs 7s logistic
     regression task for MNIST-13k (left plot) and MNIST-100k (middle plot) as a
     function of cumulative data usage.  The right plot reports performance of
-    {\sc MHminibatch} on both datasets when the temperature starts at $K=100$
-    and drops to $K=1$ after a ``burn-in'' period of 200 samples of $\theta$.
-    For all three plots, one standard deviation is indicated by the shaded error
-    regions.
+    {\sc MHminibatch} on both datasets when the temperature starts at 100 and
+    drops to 1 after a ``burn-in'' period of 200 samples (vertical dashed line)
+    of $\theta$.  For all three plots, one standard deviation is indicated by
+    the shaded error regions.
     }
 	\label{fig:logistic_performance}
 \end{figure*}
 
-\begin{figure*}[t]
-	\centering
-    \includegraphics[width=0.9\linewidth]{logistic_regression_histograms_mnist.png}
-	\caption{
-    Minibatch sizes for a representative trial of logistic regression on
-    MNIST-13k (analogous to Figure~\ref{fig:gauss_mix_2}). Both axes are on a
-    log scale and have the same ranges across the three histograms. See
-    Section~\ref{ssec:logistic} for details.
-    }
-	\label{fig:logistic_histograms_mnist}
-\end{figure*}
-
+% Moving here to get positioning better
 \begin{figure*}[t]
 	\centering
     \includegraphics[width=0.9\linewidth]{logistic_regression_histograms_mnist8m.png}
 	\caption{
     Minibatch sizes for a representative trial of logistic regression on
-    MNIST-100k (similar to Figure~\ref{fig:logistic_histograms_mnist}). Both
-    axes are on a log scale and have the same ranges across the three
-    histograms.  See Section~\ref{ssec:logistic} for details.
+    MNIST-100k (analogous to Figure~\ref{fig:gauss_mix_2}). Both axes are on a
+    log scale and have the same ranges across the three histograms.  See
+    Section~\ref{ssec:logistic} for details.
     }
 	\label{fig:logistic_histograms_mnist8m}
 \end{figure*}
-
-\begin{table}[t]
-\caption{
-Average minibatch sizes ($\pm$ one standard deviation) for the methods on the
-logistic regression tasks of binary classification on MNIST-13k and MNIST-100k.
-The averages are taken over 10 independent trials (5000 samples each) for
-MNIST-13k and 5 independent trials (3000 samples each) for MNIST-100k.
-}
-\small % Daniel: yeah, sorry, but otherwise it doesn't fit in a column
-\label{tab:logistic}
-\vskip 0.15in
-\begin{center}
-\begin{tabular}{l l l l}
-\textbf{Method/Data} & \textbf{MNIST-13k} & \textbf{MNIST-100k}  \\
-\hline \\
-{\sc MHminibatch}   & $129.8\pm 3.4$    & $202.5 \pm 13.6$ \\
-{\sc AustereMH(nc)} & $973.8\pm 49.8$   & $1098.3 \pm 44.9$ \\
-{\sc AustereMH(c)}  & $1924.3\pm 52.4$  & $2795.6 \pm 364.0$ \\
-{\sc MHSubLhd}      & $10783.4\pm 78.9$ & $14977.3 \pm 582.0$ \\
-\end{tabular}
-\end{center}
-\vskip -0.1in
-\end{table}
 
 We next test logistic regression for the binary classification of 1s versus 7s
 on the MNIST~\citep{lecun-mnisthandwrittendigit-2010} dataset and (a subset of)
@@ -882,9 +847,9 @@ walk proposer, with covariance matrix $0.05I$ for MNIST-13k and $0.01I$ for
 MNIST-100k. The default temperature setting is a constant at $K=100$ for
 MNIST-13k and MNIST-100k. Performance of all methods implicitly relies on the
 step size and temperature. Setting temperature too low or step size too high
-will generally result in worse performance for all methods. For MNIST-13k, each
-method generated 5000 samples for ten independent trials; due to MNIST-100k's
-higher computational requirements, the methods generated 3000 samples for five
+will result in slow convergence for all methods. For MNIST-13k, each method
+generated 5000 samples for ten independent trials; due to MNIST-100k's higher
+computational requirements, the methods generated 3000 samples for five
 independent trials.  For additional parameter settings and an investigation on
 tuning step sizes, see Appendix~\ref{app:logistic}.
 
@@ -905,25 +870,48 @@ magnitude compared to {\sc AustereMH(c)} and {\sc MHSubLhd}.  We also observe
 the advantage of having higher temperature from the third plot in
 Figure~\ref{fig:logistic_performance}. During the exploration period, the
 accuracy rapidly increases, and then after 200 samples, we switch the
-temperature to 1 (equivalent to ignoring temperature). {\rm MHminibatch}
-requires the step size to decrease, hence the smaller changes in accuracy.
+temperature to 1, but this requires the step size to decrease, hence the smaller
+changes in accuracy.
 
-Figures~\ref{fig:logistic_histograms_mnist}
-and~\ref{fig:logistic_histograms_mnist8m} show log-log histograms of minibatch
-sizes for the three methods.  The histograms only represent one representative
-trial; Table~\ref{tab:logistic} contains the average of the average minibatch
-sizes ($\pm$ one standard deviation) across all trials. {\sc MHminibatch}, with
-average minibatch sizes of roughly 129.8 and 202.5 for MNIST-13k and MNIST-100k,
-respectively, consumes more than 5x fewer data points than the next-best method,
-{\sc AustereMH(nc)}.  We reiterate, however, that both {\sc AustereMH(nc)} and
-{\sc MHSubLhd} require computing $\log p(x_i|\theta)$ and $\log p(x_i|\theta')$
-for all $x_i$ each iteration. Our results here do not count that extra data
-    consumption. Only our method and {\sc AustereMH(c)} rely solely on the
-    minibatch of data each iteration.
+Figure~\ref{fig:logistic_histograms_mnist8m} shows log-log histograms of
+minibatch sizes for the three methods on MNIST-100k.
+(Figure~\ref{fig:logistic_histograms_mnist} in Appendix~\ref{app:logistic}
+contains results for MNIST-13k.) The histograms only represent one
+representative trial; Table~\ref{tab:logistic} contains the average of the
+average minibatch sizes ($\pm$ one standard deviation) across all trials. {\sc
+MHminibatch}, with average minibatch sizes of roughly 129.8 and 202.5 for
+MNIST-13k and MNIST-100k, respectively, consumes more than 5x fewer data points
+than the next-best method, {\sc AustereMH(nc)}.  We reiterate, however, that
+both {\sc AustereMH(nc)} and {\sc MHSubLhd} require computing $\log
+p(x_i|\theta)$ and $\log p(x_i|\theta')$ for all $x_i$ each iteration. Our
+results here do not count that extra data consumption. Only our method and {\sc
+AustereMH(c)} rely solely on the minibatch of data each iteration.
 
 
 
 \subsection{SPARSE MATRIX FACTORIZATION}\label{ssec:collab_filtering}
+
+\begin{table}[t]
+\caption{Average minibatch sizes ($\pm$ one standard deviation) on logistic
+regression on MNIST-13k and MNIST-100k.  The averages are taken over 10
+independent trials (5000 samples each) for MNIST-13k and 5 independent trials
+(3000 samples each) for MNIST-100k.}
+\small % Daniel: yeah, sorry, but otherwise it doesn't fit in a column
+\label{tab:logistic}
+\vskip 0.15in
+\begin{center}
+\begin{tabular}{l l l l}
+\textbf{Method/Data} & \textbf{MNIST-13k} & \textbf{MNIST-100k}  \\
+\hline \\
+{\sc MHminibatch}   & $129.8\pm 3.4$    & $202.5 \pm 13.6$ \\
+{\sc AustereMH(nc)} & $973.8\pm 49.8$   & $1098.3 \pm 44.9$ \\
+{\sc AustereMH(c)}  & $1924.3\pm 52.4$  & $2795.6 \pm 364.0$ \\
+{\sc MHSubLhd}      & $10783.4\pm 78.9$ & $14977.3 \pm 582.0$ \\
+\end{tabular}
+\end{center}
+\vskip -0.1in
+\end{table}
+
 
 \begin{table}[t]
 \caption{\textbf{TODO TABLE WITH SMF RESULTS}}
@@ -941,8 +929,12 @@ ADAGrad           & ??? & ??? & \\
 \vskip -0.1in
 \end{table}
 
-\textbf{Daniel: TODO this is our third experiment. Results are in progress}
+\textbf{Daniel: TODO this is our third experiment. Results are in progress...}
 
+\textbf{We benchmark with the ADAGrad~\citep{adagrad} implementation of Sparse
+Matrix Factorization described in~\citep{Canny:2013:BDA:2487575.2487677}.
+(Daniel: is this the correct citation for BIDMach? I assume this is what we will
+use)}
 
 \section{CONCLUSIONS}\label{sec:conclusion}
 
@@ -955,7 +947,6 @@ the variance reduction techniques suggested in~\citep{DBLP:conf/icml/ChenG16}.
 More elaborate extensions involve running more experiments on other models such
 as neural networks and providing a recipe for how to use our algorithm
 (following the framework of~\citep{sgmcmc_2015}).
-
 
 
 
@@ -1413,6 +1404,18 @@ exhibits some form of ``correctness.''}
 
 \begin{figure*}[t]
 	\centering
+    \includegraphics[width=0.9\linewidth]{logistic_regression_histograms_mnist.png}
+	\caption{
+    Minibatch sizes for a representative trial of logistic regression on
+    MNIST-13k (analogous to Figure~\ref{fig:gauss_mix_2}). Both axes are on a
+    log scale and have the same ranges across the three histograms. See
+    Section~\ref{ssec:logistic} for details.
+    }
+	\label{fig:logistic_histograms_mnist}
+\end{figure*}
+
+\begin{figure*}[t]
+	\centering
     \includegraphics[width=0.9\linewidth]{logistic_regression_step_size_tests.png}
 	\caption{
     \textbf{Daniel: TODO describe}
@@ -1421,9 +1424,7 @@ exhibits some form of ``correctness.''}
 \end{figure*}
 
 \begin{table}[t]
-\caption{Parameters for the logistic regression experiments. Unless otherwise
-stated, values apply to all methods tested. For the methods
-from~\citep{cutting_mh_2014}, we use their notation for clarity.}
+\caption{Parameters for the logistic regression experiments.}
 \small
 \label{tab:logistic_settings}
 \vskip 0.15in
@@ -1436,23 +1437,48 @@ Number of samples $T$ & 5000 & 3000 \\
 Number of trials      & 10 & 5 \\
 Step size $\sigma$ for random walk proposer with covariance $\sigma I$ & 0.05 & 0.01 \\
 {\sc MHminibatch} and {\sc MHSubLhd} minibatch size $m$ & 100 & 100 \\
-{\sc AustereMH(c)} $\Delta^*$ bound & 0.1 & 0.2 \\
+{\sc AustereMH(c)} chosen $\Delta^*$ bound & 0.1 & 0.2 \\
 {\sc AustereMH(c)} minibatch size $m$ from grid search & 450 & 300 \\
 {\sc AustereMH(c)} per-test threshold $\epsilon$ from grid search & 0.01 & 0.01\\
-{\sc AustereMH(nc)} $\Delta^*$ bound & 0.05 & 0.1 \\
+{\sc AustereMH(nc)} chosen $\Delta^*$ bound & 0.05 & 0.1 \\
+{\sc MHSubLhd} $\gamma$ & 2.0  & 2.0  \\
+{\sc MHSubLhd} $p$      & 2 & 2 \\
+{\sc MHSubLhd} $\delta$ & 0.01 & 0.01 \\
 \end{tabular}
 \end{center}
 \vskip -0.1in
 \end{table}
 
-\textbf{Daniel: TODO major work in progress.}
+Figure~\ref{fig:logistic_histograms_mnist} shows the histograms for the four
+methods on one representative trial of MNIST-13k, which shows similar relative
+performance of the four methods as shown in
+Figure~\ref{fig:logistic_histograms_mnist8m} (which uses MNIST-100k). In
+particular, {\sc MHminibatch} exhibits a shorter-tailed distribution and
+consumes nearly an order of magnitude fewer data points compared to {\sc
+AustereMH(nc)}, the next-best method; see Table~\ref{tab:logistic} for details.
 
-Table~\ref{tab:logistic_settings} indicates the parameter settings for the
-logistic regression experiments.
+Next, we investigate the impact of the step size $\sigma$ for the random walk
+proposers with covariance matrix $\sigma I$. Note that $I$ is $784\times 784$ as
+we did not perform any downsampling or data preprocessing other than rescaling
+the pixel values to lie in $[0,1]$.
 
-Figure~\ref{fig:logistic_histograms_appendix} indicates minibatch histograms for
-one trial of {\sc MHminibatch} on MNIST-100k for proposers $\sigma I$ with
-$\sigma \in \{0.005, 0.01, 0.05\}$.
+For this, we use the larger dataset MNIST-100k, and test with $\sigma \in
+\{0.005, 0.01, 0.05\}$. We keep other parameters consistent with the experiments
+in Section~\ref{ssec:logistic}, in particular, keeping the initial minibatch
+size $m=100$, which is also the amount the minibatch increments by if we need
+more data. Figure~\ref{fig:logistic_histograms_appendix} indicates minibatch
+histograms (again, using the log-log scale) for one trial of {\sc MHminibatch}
+using each of the step sizes. We observe that by tuning {\sc MHminibatch}, we
+are able to adjust the average number of data points in a minibatch across a
+wide range of values. Here, the smallest step size results in an average of just
+116.1 data points per minibatch, while increasing to $\sigma=0.05$ (the step
+size used for MNIST-13k) results in an average of 2215.6. This relative trend is
+also present for both {\sc AustereMH} variants and {\sc MHSubLhd}.
+
+Table~\ref{tab:logistic_settings} indicates the relevant parameter settings for
+the logistic regression experiments. Unless otherwise stated, values apply to
+all methods tested. For values from~\citep{cutting_mh_2014}
+or~\cite{icml2014c1_bardenet14}, we use their notation to be consistent.
 
 
 \subsection{SPARSE MATRIX FACTORIZATION EXPERIMENT (SECTION~\ref{ssec:collab_filtering})}\label{app:collab_filtering}
