@@ -85,29 +85,29 @@ x_N)$ of parameter $\theta$ for large $N$.  The Metropolis-Hastings method (M-H)
 generates sample candidates from a proposal distribution $q$ which is in general
 different from the target distribution $p$, and decides whether to accept or
 reject based on an acceptance test. The acceptance test is usually a Metropolis
-test~\cite{Metropolis1953, hastings70}.
+test~\citep{Metropolis1953, hastings70}.
 
 Many state-of-the-art machine learning methods, and deep learning in particular,
 are based on minibatch updates (such as SGD) to a model.  Minibatch updates
 produce many improvements to the model for each pass over the dataset, and have
 high sample efficiency.  In contrast, conventional M-H requires calculations
 over the full dataset to produce a new sample.  Recent results
-from~\cite{cutting_mh_2014} and~\cite{icml2014c1_bardenet14} perform
+from~\citep{cutting_mh_2014} and~\citep{icml2014c1_bardenet14} perform
 approximate (bounded error) acceptance tests using subsets of the full dataset.
 The amount of data consumed for each test varies significantly from one
-minibatch to the next. By contrast,~\cite{conf/uai/MaclaurinA14,TallData16}
+minibatch to the next. By contrast,~\citep{conf/uai/MaclaurinA14,TallData16}
 perform exact tests but require a lower bound on the parameter distribution across
 its domain.  The amount of data reduction depends on the accuracy of this bound,
 and such bounds are only available for relatively simple distributions.
 
 Here we derive a new test which incorporates the variability in minibatch
 statistics as {\em a natural part of the test} and requires less data per
-iteration than prior work. We use a Barker test function~\cite{Barker65}, which
+iteration than prior work. We use a Barker test function~\citep{Barker65}, which
 makes our test naturally error tolerant. The idea of using a noise-tolerant
 Barker's test function was suggested but not explored empirically
-in~\cite{TallData16} section 6.3. But the asymptotic test statistic CDF and the
+in~\citep{TallData16} section 6.3. But the asymptotic test statistic CDF and the
 Barker function are different, which leads to fixed errors for the approach
-in~\cite{TallData16}. Here, we show that the difference between the
+in~\citep{TallData16}. Here, we show that the difference between the
 distributions can be corrected with an additive random variable. This leads to a
 test which is fast, and whose error can be made arbitrarily small.
 
@@ -115,15 +115,16 @@ Our test is applicable when the variance (over data samples) of the log
 acceptance probability is small enough (less than 1). It's not clear at first why
 this quantity should be bounded, but we will show that it is ``natural'' for
 well-specified models running Metropolis-Hastings sampling with optimal
-proposals~\cite{OptimalScaling01} on a full dataset. When we reduce the amount
+proposals~\citep{OptimalScaling01} on a full dataset. When we reduce the amount
 of data for the test, the variance goes up. We have to reduce variance in one
 of several ways. Either:
 
 \begin{itemize}[noitemsep]
-    \item Increase the temperature of the target distribution. Log likelihoods
-    scale as $1/T$, and so the variance of the likelihood ratio will vary as
-    $1/T^2$. Our model is no longer well-specified (we are doing inference at a
-    temperature different from that assumed during data generation), but higher
+    \item Increase the temperature $K$ of the target distribution. Log
+    likelihoods scale as $1/K$, and so the variance of the likelihood ratio will
+    vary as $1/K^2$. Our model is no longer well-specified (we are doing
+    inference at a temperature different from that assumed during data
+    generation), but as we demonstrate in Section~\ref{ssec:logistic}, higher
     temperature can be advantageous for parameter exploration.
 
     \item For continuous distributions, reduce the proposal step size and
@@ -141,18 +142,18 @@ It is worth discussing at this point the typical goals of M-H sampling on large
 datasets. By the Bernstein-von Mises Theorem, the posterior distribution for a
 Bayesian inference task has variance that scales inversely with $N$. Simply
 sampling from it is one application, but an efficient
-proposal~\cite{OptimalScaling01} has similar variance to the target and will
+proposal~\citep{OptimalScaling01} has similar variance to the target and will
 diffuse to it extremely slowly. For applications to neural networks or models
-where the posterior is multimodal~\cite{choromanska2014loss}, samplers will
+where the posterior is multimodal~\citep{choromanska2014loss}, samplers will
 likely get trapped in one of the modes. A common solution is to anneal the
 sampler, running first at high temperatures to flatten the likelihood landscape.
 This in turn reduces the variance of the log acceptance probability and allows
 our test to be applied. These samples can cover the search space densely with
 small steps rather than taking a few sparse steps towards an optimum. In this
-mode, Metropolis-Hastings can be used in similar fashion to Stochastic Gradient
-Descent. The goal in SGD is to make gradual progress to a posterior mode with
-each step, taking small steps so that the cumulative displacement has
-progressively lower variance.
+mode, M-H tests can be used in similar fashion to Stochastic Gradient Descent.
+The goal in SGD is to make gradual progress to a posterior mode with each step,
+taking small steps so that the cumulative displacement has progressively lower
+variance.
 
 The contributions of this paper are as follows:
 
@@ -173,7 +174,7 @@ The contributions of this paper are as follows:
 
 \section{PRELIMINARIES}\label{sec:related_work}
 
-In the Metropolis-Hastings method~\cite{gilks1996markov,brooks2011handbook}, a
+In the Metropolis-Hastings method~\citep{gilks1996markov,brooks2011handbook}, a
 difficult-to-compute probability distribution $p(\theta)$ is sampled using a
 Markov chain $\theta_1,\ldots,\theta_T$. The sample $\theta_{t+1}$ at time $t+1$
 is generated using a candidate $\theta'$ from a (simpler) proposal distribution
@@ -205,38 +206,76 @@ acceptance probability is now:
     \wedge 1
 \end{equation}
 where $p_0(\theta)$ is the prior. Computing samples this way requires all $N$
-data points, but this is very expensive for large datasets. To address this
-challenge,~\cite{cutting_mh_2014,icml2014c1_bardenet14} perform approximate
-Metropolis-Hasting tests using sequential hypothesis testing. Each iteration,
-they start with a small minibatch and test whether $\theta'$ should be accepted
-based on approximating $u<\alpha(\theta,\theta')$. If the approximate test
-cannot decide with sufficient confidence, the minibatch size is increased and
-the test repeats. This process continues until a decision. The bounds depend on
-either an asymptotic Central Limit Theorem~\cite{cutting_mh_2014} or a
-concentration bound~\cite{icml2014c1_bardenet14}. The latter requires direct
-bounds on the log likelihood ratio, which for general distributions requires
-knowing $p(x_i | \theta)$ and $p(x_i | \theta')$ for all $N$ samples. In
-addition, while both methods show useful reductions in the number of samples
-required, they suffer the drawback of resolving small log likelihood ratio
-differences between the minibatch and full batch versions. We discuss a
-worst-case scenario in Section~\ref{ssec:gaussian_example}.
+data points, but this is very expensive for large datasets.
 
-Following~\cite{icml2014c1_bardenet14}, we write the test
+To address this challenge,~\citep{cutting_mh_2014,icml2014c1_bardenet14} perform
+approximate Metropolis-Hasting tests using sequential hypothesis testing. Each
+iteration, they start with a small minibatch and test whether $\theta'$ should
+be accepted based on approximating $u<\alpha(\theta,\theta')$. If the
+approximate test cannot decide with sufficient confidence, the minibatch grows
+and the test repeats. This process continues until a decision. The bounds depend
+on either an asymptotic Central Limit Theorem~\citep{cutting_mh_2014} or a
+concentration bound~\citep{icml2014c1_bardenet14}. We refer to these algorithms,
+respectively, as {\sc AustereMH} and {\sc MHSubLhd}.
+
+In~\citep{cutting_mh_2014}, CLT asymptotic arguments are used to show that their
+approximate acceptance test error (with respect to full-batch M-H) tends to zero
+as batch size increases, but no quantitative bounds are given. In addition, to
+design a test that minimizes data usage given an error bound, they rely on
+computing a standardized mean $\mu_{\rm std}$ each iteration. As the value of
+$\mu_{\rm std}$ depends on all $\log p(x_i|\theta)$ and $\log p(x_i| \theta')$
+terms, the test is technically not a minibatch test; \citep{cutting_mh_2014}
+propose a conservative variant which assumes $\mu_{\rm std}=0$ and avoids the
+need to evaluate all likelihood terms. We refer to this as {\sc AustereMH(c)}
+and the default, non-conservative variant as {\sc AustereMH(nc)}.
+
+For {\sc MHSubLhd}, the test requires direct bounds on the log likelihood ratio,
+which for general distributions requires knowing $p(x_i | \theta)$ and $p(x_i |
+\theta')$ for all $N$ samples. In~\citep{icml2014c1_bardenet14}, explicit bounds
+are given and depend on
+\begin{equation}\label{eq:bad_bound}
+    C_{\theta, \theta'} = \max_{1\leq i\leq N}|\log p(x_i | \theta') - \log p(x_i | \theta)|.
+\end{equation}
+It is possible to analytically determine $C_{\theta,\theta'}$ for logistic
+regression and other simple models, but it is difficult to do so for more
+complicated models, so one generally needs to use all $p(x_i | \theta')$
+terms\footnote{The sample code provided by~\citep{icml2014c1_bardenet14}
+computes $C_{\theta,\theta'}$ by traversing the entire data, thus providing no
+performance advantage over the complete test.} to get $C_{\theta,\theta'}$, like
+the {\sc AustereMH(nc)} test.
+
+In contrast, as we show in Section~\ref{sec:analysis}, we use quantitative forms
+of the CLT which rely on measurable statistics from a \emph{single} minibatch.
+In addition, while both {\sc AustereMH(nc)} and {\sc MHSubLhd} show useful
+reductions in the number of samples required, they suffer the drawback of
+resolving small log likelihood ratio differences between the minibatch and full
+batch versions. We discuss a worst-case scenario in
+Section~\ref{ssec:gaussian_example}.
+
+
+\subsection{NOTATION}\label{ssec:notation}
+
+Following~\citep{icml2014c1_bardenet14}, we write the test
 $u<\alpha(\theta,\theta')$ equivalently as $\Lambda(\theta,\theta') >
 \psi(u,\theta,\theta')$, where\footnote{Our definitions differ from those
-in~\cite{icml2014c1_bardenet14} by a factor of $N$ to simplify our analysis
+in~\citep{icml2014c1_bardenet14} by a factor of $N$ to simplify our analysis
 later.}
-\begin{equation}
+\begin{equation}\label{eq:lambda}
 \begin{split}
 \Lambda(\theta,\theta') = \sum_{i=1}^N \log\frac{p(x_i|\theta')}{p(x_i|\theta)}, \\
 \psi(u,\theta,\theta') = \log\left(u\frac{q(\theta'|\theta)p_0(\theta)}{q(\theta|\theta')p_0(\theta')}\right).
 \end{split}
 \end{equation}
+To simplify notation, we assume that temperature $K=1$ (saving $T$ to indicate
+the number of samples to draw). Temperature appears as an exponential on each
+likelihood, $p(x_i|\theta)^{1/K}$, so the effect would be to act as a $1/K$
+factor on $\Lambda(\theta,\theta')$.
+
 To reduce computational effort, an unbiased estimate of $\Lambda(\theta,\theta')$
 based on a minibatch $\{x_1^*,\ldots,x_b^*\}$ can be used:
 \begin{equation}
 \Lambda^*(\theta,\theta') = \frac{N}{b}\sum_{i=1}^b 
-\log \frac{p(x_i^*|\theta')}{p(x_i^*|\theta)} 
+\log \frac{p(x_i^*|\theta')}{p(x_i^*|\theta)}.
 \end{equation}
 Finally, it will be convenient for our analysis to define
 $\Lambda_i(\theta,\theta') = N\log(\frac{p(x_i|\theta')}{p(x_i|\theta)})$.
@@ -274,7 +313,7 @@ between $\Lambda^*(\theta,\theta')$ and $\psi(u,\theta,\theta')$.
 The posterior is a Gaussian centered on the sample mean $\mu$, and with variance
 $1/N$ (i.e., $\mathcal{N}(\mu, 1/N)$). In one dimension, an efficient proposal
 distribution has the same variance as the target
-distribution~\cite{OptimalScaling01}, so we use a proposal based on
+distribution~\citep{OptimalScaling01}, so we use a proposal based on
 $\mathcal{N}(\theta,1/N)$. It is symmetric
 $q(\theta'|\theta)=q(\theta|\theta')$, and since we assumed a uniform prior,
 $\psi(u,\theta,\theta')=\log u$. Our worst-case scenario is specified in
@@ -283,8 +322,8 @@ Lemma~\ref{lem:worst_case}.
 \begin{lemma}\label{lem:worst_case}
     For the model in Section~\ref{ssec:gaussian_example}, there exists a fixed
     (independent of $N$) constant $c$ such that with probability $\geq c$ over
-    the joint distribution of $(\theta, \theta', u)$, the tests
-    from~\cite{cutting_mh_2014,icml2014c1_bardenet14} consume all $N$ samples. 
+    the joint distribution of $(\theta, \theta', u)$, {\sc AustereMH(nc)} and
+    {\sc MHSubLhd} consume all $N$ samples. 
 \end{lemma}
 \vspace{-1em}
 \begin{proof}
@@ -302,22 +341,19 @@ variation in $\Lambda^*$ to {\em replace} the variation due to $u$.
 
 \subsection{MCMC POSTERIOR INFERENCE}
 There is a separate line of MCMC work drawing principles from statistical
-physics. One can apply
-Hamiltonian Monte Carlo (HMC)~\cite{mcmc_hamiltonian_2010} methods which
-generate high acceptance \emph{and} distant proposals when run on full batches
-of data. Recently Langevin Dynamics~\cite{langevin_2011,conf/icml/AhnBW12} has
-been applied to Bayesian estimation on minibatches of data. This simplified
-dynamics uses local proposals and avoids M-H tests by using small proposal steps
-whose acceptance approaches 1 in the limit. However, the constraint on proposal
-step size is severe, and the state space exploration reduces to a random walk.
-Full minibatch HMC for minibatches was described in~\cite{sghmc_2014} which
-allows momentum-augmented proposals with larger step sizes. However, step sizes
-are still limited by the need to run accurately without M-H tests.  By providing
-an M-H test with similar cost to standard gradient steps, our work opens the
-door to applying those methods with much more aggressive step sizes without loss
-of accuracy. 
-
-
+physics. One can apply Hamiltonian Monte Carlo
+(HMC)~\citep{mcmc_hamiltonian_2010} methods which generate high acceptance
+\emph{and} distant proposals when run on full batches of data. Recently Langevin
+Dynamics~\citep{langevin_2011,conf/icml/AhnBW12} has been applied to Bayesian
+estimation on minibatches of data. This simplified dynamics uses local proposals
+and avoids M-H tests by using small proposal steps whose acceptance approaches 1
+in the limit. However, the constraint on proposal step size is severe, and the
+state space exploration reduces to a random walk.  Full minibatch HMC for
+minibatches was described in~\citep{sghmc_2014} which allows momentum-augmented
+proposals with larger step sizes. However, step sizes are still limited by the
+need to run accurately without M-H tests.  By providing an M-H test with similar
+cost to standard gradient steps, our work opens the door to applying those
+methods with much more aggressive step sizes without loss of accuracy. 
 
 
 
@@ -362,10 +398,10 @@ functions is specified as follows:
     g(\Delta(\theta,\theta'))$ satisfies detailed balance.
 \end{lemma}
 
-This result is used in~\cite{Barker65} to define the Barker acceptance test.
+This result is used in~\citep{Barker65} to define the Barker acceptance test.
 
 \subsection{BARKER (LOGISTIC) ACCEPTANCE FUNCTION}\label{ssec:barker_function}
-For our new MH test we use the Barker logistic~\cite{Barker65}
+For our new MH test we use the Barker logistic~\citep{Barker65}
 function: $g(s)=(1+\exp(-s))^{-1}$. Straightforward arithmetic shows
 that it satisfies the condition in Lemma~\ref{lem:detailed_balance}.
 It is slightly less efficient than the Metropolis test, since its
@@ -412,7 +448,7 @@ we can write
 where $\mathcal{\bar{N}}(0, \sigma^2(\Delta^*))$ denotes a distribution which is
 approximately normal with variance $\sigma^2(\Delta^*)$.  But to perform the
 test in Equation~(\ref{eq:the_exact_test}) we want $\Delta + X$ for a logistic
-random variable $X$ (call it $X_{\rm log}$ from now on). In~\cite{TallData16} it
+random variable $X$ (call it $X_{\rm log}$ from now on). In~\citep{TallData16} it
 was proposed to use $\Delta^*$ in a Barker test, and tolerate the fixed
 error between the logistic and normal distributions. 
 
@@ -553,33 +589,13 @@ MHminibatch}. A few points:
 
 \section{ANALYSIS}\label{sec:analysis}
 
-\textbf{Daniel: TODO this should be where we mention that AustereMH still
-requires computation of all likelihoods, and we should explain John's complaint
-about Gaussianity here.}
-
 We now derive error bounds for our M-H test and the target distribution it
-generates. In the most similar prior works,~\cite{cutting_mh_2014} use CLT
-asymptotic arguments to show that its approximate acceptance test error tends to
-zero as batch size increases, but no quantitative bounds are given.
-In~\cite{icml2014c1_bardenet14}, explicit bounds are given and depend on
-\begin{equation}\label{eq:bad_bound}
-    C_{\theta, \theta'} = \max_{1\leq i\leq N}|\log p(x_i | \theta') - \log p(x_i | \theta)|.
-\end{equation}
-It is possible to analytically determine $C_{\theta,\theta'}$ for logistic
-regression, but it is unclear how to do so for more complicated models, and one
-generally needs to use all $p(x_i | \theta')$ terms\footnote{The sample code
-provided by~\cite{icml2014c1_bardenet14} computes $C_{\theta,\theta'}$
-by traversing the entire data, thus providing no performance advantage over the
-complete test.} to get $C_{\theta,\theta'}$.  In contrast, we use quantitative
-forms of the CLT which rely on measurable statistics from a \emph{single}
-minibatch.
-
-In Section~\ref{ssec:delta_star_distribution}, we present bounds on the absolute
-and relative error (in terms of the CDFs) of the distribution of $\Delta^*$ vs.
-a Gaussian. We then show in Section~\ref{ssec:preserve_bounds} that these bounds
-are preserved after the addition of other random variables (e.g., $X_{\rm nc}$
-and $X_{\rm corr}$). It then follows that the acceptance test has the same error
-bound.
+generates. In Section~\ref{ssec:delta_star_distribution}, we present bounds on
+the absolute and relative error (in terms of the CDFs) of the distribution of
+$\Delta^*$ vs.  a Gaussian. We then show in Section~\ref{ssec:preserve_bounds}
+that these bounds are preserved after the addition of other random variables
+(e.g., $X_{\rm nc}$ and $X_{\rm corr}$). It then follows that the acceptance
+test has the same error bound.
 
 \subsection{BOUNDING THE ERROR OF $\Delta^*$ FROM A GAUSSIAN}\label{ssec:delta_star_distribution}
 
@@ -624,10 +640,11 @@ $s_X = s_{\Delta^*}$. We can now substitute into Equation~(\ref{eq:clt-bounds2})
 and displace by the mean, giving:
 
 \begin{corollary}\label{cor:our_bound_delta_prime}
-\begin{equation}
 \small
+\begin{equation}
 \sup_y \left|{\rm Pr}(\Delta^*< y) -\Phi\left(\frac{y-\Delta}{s_{\Delta^*}}\right)\right| \leq \frac{6.4\mE[|X|^3]+2\mE[|X|]}{\sqrt{b}}
 \end{equation}
+\normalsize
 \end{corollary} %\vspace{-10pt}
 where the upper bound can be expressed as $\epsilon(\theta,\theta',b)$.
 Corollary~\ref{cor:our_bound_delta_prime} shows that the distribution of
@@ -685,8 +702,8 @@ additional assumption. We review this in Appendix~\ref{app:better_error_bound}.
 \subsection{BOUNDS ON THE STATIONARY DISTRIBUTION}
 Bounds on the error of an M-H test imply bounds on the stationary distribution
 of the Markov chain under appropriate conditions. Such bounds were derived in
-both~\cite{cutting_mh_2014} and~\cite{icml2014c1_bardenet14}. We include the
-result from~\cite{cutting_mh_2014} (Theorem 1) here: Let $d_v(P,Q)$ denote the
+both~\citep{cutting_mh_2014} and~\citep{icml2014c1_bardenet14}. We include the
+result from~\citep{cutting_mh_2014} (Theorem 1) here: Let $d_v(P,Q)$ denote the
 total variation distance between two distributions $P$ and $Q$.  Let
 $\mathcal{T}_0$ denote the transition kernel of the exact Markov chain,
 $\mathcal{S}_0$ denote the exact posterior distribution, and
@@ -710,16 +727,14 @@ where $\epsilon$ is the bound on the error in the acceptance test.
 
 % Daniel: NOTE, I'm calling temperature "K" so that "T" stays reserved for
 % "number of samples of \theta we draw".
-In Sections~\ref{ssec:gaussians} and~\ref{ssec:logistic}, we benchmark our test,
-{\sc MHminibatch}, against the test from~\cite{icml2014c1_bardenet14} ({\sc
-MHSubLhd}) and from~\cite{cutting_mh_2014}. As highlighted in
-Section~\ref{sec:analysis}, the test from~\cite{cutting_mh_2014} can be
-implemented using a conservative or a non-conservative variant; we name these
-{\sc AustereMH(c)}, and {\sc AustereMH(nc)}, respectively, and they use the
-grid-search over minibatch sizes $m$ and per-test thresholds $\epsilon$
-described in Appendix~\ref{sssec:grid_search}. Throughout our descriptions, we
-refer to a \emph{trial} as the period when an algorithm collects all its desired
-samples $\{\theta_1,\ldots,\theta_T\}$, generally with $T=3000$ or $T=5000$.
+In Sections~\ref{ssec:gaussians} and~\ref{ssec:logistic}, we benchmark {\sc
+MHminibatch} against the test from~\citep{icml2014c1_bardenet14} ({\sc
+MHSubLhd}) and from~\citep{cutting_mh_2014} ({\sc AustereMH(c)}, and {\sc
+AustereMH(nc)}). The latter two tests use a grid-search over minibatch sizes $m$
+and per-test thresholds $\epsilon$ described in
+Appendix~\ref{sssec:grid_search}. Throughout our descriptions, we refer to a
+\emph{trial} as the period when an algorithm collects all its desired samples
+$\{\theta_1,\ldots,\theta_T\}$, generally with $T=3000$ or $T=5000$.
 
 \subsection{MIXTURE OF GAUSSIANS}\label{ssec:gaussians}
 
@@ -744,7 +759,7 @@ samples $\{\theta_1,\ldots,\theta_T\}$, generally with $T=3000$ or $T=5000$.
     \label{fig:gauss_mix_2}
 \end{figure*}
 
-This model is adapted from~\cite{langevin_2011} by increasing the number of
+This model is adapted from~\citep{langevin_2011} by increasing the number of
 samples to 1 million.  The parameters are $\theta = \langle \theta_1,\theta_2
 \rangle$, and the generation process is
 \begin{equation}\label{eq:data_generation}
@@ -757,34 +772,35 @@ We set $\sigma_1^2 = 10, \sigma_2^2 = 1$ and $\sigma_x^2=2$.  We fix $\theta =
 \langle 0,1 \rangle$. The original paper sampled 100 data points and estimated
 the posterior. We are interested in performance on larger problems and so
 sampled 1,000,000 points to form the posterior of
-$p(\theta)\prod_{i=1}^{1,000,000}p(x_i | \theta)$ with the same prior from
+$p(\theta)\prod_{i=1}^{1,000,000}p(x_i | \theta)^{1/K}$ with the same prior from
 Equation~(\ref{eq:data_generation}). This produces a much sharper posterior with
 two very narrow peaks.  Our goal is to reproduce the original posterior, so we
 adjust the temperature to $K=10,000$.  Taking logs, we get the target as shown
 in the far left of Figure~\ref{fig:gauss_mix_1}.
 
-We benchmark with {\sc AustereMH(c)} and {\sc MHSubLhd}. {\sc MHminibatch} and
-{\sc MHSubLhd} were initialized with $m=100$. For {\sc MHSubLhd}, we increase
+We benchmark with {\sc AustereMH(c)} and {\sc MHSubLhd}. We initialized {\sc
+MHminibatch} and {\sc MHSubLhd} with $m=100$. For {\sc MHSubLhd}, we increase
 sizes geometrically with $\gamma = 1.5$ and use parameters $p = 2, \delta =
 0.01$.  All methods collect 5000 samples using a random walk proposer with
-covariance ${\rm diag}(0.15, 0.15)$, which means the M-H test is responsible for
-shaping the sample distribution.
+covariance matrix ${\rm diag}(0.15, 0.15)$, which means the M-H test is
+responsible for shaping the sample distribution.
 
 Figure~\ref{fig:gauss_mix_1} shows scatter plots of the resulting $\theta$
 samples for the three methods, with darker regions indicating a greater density
 of points. There are no obvious differences, showing that {\sc MHminibatch}
 reaches an acceptable posterior. We further measure the similarity between each
 set of samples and the actual posterior. Due to space constraints, results are
-in Appendix~\ref{app:gaussians}.
+in Appendix~\ref{sssec:gauss_metrics}.
 
 Figure~\ref{fig:gauss_mix_2} shows that {\sc MHminibatch} dominates in terms of
 speed and efficiency. The histograms of the (final) minibatch sizes used each
 iteration show that our method consumes significantly less data; the
 distribution is short-tailed and the mean is 210, more than an order of
 magnitude better compared to the other two methods (averages are 15562 and
-16857). The sizes correspond to the running times of the methods, excluding the
-likelihood computation of all data points for {\sc MHSubLhd}, which would
-drastically increase running time.
+16857). \textbf{Daniel: Xinlei, you should change these numbers as you see fit,
+and also describe the number of trials you ran.} The sizes correspond to the
+running times of the methods, excluding the likelihood computation of all data
+points for {\sc MHSubLhd}, which would drastically increase running time.
 
 
 \subsection{LOGISTIC REGRESSION}\label{ssec:logistic}
@@ -854,8 +870,8 @@ MNIST-13k and 5 independent trials (3000 samples each) for MNIST-100k.
 \end{table}
 
 We next test logistic regression for the binary classification of 1s versus 7s
-on the MNIST~\cite{lecun-mnisthandwrittendigit-2010} dataset and (a subset of)
-infinite MNIST~\cite{loosli-canu-bottou-2006}. For the former, extracting all 1s
+on the MNIST~\citep{lecun-mnisthandwrittendigit-2010} dataset and (a subset of)
+infinite MNIST~\citep{loosli-canu-bottou-2006}. For the former, extracting all 1s
 and 7s resulted in 13,000 training samples, and for the latter, we used 87,000
 additional (augmented) 1s and 7s to get 100,000 training samples. Both datasets
 use the same test set, with 2,163 samples. Henceforth, we call them MNIST-13k
@@ -873,7 +889,7 @@ independent trials.  For additional parameter settings and an investigation on
 tuning step sizes, see Appendix~\ref{app:logistic}.
 
 For {\sc MHSubLhd}, we tried to use the provided symbolic bound for
-$C_{\theta,\theta'}$ described in~\cite{icml2014c1_bardenet14}, but it was too
+$C_{\theta,\theta'}$ described in~\citep{icml2014c1_bardenet14}, but it was too
 high and provided no performance benefit. Instead we use the empirical
 $C_{\theta,\theta'}$ from the entire dataset. 
 
@@ -882,30 +898,28 @@ prediction accuracy on both datasets for all methods as a function of the
 cumulative training points processed.\footnote{The curves do not span the same
 length over the x-axis since the methods consume different amounts of data.} To
 generate the curves, for each of the sampled vectors $\theta_t$,
-$t\in\{1,\ldots,N\}$ ($N=5000$ for MNIST-13k, $N=3000$ for MNIST-100k), we use
-$\theta_t$ as the parameter for logistic regression. The results indicate that
-our test is more efficient, obtaining convergence more than an order of
-magnitude faster than {\sc AustereMH(nc)} and several orders of magnitude
-compared to {\sc AustereMH(c)} and {\sc MHSubLhd}. We also observe the advantage
-of having higher temperature from the third plot in
+$t\in\{1,\ldots,T\}$, we use $\theta_t$ as the logistic regression parameter.
+The results indicate that our test is more efficient, obtaining convergence more
+than an order of magnitude faster than {\sc AustereMH(nc)} and several orders of
+magnitude compared to {\sc AustereMH(c)} and {\sc MHSubLhd}.  We also observe
+the advantage of having higher temperature from the third plot in
 Figure~\ref{fig:logistic_performance}. During the exploration period, the
 accuracy rapidly increases, and then after 200 samples, we switch the
 temperature to 1 (equivalent to ignoring temperature). {\rm MHminibatch}
 requires the step size to decrease, hence the smaller changes in accuracy.
 
 Figures~\ref{fig:logistic_histograms_mnist}
-and~\ref{fig:logistic_histograms_mnist8m} show histograms of minibatch sizes for
-the three methods on a log-log scale for MNIST-13k and MNIST-100k, respectively.
-The histograms only represent one representative trial; Table~\ref{tab:logistic}
-contains the average of the average minibatch sizes ($\pm$ one standard
-deviation) across either 10 or 5 trials. The results indicate that {\sc
-MHminibatch}, with average minibatch sizes of roughly 129.8 and 202.5 for
-MNIST-13k and MNIST-100k, respectively, consumes almost an order of magnitude
-fewer data points than the next-best method, {\sc AustereMH(nc)}.  We reiterate,
-however, that both {\sc AustereMH(nc)} and {\sc MHSubLhd} require computing
-$\log p(x_i|\theta)$ and $\log p(x_i|\theta')$ for all $x_i$ each iteration.
-These results here do not count that extra data consumption. Only our method and
-{\sc AustereMH(c)} rely solely on the minibatch of data each iteration.
+and~\ref{fig:logistic_histograms_mnist8m} show log-log histograms of minibatch
+sizes for the three methods.  The histograms only represent one representative
+trial; Table~\ref{tab:logistic} contains the average of the average minibatch
+sizes ($\pm$ one standard deviation) across all trials. {\sc MHminibatch}, with
+average minibatch sizes of roughly 129.8 and 202.5 for MNIST-13k and MNIST-100k,
+respectively, consumes more than 5x fewer data points than the next-best method,
+{\sc AustereMH(nc)}.  We reiterate, however, that both {\sc AustereMH(nc)} and
+{\sc MHSubLhd} require computing $\log p(x_i|\theta)$ and $\log p(x_i|\theta')$
+for all $x_i$ each iteration. Our results here do not count that extra data
+    consumption. Only our method and {\sc AustereMH(c)} rely solely on the
+    minibatch of data each iteration.
 
 
 
@@ -927,7 +941,7 @@ ADAGrad           & ??? & ??? & \\
 \vskip -0.1in
 \end{table}
 
-\textbf{Daniel: TODO we wanted a third experiment, right?}
+\textbf{Daniel: TODO this is our third experiment. Results are in progress}
 
 
 \section{CONCLUSIONS}\label{sec:conclusion}
@@ -936,17 +950,18 @@ We have derived an M-H test for minibatch MCMC which approximates full data
 tests. We present theoretical results and experimentally show the benefits of
 our test on Gaussian mixtures, logistic regression, and sparse matrix
 factorization.  Directions for future work include integrating our algorithm
-with~\cite{cutting_mh_2014} by applying both tests each iteration or utilizing
-the variance reduction techniques suggested in~\cite{DBLP:conf/icml/ChenG16}.
+with~\citep{cutting_mh_2014} by applying both tests each iteration or utilizing
+the variance reduction techniques suggested in~\citep{DBLP:conf/icml/ChenG16}.
 More elaborate extensions involve running more experiments on other models such
 as neural networks and providing a recipe for how to use our algorithm
-(following the framework of~\cite{sgmcmc_2015}).
+(following the framework of~\citep{sgmcmc_2015}).
 
 
 
 
 \bibliography{paper}
-\bibliographystyle{plain}
+%\bibliographystyle{plain}
+\bibliographystyle{plainnat}
 
 \clearpage
 \appendix
@@ -993,8 +1008,8 @@ Equation~(\ref{eq:lemma_ll_ratio}), we see that
     = -N(\theta'-\theta)\left(\theta-0.5+\frac{\theta'-\theta}{2}\right).
 \end{equation}
 Next, consider the minibatch acceptance test $\Lambda^*(\theta,\theta')
-\not\approx \psi(u,\theta,\theta')$ used in ~\cite{cutting_mh_2014}
-and~\cite{icml2014c1_bardenet14} , where $\not\approx$ means ``significantly
+\not\approx \psi(u,\theta,\theta')$ used in ~\citep{cutting_mh_2014}
+and~\citep{icml2014c1_bardenet14} , where $\not\approx$ means ``significantly
 different from'' under the distribution over samples. This is
 \begin{align}
 \Lambda^*(\theta,\theta')  \not\approx \psi(u_0,\theta,\theta') 
@@ -1043,7 +1058,7 @@ probability of the conjunction of these events is $c = p_0 p_1 p_2 = 0.0085$.
 
 \subsection{PROOF OF LEMMA~\ref{lem:quant_clt}}\label{app:quant_clt}
 
-The following bound is given immediately after Corollary 2 from~\cite{explicit-clt05}:
+The following bound is given immediately after Corollary 2 from~\citep{explicit-clt05}:
 \begin{equation}
 -6.4\mE[|X|^3]-2\mE[|X|] \leq \sup_x|{\rm Pr}(t<x)-\Phi(x)|{\sqrt{n}} \leq
 1.36\mE[|X|^3].
@@ -1103,7 +1118,7 @@ Cramer's condition holds:
     \lim_{t \to \infty} \sup |\mE[\exp(i t X)]| < 1,
 \end{equation}
 then Equation 2.2 in Bentkus et al.'s work on Edgeworth
-expansions~\cite{Bentkus97} provides:
+expansions~\citep{Bentkus97} provides:
 
 \begin{lemma}\label{lem:clt_edgeworth}
 Let $X_1,\ldots,X_n$ be a set of zero-mean, independent, identically-distributed
@@ -1331,8 +1346,8 @@ corr}$.
 \begin{center}
 \begin{tabular}{l l l l}
 \textbf{Metric} & {\sc MHminibatch} & {\sc AustereMH} & {\sc MHSubLhd} \\
-\hline \\
-Equation~\ref{eq:log_prob_poissons} & -1430.0 & -1578.9 & -1232.7 \\
+\hline
+\T Equation~\ref{eq:log_prob_poissons} & -1430.0 & -1578.9 & -1232.7 \\
 Chi-Squared & 3313.9 & 3647.7 & 2444.1 \\
 \end{tabular}
 \end{center}
@@ -1344,7 +1359,7 @@ Chi-Squared & 3313.9 & 3647.7 & 2444.1 \\
 \subsubsection{Grid Search}\label{sssec:grid_search}
 
 For the Gaussian mixture experiment, we use the conservative method
-from~\cite{cutting_mh_2014}, which avoids the need for recomputing log
+from~\citep{cutting_mh_2014}, which avoids the need for recomputing log
 likelihoods of each data point each iteration by choosing baseline minibatch
 sizes $m$ and per-test thresholds $\epsilon$ beforehand, and then using those
 values for the entirety of the trials. We experimented with the following
@@ -1386,8 +1401,8 @@ out of $N_{\rm bins}$ total. We have
 \end{equation}
 Table~\ref{tab:poissons} shows the likelihoods. To facilitate interpretation we
 perform significance tests using Chi-Squared distribution (also in
-Table~\ref{tab:poissons}). Scores lie between~\cite{cutting_mh_2014}
-and~\cite{icml2014c1_bardenet14}, but the variance of these values is high and
+Table~\ref{tab:poissons}). Scores lie between~\citep{cutting_mh_2014}
+and~\citep{icml2014c1_bardenet14}, but the variance of these values is high and
 ordering changes depending on the range of samples generated. \textbf{Daniel:
 one reviewer had a problem with this, and I agree. The easiest fix here is to
 simply report standard deviation values. Also, we should emphasize that we are
@@ -1408,7 +1423,7 @@ exhibits some form of ``correctness.''}
 \begin{table}[t]
 \caption{Parameters for the logistic regression experiments. Unless otherwise
 stated, values apply to all methods tested. For the methods
-from~\cite{cutting_mh_2014}, we use their notation for clarity.}
+from~\citep{cutting_mh_2014}, we use their notation for clarity.}
 \small
 \label{tab:logistic_settings}
 \vskip 0.15in

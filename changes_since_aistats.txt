@@ -2,9 +2,9 @@ Here are the paper adjustments since the AISTATS 2017 submission (or,
 equivalently, the October 016 arXiv submission). This is to help keep track of
 the changes.
 
-0. I converted things to the ICML 2017 format. This resulted in some minor
+0. I converted things to the UAI 2017 format. This resulted in some minor
 changes. I also made the appendix to be the full-width, which seems to be
-standard judging from other ICML papers I've seen (from Berkeley people) and
+standard judging from other ICML/UAI papers I've seen (from Berkeley people) and
 it's also easier for us to write instead of having to force math and tables to
 fit in half a page.
 
@@ -21,8 +21,7 @@ state the Poissons result but we shouldn't over-emphasize it. Another change:
 making the appendix more organized, and also having three sub-sections, each for
 the three experiments.
 
-3. A new collaborative filtering experiment; it should be the third thing we do
-(up to debate).
+3. A new sparse matrix factorization experiment.
 
 4. I put in a *lot* more values tested for the L_infty error for the correction
 distribution. One of the reviewers asked for more detail on this, and I agree,
@@ -31,3 +30,7 @@ then refer the reader to the appendix for details.
 
 5. Added reference from one of the reviewers so that we can treat it as a future
 work possibility.
+
+6. Substantially revised logistic regression section. Actually the experiment
+section has been revised the most, so better to just re-read it (if not
+re-reading the entire paper).
