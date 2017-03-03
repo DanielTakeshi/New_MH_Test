@@ -131,11 +131,8 @@ of several ways. Either:
     variance compared to an optimal proposal. The variance of the log acceptance
     probability scales as the square of proposal step size. 
 
-%  \item Increase the minibatch size when needed. Log acceptance variance
-%    scales as $1/k$ vs the minibatch size $k$. Our test is adaptive like earlier
-%    works, but unlike them, the distribution of minibatch size is Gaussian, not
-%    long-tailed.  Increased minibatch size also reduces the error rate for the
-%    test.
+    \item Utilize Hamiltonian and Langevin Dynamics to judiciously model a system
+    so as to generate distant yet high-quality proposals.
 \end{itemize}
 
 It is worth discussing at this point the typical goals of M-H sampling on large
@@ -216,41 +213,13 @@ approximate test cannot decide with sufficient confidence, the minibatch grows
 and the test repeats. This process continues until a decision. The bounds depend
 on either an asymptotic Central Limit Theorem~\citep{cutting_mh_2014} or a
 concentration bound~\citep{icml2014c1_bardenet14}. We refer to these algorithms,
-respectively, as {\sc AustereMH} and {\sc MHSubLhd}.
-
-In~\citep{cutting_mh_2014}, CLT asymptotic arguments are used to show that their
-approximate acceptance test error (with respect to full-batch M-H) tends to zero
-as batch size increases, but no quantitative bounds are given. In addition, to
-design a test that minimizes data usage given an error bound, they rely on
-computing a standardized mean $\mu_{\rm std}$ each iteration. As the value of
-$\mu_{\rm std}$ depends on all $\log p(x_i|\theta)$ and $\log p(x_i| \theta')$
-terms, the test is technically not a minibatch test; \citep{cutting_mh_2014}
-propose a conservative variant which assumes $\mu_{\rm std}=0$ and avoids the
-need to evaluate all likelihood terms. We refer to this as {\sc AustereMH(c)}
-and the default, non-conservative variant as {\sc AustereMH(nc)}.
-
-For {\sc MHSubLhd}, the test requires direct bounds on the log likelihood ratio,
-which for general distributions requires knowing $p(x_i | \theta)$ and $p(x_i |
-\theta')$ for all $N$ samples. In~\citep{icml2014c1_bardenet14}, explicit bounds
-are given and depend on
-\begin{equation}\label{eq:bad_bound}
-    C_{\theta, \theta'} = \max_{1\leq i\leq N}|\log p(x_i | \theta') - \log p(x_i | \theta)|.
-\end{equation}
-It is possible to analytically determine $C_{\theta,\theta'}$ for logistic
-regression and other simple models, but it is difficult to do so for more
-complicated models, so one generally needs to use all $p(x_i | \theta')$
-terms\footnote{The sample code provided by~\citep{icml2014c1_bardenet14}
-computes $C_{\theta,\theta'}$ by traversing the entire data, thus providing no
-performance advantage over the complete test.} to get $C_{\theta,\theta'}$, like
-the {\sc AustereMH(nc)} test.
-
-In contrast, as we show in Section~\ref{sec:analysis}, we use quantitative forms
-of the CLT which rely on measurable statistics from a \emph{single} minibatch.
-In addition, while both {\sc AustereMH(nc)} and {\sc MHSubLhd} show useful
-reductions in the number of samples required, they suffer the drawback of
-resolving small log likelihood ratio differences between the minibatch and full
-batch versions. We discuss a worst-case scenario in
-Section~\ref{ssec:gaussian_example}.
+respectively, as {\sc AustereMH} and {\sc MHSubLhd}. While both show useful
+reductions in the number of samples required, they suffer from two drawbacks:
+having to compute all log likelihood tokens each iteration to compute certain
+statistics,\footnote{Thus, these are not technically minibatch methods.} (see
+Section~\ref{sec:analysis}), and resolving small log likelihood ratio
+differences between the minibatch and full batch versions. We discuss a
+worst-case scenario in Section~\ref{ssec:gaussian_example}.
 
 
 \subsection{NOTATION}\label{ssec:notation}
@@ -322,8 +291,8 @@ Lemma~\ref{lem:worst_case}.
 \begin{lemma}\label{lem:worst_case}
     For the model in Section~\ref{ssec:gaussian_example}, there exists a fixed
     (independent of $N$) constant $c$ such that with probability $\geq c$ over
-    the joint distribution of $(\theta, \theta', u)$, {\sc AustereMH(nc)} and
-    {\sc MHSubLhd} consume all $N$ samples. 
+    the joint distribution of $(\theta, \theta', u)$, {\sc AustereMH} and {\sc
+    MHSubLhd} consume all $N$ samples. 
 \end{lemma}
 \vspace{-1em}
 \begin{proof}
@@ -590,12 +559,40 @@ MHminibatch}. A few points:
 \section{ANALYSIS}\label{sec:analysis}
 
 We now derive error bounds for our M-H test and the target distribution it
-generates. In Section~\ref{ssec:delta_star_distribution}, we present bounds on
-the absolute and relative error (in terms of the CDFs) of the distribution of
-$\Delta^*$ vs.  a Gaussian. We then show in Section~\ref{ssec:preserve_bounds}
-that these bounds are preserved after the addition of other random variables
-(e.g., $X_{\rm nc}$ and $X_{\rm corr}$). It then follows that the acceptance
-test has the same error bound.
+generates. In the most similar prior works,~\citep{cutting_mh_2014}, CLT
+asymptotic arguments are used to show that their approximate acceptance test
+error (with respect to full-batch M-H) tends to zero as batch size increases,
+but no quantitative bounds are given. In addition, to design a test that
+minimizes data usage given an error bound, they rely on computing a standardized
+mean $\mu_{\rm std}$ each iteration. As the value of $\mu_{\rm std}$ depends on
+all $\log p(x_i|\theta)$ and $\log p(x_i| \theta')$ terms, the test is
+technically not a minibatch test; \citep{cutting_mh_2014} propose a conservative
+variant which assumes $\mu_{\rm std}=0$ and avoids the need to evaluate all
+likelihood terms. We refer to this as {\sc AustereMH(c)} and the default,
+non-conservative variant as {\sc AustereMH(nc)}.
+
+For {\sc MHSubLhd}, the test requires direct bounds on the log likelihood ratio,
+which for general distributions requires knowing $p(x_i | \theta)$ and $p(x_i |
+\theta')$ for all $N$ samples. In~\citep{icml2014c1_bardenet14}, explicit bounds
+are given and depend on
+\begin{equation}\label{eq:bad_bound}
+    C_{\theta, \theta'} = \max_{1\leq i\leq N}|\log p(x_i | \theta') - \log p(x_i | \theta)|.
+\end{equation}
+It is possible to analytically determine $C_{\theta,\theta'}$ for logistic
+regression and other simple models, but it is difficult to do so for more
+complicated models, so one generally needs to use all $p(x_i | \theta')$
+terms\footnote{The sample code provided by~\citep{icml2014c1_bardenet14}
+computes $C_{\theta,\theta'}$ by traversing the entire data, thus providing no
+performance advantage over the complete test.} to get $C_{\theta,\theta'}$, like
+the {\sc AustereMH(nc)} test.  In contrast, we use quantitative forms of the CLT
+which rely on measurable statistics from a \emph{single} minibatch.
+
+In Section~\ref{ssec:delta_star_distribution}, we present bounds on the absolute
+and relative error (in terms of the CDFs) of the distribution of $\Delta^*$
+versus a Gaussian. We then show in Section~\ref{ssec:preserve_bounds} that these
+bounds are preserved after the addition of other random variables (e.g., $X_{\rm
+nc}$ and $X_{\rm corr}$). It then follows that the acceptance test has the same
+error bound.
 
 \subsection{BOUNDING THE ERROR OF $\Delta^*$ FROM A GAUSSIAN}\label{ssec:delta_star_distribution}
 
@@ -951,7 +948,6 @@ as neural networks and providing a recipe for how to use our algorithm
 
 
 \bibliography{paper}
-%\bibliographystyle{plain}
 \bibliographystyle{plainnat}
 
 \clearpage
@@ -1359,6 +1355,11 @@ values:
 \item $\epsilon \in \{0.001, 0.005, 0.01, 0.05, 0.1, 0.2\}$
 \item $m \in \{50, 100, 150, 200, 250, 300, 350, 400, 450, 500\}$
 \end{itemize}
+and chose the $(m,\epsilon)$ pairing which resulted in the lowest expected data
+usage given a selected upper bound on the error. Through personal communication
+with~\citet{cutting_mh_2014}, we were able to use their same code to compute
+expected data usage and errors.
+
 The main difference between {\sc AustereMH(c)} and {\sc
 AustereMH(nc)}\footnote{{\sc AustereMH(nc)} is used in
 Section~\ref{ssec:logistic}.}  is that the latter needs to run a grid search
