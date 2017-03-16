@@ -811,7 +811,7 @@ drastically increase running time.
     regression task for MNIST-13k (left plot) and MNIST-100k (middle plot) as a
     function of cumulative data usage.  The right plot reports performance of
     {\sc MHminibatch} on both datasets when the temperature starts at 100 and
-    drops to 1 after a ``burn-in'' period of 200 samples (vertical dashed line)
+    drops to 1 after a ``burn-in'' period of 400 samples (vertical dashed line)
     of $\theta$.  For all three plots, one standard deviation is indicated by
     the shaded error regions.
     }
@@ -865,24 +865,25 @@ The results indicate that our test is more efficient, obtaining convergence more
 than an order of magnitude faster than {\sc AustereMH(nc)} and several orders of
 magnitude compared to {\sc AustereMH(c)} and {\sc MHSubLhd}.  We also observe
 the advantage of having higher temperature from the third plot in
-Figure~\ref{fig:logistic_performance}. During the exploration period, the
-accuracy rapidly increases, and then after 200 samples, we switch the
-temperature to 1, but this requires the step size to decrease, hence the smaller
-changes in accuracy.
+Figure~\ref{fig:logistic_performance}, which plots average performance and one
+standard deviation for {\sc MHminibatch} over 10 trials. During the exploration
+period, the accuracy rapidly increases, and then after 400 samples, we switch
+the temperature to 1, but this requires the step size to decrease, hence the
+smaller changes in accuracy.
 
 Figure~\ref{fig:logistic_histograms_mnist8m} shows log-log histograms of
-minibatch sizes for the three methods on MNIST-100k.
+minibatch sizes for the methods on MNIST-100k.
 (Figure~\ref{fig:logistic_histograms_mnist} in Appendix~\ref{app:logistic}
 contains results for MNIST-13k.) The histograms only represent one
 representative trial; Table~\ref{tab:logistic} contains the average of the
 average minibatch sizes ($\pm$ one standard deviation) across all trials. {\sc
-MHminibatch}, with average minibatch sizes of roughly 129.8 and 202.5 for
-MNIST-13k and MNIST-100k, respectively, consumes more than 5x fewer data points
-than the next-best method, {\sc AustereMH(nc)}.  We reiterate, however, that
-both {\sc AustereMH(nc)} and {\sc MHSubLhd} require computing $\log
-p(x_i|\theta)$ and $\log p(x_i|\theta')$ for all $x_i$ each iteration. Our
-results here do not count that extra data consumption. Only our method and {\sc
-AustereMH(c)} rely solely on the minibatch of data each iteration.
+MHminibatch}, with average minibatch sizes of 133.7 and 242.4 for MNIST-13k and
+MNIST-100k, respectively, consumes more than 7x and 4x fewer data points than
+the next-best method, {\sc AustereMH(nc)}.  We reiterate, however, that both
+{\sc AustereMH(nc)} and {\sc MHSubLhd} require computing $\log p(x_i|\theta)$
+and $\log p(x_i|\theta')$ for all $x_i$ each iteration. Our results here do not
+count that extra data consumption. Only our method and {\sc AustereMH(c)} rely
+solely on the minibatch of data each iteration.
 
 
 
@@ -900,7 +901,7 @@ independent trials (5000 samples each) for MNIST-13k and 5 independent trials
 \begin{tabular}{l l l l}
 \textbf{Method/Data} & \textbf{MNIST-13k} & \textbf{MNIST-100k}  \\
 \hline \\
-{\sc MHminibatch}   & $129.8\pm 3.4$    & $202.5 \pm 13.6$ \\
+{\sc MHminibatch}   & $133.7\pm 4.7$    & $242.4 \pm 12.4$ \\
 {\sc AustereMH(nc)} & $973.8\pm 49.8$   & $1098.3 \pm 44.9$ \\
 {\sc AustereMH(c)}  & $1924.3\pm 52.4$  & $2795.6 \pm 364.0$ \\
 {\sc MHSubLhd}      & $10783.4\pm 78.9$ & $14977.3 \pm 582.0$ \\
