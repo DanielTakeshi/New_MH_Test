@@ -880,7 +880,7 @@ minibatch sizes for the methods on MNIST-100k.
 contains results for MNIST-13k.) The histograms only represent one
 representative trial; Table~\ref{tab:logistic} contains the average of the
 average minibatch sizes ($\pm$ one standard deviation) across all trials. {\sc
-MHminibatch}, with average minibatch sizes of 133.7 and 242.4 for MNIST-13k and
+MHminibatch}, with average minibatch sizes of 125.4 and 216.5 for MNIST-13k and
 MNIST-100k, respectively, consumes more than 7x and 4x fewer data points than
 the next-best method, {\sc AustereMH(nc)}.  We reiterate, however, that both
 {\sc AustereMH(nc)} and {\sc MHSubLhd} require computing $\log p(x_i|\theta)$
@@ -904,7 +904,7 @@ independent trials (5000 samples each) for MNIST-13k and 5 independent trials
 \begin{tabular}{l l l l}
 \textbf{Method/Data} & \textbf{MNIST-13k} & \textbf{MNIST-100k}  \\
 \hline \\
-{\sc MHminibatch}   & $133.7\pm 4.7$    & $242.4 \pm 12.4$ \\
+{\sc MHminibatch}   & $125.4\pm 9.2$    & $216.5 \pm 7.9$ \\
 {\sc AustereMH(nc)} & $973.8\pm 49.8$   & $1098.3 \pm 44.9$ \\
 {\sc AustereMH(c)}  & $1924.3\pm 52.4$  & $2795.6 \pm 364.0$ \\
 {\sc MHSubLhd}      & $10783.4\pm 78.9$ & $14977.3 \pm 582.0$ \\
@@ -1424,7 +1424,8 @@ exhibits some form of ``correctness.''}
 	\centering
     \includegraphics[width=0.9\linewidth]{logistic_regression_step_size_tests.png}
 	\caption{
-    \textbf{Daniel: TODO describe}
+    Effect of changing the proposal step size $\sigma$ for
+    {\sc MHminibatch}.
     }
 	\label{fig:logistic_histograms_appendix}
 \end{figure*}
