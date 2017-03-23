@@ -795,11 +795,34 @@ in Appendix~\ref{sssec:gauss_metrics}.
 Figure~\ref{fig:gauss_mix_2} shows that {\sc MHminibatch} dominates in terms of
 speed and efficiency. The histograms of the (final) minibatch sizes used each
 iteration show that our method consumes significantly less data; the
-distribution is short-tailed and the mean is 213, more than an order of
-magnitude better compared to the other two methods (averages are 11962 and
-63408). Sizes correspond to the running times of the methods, excluding the
+distribution is short-tailed and the mean is 172, more than an order of
+magnitude better compared to the other two methods (averages are 12562 and
+675008). We further ran 10 runs of mixture of Gaussians experiments, and
+the average and standard deviation values of the mean minibatch size 
+for {\sc MHminibatch}, {\sc AustereMH(c)}, {\sc MHSubLhd} are listed in
+table ~\ref{tab:gaussianres}. Sizes correspond to the running times of the methods, excluding the
 likelihood computation of all data points for {\sc MHSubLhd}, which would
 drastically increase running time.
+
+
+\begin{table}[t]
+\caption{Statistics for mean minibatch sizes on gaussian mixture model
+experiments using {\sc MHminibatch}, {\sc AustereMH(c)}, {\sc MHSubLhd}.
+The averages are taken over 10 independent trials (3000 samples each).}
+\small % Daniel: yeah, sorry, but otherwise it doesn't fit in a column
+\label{tab:gaussianres}
+\vskip 0.15in
+\begin{center}
+\begin{tabular}{l l l l}
+\textbf{Method/Data} & \textbf{Average of Mean} & \textbf{Std of Mean}  \\
+\hline \\
+{\sc MHminibatch}   & 182 & 12 \\
+{\sc AustereMH(c)}  & 13540 & 1521 \\
+{\sc MHSubLhd}      & 65759 & 3222 \\
+\end{tabular}
+\end{center}
+\vskip -0.1in
+\end{table}
 
 
 \subsection{LOGISTIC REGRESSION}\label{ssec:logistic}
