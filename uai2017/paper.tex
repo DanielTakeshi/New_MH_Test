@@ -797,28 +797,35 @@ speed and efficiency. The histograms of the (final) minibatch sizes used each
 iteration show that our method consumes significantly less data; the
 distribution is short-tailed and the mean is 172, more than an order of
 magnitude better compared to the other two methods (averages are 12562 and
-675008). We further ran 10 runs of mixture of Gaussians experiments, and
-the average and standard deviation values of the mean minibatch size 
-for {\sc MHminibatch}, {\sc AustereMH(c)}, {\sc MHSubLhd} are listed in
-table ~\ref{tab:gaussianres}. Sizes correspond to the running times of the methods, excluding the
-likelihood computation of all data points for {\sc MHSubLhd}, which would
-drastically increase running time.
+675008). \textbf{Daniel: Xinlei, these numbers don't match
+Figure~\ref{fig:gauss_mix_2} and the figures need to be updated so the scatter
+plot has the correct method names and the scaling key, while the histograms have
+the correct names and the seaborn background.} We
+further ran 10 runs of mixture of Gaussians experiments, and the average and
+standard deviation values of the mean minibatch size for {\sc MHminibatch}, {\sc
+AustereMH(c)}, {\sc MHSubLhd} are listed in table ~\ref{tab:gaussianres}. Sizes
+correspond to the running times of the methods, excluding the likelihood
+computation of all data points for {\sc MHSubLhd}, which would drastically
+increase running time.
 
 
 \begin{table}[t]
-\caption{Statistics for mean minibatch sizes on gaussian mixture model
-experiments using {\sc MHminibatch}, {\sc AustereMH(c)}, {\sc MHSubLhd}.
-The averages are taken over 10 independent trials (3000 samples each).}
-\small % Daniel: yeah, sorry, but otherwise it doesn't fit in a column
+\caption{Average minibatch sizes ($\pm$ one standard deviation) on the Gaussian
+mixture model. The averages are taken over 10 independent trials (3000 samples
+each). \textbf{Daniel: Xinlei, can you add in one more decimal point for all the
+numbers in this table, like I do in the Logistic Regression table?}}
+% Daniel: this `small` command was carried over from the LR table which couldn't
+% fit in a column. It's not needed here.
+%\small 
 \label{tab:gaussianres}
 \vskip 0.15in
 \begin{center}
 \begin{tabular}{l l l l}
-\textbf{Method/Data} & \textbf{Average of Mean} & \textbf{Std of Mean}  \\
+\textbf{Method} & \textbf{Average of MB Sizes} \\
 \hline \\
-{\sc MHminibatch}   & 182 & 12 \\
-{\sc AustereMH(c)}  & 13540 & 1521 \\
-{\sc MHSubLhd}      & 65759 & 3222 \\
+{\sc MHminibatch}   & $182\pm 12$ \\
+{\sc AustereMH(c)}  & $13540\pm 1521$ \\
+{\sc MHSubLhd}      & $65759\pm 3222$ \\
 \end{tabular}
 \end{center}
 \vskip -0.1in
@@ -913,8 +920,6 @@ solely on the minibatch of data each iteration.
 
 
 
-\subsection{SPARSE MATRIX FACTORIZATION}\label{ssec:collab_filtering}
-
 \begin{table}[t]
 \caption{Average minibatch sizes ($\pm$ one standard deviation) on logistic
 regression on MNIST-13k and MNIST-100k.  The averages are taken over 10
@@ -937,44 +942,27 @@ independent trials (5000 samples each) for MNIST-13k and 5 independent trials
 \end{table}
 
 
-\begin{table}[t]
-\caption{\textbf{TODO TABLE WITH SMF RESULTS}}
-\small % Daniel: yeah, sorry, but otherwise it doesn't fit in a column
-\label{tab:smf}
-\vskip 0.15in
-\begin{center}
-\begin{tabular}{l l l l}
-\textbf{RMSE} & \textbf{MovieLens 10m} & \textbf{Netflix}  \\
-\hline \\
-{\sc MHminibatch} & ??? & ??? & \\
-ADAGrad           & ??? & ??? & \\
-\end{tabular}
-\end{center}
-\vskip -0.1in
-\end{table}
-
-\textbf{Daniel: TODO this is our third experiment. Results are in progress...}
-
-\textbf{We benchmark with the ADAGrad~\citep{adagrad} implementation of Sparse
-Matrix Factorization described in~\citep{Canny:2013:BDA:2487575.2487677}, which
-is a variant of Alternating Least Squares~\citep{Koren:2009:MFT:1608565.1608614}.
-(Daniel: is this the correct citation for BIDMach? I assume this is what we will
-use)}
-
-\section{CONCLUSIONS}\label{sec:conclusion}
+\section{CONCLUSIONS AND DISCUSSIONS}\label{sec:conclusion}
 
 We have derived an M-H test for minibatch MCMC which approximates full data
 tests. We present theoretical results and experimentally show the benefits of
-our test on Gaussian mixtures, logistic regression, and sparse matrix
-factorization.  Directions for future work include integrating our algorithm
-with~\citep{cutting_mh_2014} by applying both tests each iteration or utilizing
-the variance reduction techniques suggested in~\citep{DBLP:conf/icml/ChenG16}.
-More elaborate extensions involve running more experiments on other models such
-as neural networks and providing a recipe for how to use our algorithm
-(following the framework of~\citep{sgmcmc_2015}).
+our test on Gaussian mixtures and a variety of logistic regression experiments.
+
+The most pressing direction for future work is to integrate our M-H test with
+Hamiltonian Monte Carlo and Langevin Dynamics methods to enable MCMC methods to
+scale to models such as deep neural networks. With these types of models, our
+proposal probabilities will almost certainly have to be asymmetric, but these
+typically result in an estimate plus Gaussian noise which we can absorb into our
+test.
+
+Other possibilities for future work include integrating our algorithm
+with~\citep{cutting_mh_2014} by applying both tests each iteration, utilizing
+the variance reduction techniques suggested in~\citep{DBLP:conf/icml/ChenG16},
+and providing recipe for how to use our algorithm following the framework
+of~\citep{sgmcmc_2015}.
 
 
-
+\newpage
 \bibliography{paper}
 \bibliographystyle{plainnat}
 
@@ -993,9 +981,11 @@ This appendix is divided into two main parts. Appendix~\ref{app:proofs} provides
 the proofs that we omitted from the main text due to space constraints.
 Appendix~\ref{app:experiments} provides further details on the correction
 distribution derivation and on our three main experiments to assist
-understanding and reproducibility. Our code is open-source on
-GitHub.\footnote{\url{https://github.com/BIDData/BIDMach/blob/master/src/main/scala/BIDMach/updaters/MHTest.scala}}
-% Daniel: TODO remove for anonymous review later.
+understanding and reproducibility. 
+% Daniel: TODO can decide whether to include this here or not. It might actually
+% be better to do this in the logistic regression section.
+% Our code is open-source on
+% GitHub.\footnote{\url{https://github.com/BIDData/BIDMach/blob/master/src/main/scala/BIDMach/updaters/MHTest.scala}}
 
 
 \section{PROOFS OF LEMMAS AND COROLLARIES}\label{app:proofs}
@@ -1354,7 +1344,8 @@ corr}$.
 \subsection{GAUSSIAN MIXTURE MODEL EXPERIMENT (SECTION~\ref{ssec:gaussians})}\label{app:gaussians}
 
 \begin{table}[t]
-\caption{Gaussian Mixture Model Statistics}
+\caption{Gaussian Mixture Model Statistics \textbf{TODO Xinlei, please fix this
+table.}}
 \small
 \label{tab:poissons}
 \vskip 0.15in
@@ -1424,9 +1415,9 @@ perform significance tests using Chi-Squared distribution (also in
 Table~\ref{tab:poissons}). Scores lie between~\citep{cutting_mh_2014}
 and~\citep{icml2014c1_bardenet14}, but the variance of these values is high and
 ordering changes depending on the range of samples generated. \textbf{Daniel:
-one reviewer had a problem with this, and I agree. The easiest fix here is to
-simply report standard deviation values. Also, we should emphasize that we are
-not aiming to get the best score by this metric but simply something that
+Xinlei, one reviewer had a problem with this, and I agree. The easiest fix here
+is to simply report standard deviation values. Also, we should emphasize that we
+are not aiming to get the best score by this metric but simply something that
 exhibits some form of ``correctness.''}
 
 \subsection{LOGISTIC REGRESSION EXPERIMENT (SECTION~\ref{ssec:logistic})}\label{app:logistic}
@@ -1509,13 +1500,5 @@ Table~\ref{tab:logistic_settings} indicates the relevant parameter settings for
 the logistic regression experiments. Unless otherwise stated, values apply to
 all methods tested. For values from~\citep{cutting_mh_2014}
 or~\cite{icml2014c1_bardenet14}, we use their notation to be consistent.
-
-
-\subsection{SPARSE MATRIX FACTORIZATION EXPERIMENT (SECTION~\ref{ssec:collab_filtering})}\label{app:collab_filtering}
-
-\textbf{Daniel: TODO}
-
-
-
 
 \end{document}
