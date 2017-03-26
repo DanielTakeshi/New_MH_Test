@@ -1353,8 +1353,8 @@ table.}}
 \begin{tabular}{l l l l}
 \textbf{Metric} & {\sc MHminibatch} & {\sc AustereMH} & {\sc MHSubLhd} \\
 \hline
-\T Equation~\ref{eq:log_prob_poissons} & -1320.8 & -1601.7 & -1332.9 \\
-Chi-Squared & 7313.0 & 11969.6 & 2875.6 \\
+\T Equation~\ref{eq:log_prob_poissons} & $-1306.2 \pm 20.7$ & $-1619.6 \pm 25.3$ & $-1301.5 \pm 44.4$ \\
+Chi-Squared & $5706.8 \pm 2271.5$ & $ 10501.3 \pm 2076.5$ & $ 3711.7 \pm 1182.4$ \\
 \end{tabular}
 \end{center}
 \vskip -0.1in
@@ -1412,9 +1412,13 @@ out of $N_{\rm bins}$ total. We have
 \end{equation}
 Table~\ref{tab:poissons} shows the likelihoods. To facilitate interpretation we
 perform significance tests using Chi-Squared distribution (also in
-Table~\ref{tab:poissons}). Scores lie between~\citep{cutting_mh_2014}
-and~\citep{icml2014c1_bardenet14}, but the variance of these values is high and
-ordering changes depending on the range of samples generated. \textbf{Daniel:
+Table~\ref{tab:poissons}). The table provides the mean likelihood value and mean 
+Chi-Squared test statistics value as well as their standard deviations.  Our likelihood values 
+lies between~\citep{cutting_mh_2014} and~\citep{icml2014c1_bardenet14}, 
+but the variance of their likelihood values are high and
+ordering changes depending on the range of samples generated. It should be noted 
+that we are not aiming at optimizing the likelihood values nor the Chi-Squared statistics.
+We use these values to show the extent of correctness. \textbf{Daniel:
 Xinlei, one reviewer had a problem with this, and I agree. The easiest fix here
 is to simply report standard deviation values. Also, we should emphasize that we
 are not aiming to get the best score by this metric but simply something that
