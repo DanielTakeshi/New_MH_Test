@@ -775,7 +775,7 @@ $p(\theta)\prod_{i=1}^{1,000,000}p(x_i | \theta)^{1/K}$ with the same prior from
 Equation~(\ref{eq:data_generation}). This produces a much sharper posterior with
 two very narrow peaks.  Our goal is to reproduce the original posterior, so we
 adjust the temperature to $K=10,000$.  Taking logs, we get the target as shown
-in the far left of Figure~\ref{fig:gauss_mix_1}.
+in the far right of Figure~\ref{fig:gauss_mix_1}.
 
 We benchmark with {\sc AustereMH(c)} and {\sc MHSubLhd}. We initialized {\sc
 MHminibatch} and {\sc MHSubLhd} with $m=50$. For {\sc AustereMH(c)}, we set
@@ -797,23 +797,17 @@ speed and efficiency. The histograms of the (final) minibatch sizes used each
 iteration show that our method consumes significantly less data; the
 distribution is short-tailed and the mean is 172, more than an order of
 magnitude better compared to the other two methods (averages are 12562 and
-67508). \textbf{Daniel: Xinlei, these numbers don't match
-Figure~\ref{fig:gauss_mix_2} and the figures need to be updated so the scatter
-plot has the correct method names and the scaling key, while the histograms have
-the correct names and the seaborn background.} We
-further ran 10 runs of mixture of Gaussians experiments, and the average and
-standard deviation values of the mean minibatch size for {\sc MHminibatch}, {\sc
-AustereMH(c)}, {\sc MHSubLhd} are listed in table ~\ref{tab:gaussianres}. Sizes
-correspond to the running times of the methods, excluding the likelihood
-computation of all data points for {\sc MHSubLhd}, which would drastically
-increase running time.
+67508). We further ran 10 runs of mixture of Gaussians experiments and report
+minibatch sizes in Table~\ref{tab:gaussianres}. Sizes correspond to the running
+times of the methods, excluding the likelihood computation of all data points
+for {\sc AustereMH(nc)} and {\sc MHSubLhd}, which would drastically increase
+    running time.
 
 
 \begin{table}[t]
 \caption{Average minibatch sizes ($\pm$ one standard deviation) on the Gaussian
 mixture model. The averages are taken over 10 independent trials (3000 samples
-each). \textbf{Daniel: Xinlei, can you add in one more decimal point for all the
-numbers in this table, like I do in the Logistic Regression table?}}
+each).}
 % Daniel: this `small` command was carried over from the LR table which couldn't
 % fit in a column. It's not needed here.
 %\small 
@@ -1344,14 +1338,13 @@ corr}$.
 \subsection{GAUSSIAN MIXTURE MODEL EXPERIMENT (SECTION~\ref{ssec:gaussians})}\label{app:gaussians}
 
 \begin{table}[t]
-\caption{Gaussian Mixture Model Statistics \textbf{TODO Xinlei, please fix this
-table.}}
+\caption{Gaussian Mixture Model Statistics}
 \small
 \label{tab:poissons}
 \vskip 0.15in
 \begin{center}
 \begin{tabular}{l l l l}
-\textbf{Metric} & {\sc MHminibatch} & {\sc AustereMH} & {\sc MHSubLhd} \\
+\textbf{Metric/Method} & {\sc MHminibatch} & {\sc AustereMH(c)} & {\sc MHSubLhd} \\
 \hline
 \T Equation~\ref{eq:log_prob_poissons} & $-1306.2 \pm 20.7$ & $-1619.6 \pm 25.3$ & $-1301.5 \pm 44.4$ \\
 Chi-Squared & $5706.8 \pm 2271.5$ & $ 10501.3 \pm 2076.5$ & $ 3711.7 \pm 1182.4$ \\
@@ -1389,10 +1382,6 @@ AustereMH(nc)}.
 
 \subsubsection{Gaussian Mixture Model Metrics}\label{sssec:gauss_metrics}
 
-\textbf{Daniel: Xinlei, you should be in charge of checking this section and
-adding some stuff to Table~\ref{tab:poissons}, perhaps averages plus or minus
-one standard deviation.}
-
 We discretize the posterior coordinates into bins with respect to the two
 components of $\theta$.  The probability $P_i$ of a sample falling into bin $i$
 is the integral of the true posterior over the bin's area.  A single sample
@@ -1412,17 +1401,12 @@ out of $N_{\rm bins}$ total. We have
 \end{equation}
 Table~\ref{tab:poissons} shows the likelihoods. To facilitate interpretation we
 perform significance tests using Chi-Squared distribution (also in
-Table~\ref{tab:poissons}). The table provides the mean likelihood value and mean 
-Chi-Squared test statistics value as well as their standard deviations.  Our likelihood values 
-lies between~\citep{cutting_mh_2014} and~\citep{icml2014c1_bardenet14}, 
-but the variance of their likelihood values are high and
-ordering changes depending on the range of samples generated. It should be noted 
-that we are not aiming at optimizing the likelihood values nor the Chi-Squared statistics.
-We use these values to show the extent of correctness. \textbf{Daniel:
-Xinlei, one reviewer had a problem with this, and I agree. The easiest fix here
-is to simply report standard deviation values. Also, we should emphasize that we
-are not aiming to get the best score by this metric but simply something that
-exhibits some form of ``correctness.''}
+Table~\ref{tab:poissons}). The table provides the mean likelihood value and mean
+Chi-Squared test statistics value as well as their standard deviations.  Our
+likelihood values lies between~\citep{cutting_mh_2014}
+and~\citep{icml2014c1_bardenet14}, but we note that we are not aiming to
+optimize the likelihood values or the Chi-Squared statistics.  We use these
+values to show the extent of correctness.
 
 \subsection{LOGISTIC REGRESSION EXPERIMENT (SECTION~\ref{ssec:logistic})}\label{app:logistic}
 
