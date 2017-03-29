@@ -111,30 +111,67 @@ in~\citep{TallData16}. Here, we show that the difference between the
 distributions can be corrected with an additive random variable. This leads to a
 test which is fast, and whose error can be made arbitrarily small.
 
-Our test is applicable when the variance (over data samples) of the log
-acceptance probability is small enough (less than 1). It's not clear at first why
-this quantity should be bounded, but we will show that it is ``natural'' for
-well-specified models running Metropolis-Hastings sampling with optimal
-proposals~\citep{OptimalScaling01} on a full dataset. When we reduce the amount
-of data for the test, the variance goes up. We have to reduce variance in one
-of several ways. Either:
+We note that this approach is fundamentally different from prior
+work. It makes no assumptions and requires no global bounds on the
+posterior parameter distribution in order to work. It is exact in the
+limit as batch size increases by the Central Limit Theorem. This is
+not true of ~\citep{cutting_mh_2014} and~\citep{icml2014c1_bardenet14}
+which use tail bounds and provide only approximate tests even with
+arbitratily large batches of data. Our test is also exact under the
+assumptions of \citep{cutting_mh_2014} that per-sample parameter
+posteriors are normally distributed about the population mean.  Rather
+than tail bounds, our approach uses moment estimates from the data to
+determine how far the minibatch posteriors deviate from a normal
+distribution.  These bounds carry through to the overall accuracy of
+the test.
 
-\begin{itemize}[noitemsep]
+Our test is applicable when the variance (over data samples) of the
+log probability ratio between proposal and current state is small
+enough (less than 1). It's not clear at first why this quantity should
+be bounded, but it is natural for well-specified models running
+Metropolis-Hastings sampling with optimal
+proposals~\citep{OptimalScaling01} on a full dataset. If the posterior
+parameter distribution is a unit-variance normal distribution, then
+the posterior for $N$ samples will have variance $1/N$. There is
+simply not enough information in $M << N$ samples to locate and
+efficiently sample from this posterior. This is not a property of any
+particular proposal or test, but of the information carried by the
+data. The variance condition succinctly captures the condition that
+the minibatch carries enough information to generate a sample.  While
+we cannot expect to generate independent samples from the posterior
+using only a small subset of the data, there are three situations
+where we can exploit small minibatches:
+
+\begin{enumerate}[noitemsep]
     \item Increase the temperature $K$ of the target distribution. Log
     likelihoods scale as $1/K$, and so the variance of the likelihood ratio will
-    vary as $1/K^2$. Our model is no longer well-specified (we are doing
-    inference at a temperature different from that assumed during data
-    generation), but as we demonstrate in Section~\ref{ssec:logistic}, higher
+    vary as $1/K^2$. As we demonstrate in Section~\ref{ssec:logistic}, higher
     temperature can be advantageous for parameter exploration.
 
-    \item For continuous distributions, reduce the proposal step size and
-    variance compared to an optimal proposal. The variance of the log acceptance
-    probability scales as the square of proposal step size. 
+    \item For continuous distributions, reduce the proposal step size
+      (i.e. generate correlated samples). The variance of the log
+      acceptance probability scales as the square of proposal step
+      size.
 
-    \item Utilize Hamiltonian and Langevin Dynamics to judiciously model a system
-    so as to generate distant yet high-quality proposals.
-\end{itemize}
+  \item Utilize Hamiltonian Dynamics for proposals and tests. Here the
+    dynamics itself provide shaping to the posterior distribution, and
+    the M-H is only needed to correct for quantization error. In terms
+    of the information carried by the samples, this approach is not
+    limited by the data in a particular minibatch since momentum is
+    carried over time and ``remembered'' across multiple
+    minibatches.
+\end{enumerate}
 
+We note that 2 above is characteristic of Gibbs samplers applied to
+large datasets~\citep{dupuy2016}. Such samplers represent a
+model posterior via counts over an entire dataset of $N$ samples. When
+a minibatch of $M$ samples is used to update the model, the counts for
+these samples only are updated. This creates ``steps'' of $O(M/N)$
+in the model parameters, and correlated samples from the model
+posterior. Correlated samples are still very useful in high-dimensional
+ML problems with multi-model posteriors since they correspond to a finer-scale
+random walk through the posterior landscape. 
+\begin{comment}
 It is worth discussing at this point the typical goals of M-H sampling on large
 datasets. By the Bernstein-von Mises Theorem, the posterior distribution for a
 Bayesian inference task has variance that scales inversely with $N$. Simply
@@ -151,7 +188,7 @@ mode, M-H tests can be used in similar fashion to Stochastic Gradient Descent.
 The goal in SGD is to make gradual progress to a posterior mode with each step,
 taking small steps so that the cumulative displacement has progressively lower
 variance.
-
+\end{comment}
 The contributions of this paper are as follows:
 
 \begin{itemize}[noitemsep]
@@ -160,10 +197,9 @@ The contributions of this paper are as follows:
     additive correction variable to implement a Barker test based on minibatch
     mean and variance. 
 
-    \item We compare performance of our new test and prior approaches on several
-    datasets. We demonstrate several order-of-magnitude improvements in efficiency
-    (measured as data consumed per test), and show that it does not suffer from
-    long-tailed minibatch sizes.
+    \item We compare our new test and prior approaches on several
+      datasets. We demonstrate several order-of-magnitude improvements in sample efficiency,
+      and that batch size distribution is short-tailed. 
 \end{itemize}
 
 
@@ -942,12 +978,12 @@ We have derived an M-H test for minibatch MCMC which approximates full data
 tests. We present theoretical results and experimentally show the benefits of
 our test on Gaussian mixtures and a variety of logistic regression experiments.
 
-The most pressing direction for future work is to integrate our M-H test with
-Hamiltonian Monte Carlo and Langevin Dynamics methods to enable MCMC methods to
-scale to models such as deep neural networks. With these types of models, our
-proposal probabilities will almost certainly have to be asymmetric, but these
-typically result in an estimate plus Gaussian noise which we can absorb into our
-test.
+A priority is to extend our work to methods such as Hamiltonian Monte Carlo and Langevin Dynamics
+which use efficient but asymmetric proposals. While there are various approaches
+to symmetrizing these proposals, they have high cost in the context of minibatch
+MCMC. Instead we plan to extend our method to log proposal ratios which have
+similar structure (whole-dataset mean plus additive noise) to the log probability
+ratio. These can be similarly absorbed in the Barker test. 
 
 Other possibilities for future work include integrating our algorithm
 with~\citep{cutting_mh_2014} by applying both tests each iteration, utilizing
