@@ -1,21 +1,26 @@
+:silent
 :load simulator.ssc
 :load cutMHTest.ssc
 :load adaptiveMHTest.ssc
 
 /**
- * Code for running Logistic Regression results. Documentation in progress (sorry).
+ * Code for running Logistic Regression results. Make sure you check all of the
+ * important parameters at the start, including the path to the training and
+ * testing datasets.
  *
- * NOTE ON USAGE: this will run *one* of the three methods: ours, kora (Korattikara), and bard
- * (Bardenet). It used to run all three at once but I was getting out of memory errors when I did
- * that for larger datasets. The datasets here are fixed ahead of time in 'train_data_dir' and
- * 'test_data_dir' so the methods are going to be using the same data.
+ * NOTE ON USAGE: this will run *one* of the three methods: ours, kora
+ * (Korattikara), and bard (Bardenet). It used to run all three at once but I
+ * was getting out of memory errors when I did that for larger datasets. The
+ * datasets here are fixed ahead of time in 'train_data_dir' and 'test_data_dir'
+ * so the methods are going to be using the same data.
  * 
- * Fix the values in the parameters (listed at the start of this script) and run it using:
+ * Fix the values in the parameters (listed at the start) and run it using:
  *
  * [path_to_bidmach]./bidmach logisticRegressionModel.ssc | tee output.txt
  *
- * The output.txt should ideally be named something informative. Note that this script *needs the
- * other .ssc methods and other files* that are in this 'code' directory.
+ * The output.txt should ideally be named something informative. Note that this
+ * script needs the other .ssc methods and other files that are in this 'code'
+ * directory.
  */
 
 // -------------------------------- //
@@ -23,44 +28,57 @@
 // -------------------------------- //
 
 // IMPORTANT STUFF! AT LEAST CHECK THESE EVERY TIME YOU RUN SOMETHING!
-val nsamps = 3000           // The number of \theta values to sample (i.e., number of iterations).
+// And you also have to check the file names too, especially for AustereMH.
+val nsamps = 5000           // The number of \theta values to sample (i.e., number of iterations).
 val test_to_use = "kora"    // Three options: "ours", "kora", or "bard". Use one of these.
-val k = 1929350              // k = (#training)+(#testing) points. This will change the output data names.
-val n = 1736415       // The number of training points, should be 80% of k.
-val temperature = n/100.0   // This was 1000.0 for the previous MNIST (not 8M) experiment.
-val batchsize = 5           // I'm also experimenting with changing minibatch sizes.
-val cutMHeps = 0.05          // Set this here (to keep all modifiable parameters here).
+val ntrain = 13000          // Number of training data (affects output name).
+val temperature = 100.0     // This was 1000.0 for the previous MNIST (not 8M) experiment.
+var batchsize = 100         // I'm also experimenting with changing minibatch sizes.
 val adapt_gamma = 2.00      // The gamma value for the adaptive MH test.
+val sigma_proposer = 0.05   // The step size for the proposal.
+val conservative = false    // For Korattikara's test.
+val deltaStar = 0.05f       // Upper bound on \mathcal{E} (I think) in Korattikara paper.
 
-// LESS IMPORTANT STUFF BELOW
-val train_data_dir = "/home/xinleipan/data/FINAL_MNIST8M_TRAIN_1736415.fmat.lz4"
-val test_data_dir = "/home/xinleipan/data/FINAL_MNIST8M_TEST_192935.fmat.lz4";
+/* 
+ * Change the data path! This is for Daniel's personal machine:
+ * Training MNIST, use:   "/data/MNIST/MNIST_XandY_train_1_7_shuf.fmat.lz4"
+ * Training MNIST8M, use: "/data/MNIST8M/MNIST8M_XandY_train_1_7_shuf_100k.fmat.lz4"
+ */
 
-val sigma = 1.0
-val pscale = 1.0
-val sigma_proposer = 0.05;
+val train_data_dir = "/data/MNIST/MNIST_XandY_train_1_7_shuf.fmat.lz4"
+val test_data_dir  = "/data/MNIST/MNIST_XandY_test_1_7_shuf.fmat.lz4"
 
 // Create the different tests we will be using.
-val newtest = new NewTest;
-newtest.explin = false;
-val cutMHtest = new cutMHTest;
-val adaptiveMHtest = new adaptiveMHTest;
-cutMHtest.N = n;
-adaptiveMHtest.N = n;
-adaptiveMHtest.gamma = adapt_gamma;
-cutMHtest.eps = cutMHeps
+// NEW! We will now assign cutMHtest.eps _after_ we run grid search.
+val newtest = new NewTest
+newtest.explin = false
+val cutMHtest = new cutMHTest
+val adaptiveMHtest = new adaptiveMHTest
+cutMHtest.N = ntrain
+adaptiveMHtest.N = ntrain
+adaptiveMHtest.gamma = adapt_gamma
+
 
 /**
- * TODO document!
+ * This handles the logic for running our logistic regression experiment.
+ *
+ * @param n The total number of training data points; in the first arXiv
+ *      version, we reported usng 450k.
+ * @param sigma We never use this, it seems to be a relic from the inheritance
+ *      in MHmodel. Why do we have this? It's not the variance of the proposer;
+ *      that's the `sigma_proposer` variable.
+ * @param pscale Same issue with sigma, we never use it!
  */
 class LogisticRegression(n:Int, sigma:Double, pscale: Double) extends MHmodel (1, n, sigma, pscale) {
 	
-    var sigma_proposer = 0.05;
+    var sigma_proposer = 0.01;
     var temp = 1.0;
     val data = loadFMat(train_data_dir);
 
-    /**
-     * TODO document!
+    /** 
+     * Initialize starting \theta randomly with values in (0,1). The reason why
+     * we have a -1 here is because we assume the last row of `data` contains
+     * the labels.
      */
     def initfn():Mat = {
         val parameter_dim = data.dims(0) - 1;
@@ -68,42 +86,69 @@ class LogisticRegression(n:Int, sigma:Double, pscale: Double) extends MHmodel (1
         theta;
     };
 
-    /**
-     * TODO document!
-     */
+    /** Generates \theta' by performing a random walk. */
     def proposalfn(theta:Mat):Mat = {
         theta + dnormrnd(0, sigma_proposer, theta.dims(0), 1);
     };
     
     /**
-     * TODO document!
+     * Evaluates the log likelihood p(y|x,\theta) for each element in the
+     * minibatch, scaled if necessary according to scaling/temperature.
+     *
+     * @param batch This is a subset of the full data, of dimension (m,n) where
+     *      m is the dimension of the data PLUS ONE (e.g. 785 for MNIST) and n
+     *      is the minibatch size, which generally varies. The last row in
+     *      `batch` corresponds to the labels, either +1 or -1.
+     * @param theta A column vector representing the weights for logistic
+     *      regression.
+     *
+     * @return The log likelihood of each element in this minibatch, w.r.t this
+     *      particular \theta (i.e. it doesn't combine into a scalar).
      */
     def evalfn(batch:Mat, theta:Mat):Mat = {
         val X = batch(0 until batch.dims(0)-1, ?)
         val Y = batch(batch.dims(0)-1,?)
-        val z = Y dot (theta.t * X);
-        val sig = 1/(1 + exp(-1.0 * z));
+        val z = Y *@ (theta.t * X); // Note: `*@` will broadcoast; `dot` won't.
+        val sig = max( 1/(1 + exp(-1.0 * z)) , 1e-20); // Numerically robust
         val log_sig = ln(sig);
-        val scale_and_temp = 1.0 * (n/temp);
+        // NOTE: we scale 1/b in the test function method, not here.
+        val scale_and_temp = 1.0 * (n/temp); 
         scale_and_temp * log_sig;
     };
 }
 	
+
 /**
- * TODO document!
+ * Evaluates the performance of our sampled \theta values on the Logistic
+ * Regression testing dataset. It can be a little confusing at first sight but
+ * this is one way of computing the likelihood for logistic regression --
+ * assuming BINARY classification. Our classes are -1 and 1 even though we're
+ * classifying 1s and 7s (the 7s are our -1s).
+ * 
+ * @param X A matrix contining our test data, of size (784, num_test_elements),
+ *      where the 784 is because MNIST is 28x28.
+ * @param Y A vector containing the test data labels (i.e. digits from MNIST,
+ *      then mapped to a scale of -1 or 1).
+ * @param theta A matrix of size (784, num_samples), where each column indicates
+ *      the current \theta due to MCMC sampling.
+ *
+ * @return (accuracy, ll), these are each matrices ("vectors") with the spot at
+ *      index i containing the test set accuracy (repectively, log likelihood)
+ *      based on logistic regression using the weights from theta(i).
  */
 def eval_cost(X:DMat, Y:DMat, theta:DMat): (DMat, DMat) = {
-	val z = Y *@ (theta.t * X);
-	val sig = 1.0/ (1.0 + exp(-1.0 * z));
-	var accuracy = dzeros(sig.dims(0),1);
-	var ll = dzeros(sig.dims(0),1);
-	for(i<- 0 until sig.dims(0)){
-		val temp = sig(i, ?);
-		accuracy(i) = find(temp>0.5).dims(0) * 1.0 / temp.dims(1) * 1.0;
-		ll(i) = sum(ln(temp)).dv * 1.0 / temp.dims(1) * 1.0;
-	}
-	return (accuracy, ll);
+    val z = Y *@ (theta.t * X);
+    val sig = DMat(max( 1/(1 + exp(-1.0 * z)) , 1e-20)) // Numerically robust
+    var accuracy = dzeros(sig.dims(0),1);
+    var ll = dzeros(sig.dims(0),1);
+    for (i<- 0 until sig.dims(0)) {
+        val temp = sig(i, ?);
+        accuracy(i) = find(temp>0.5).dims(0) * 1.0 / temp.dims(1) * 1.0;
+        ll(i) = sum(ln(temp)).dv * 1.0 / temp.dims(1) * 1.0;
+    }
+    return (accuracy, ll);
 };
+
 
 /**
  * This will run exactly one of the three experiments. Don't use all of them, because that runs out
@@ -112,83 +157,102 @@ def eval_cost(X:DMat, Y:DMat, theta:DMat): (DMat, DMat) = {
  * @param exp_type The String which represents which test. Options: "ours", "kora", and "bard".
  * @param nn The LogisticRegression model we are using.
  */
- 
-def run_experiment(exp_type:String, nn:LogisticRegression) = {
+
+def run_experiment(exp:String, nn:LogisticRegression) = {
 
     // TEST #1: OUR METHOD ("ours")
-    if (exp_type == "ours") {
-        
-        val (samples, mb_size, ll_train) = dosimm(mod=nn, test=newtest, size=batchsize, nsamps=nsamps, acc=0.05);
+    if (exp == "ours") {
+        val (samples, mb_size, ll_train) = dosimm(mod=nn, 
+                    test=newtest, 
+                    size=batchsize, 
+                    nsamps=nsamps, 
+                    acc=0.05)
+        val testdata = loadFMat(test_data_dir)
+        val X = testdata(0 until testdata.dims(0)-1, ?)
+        var Y = testdata(testdata.dims(0)-1, ?)
+        val (accuracy, ll_test) = eval_cost(X, Y, samples)
+        val cum_size = cumsum(DMat(mb_size))
 
-        val testdata = loadFMat(test_data_dir);
-        val X = testdata(0 until testdata.dims(0)-1, ?);
-        var Y = testdata(testdata.dims(0)-1, ?);
-
-        val (accuracy, ll_test) = eval_cost(X, Y, samples);
-        val cum_size = cumsum(DMat(mb_size));
-
-        saveAs("logistic_results_" +exp_type+ "_" +k+ ".mat", samples,       "samples_ours", 
-                                                              cum_size,      "cum_size_ours",
-                                                              DMat(mb_size), "mb_size_ours",
-                                                              ll_train,      "ll_train_ours", 
-                                                              ll_test,       "ll_test_ours", 
-                                                              accuracy,      "accuracy_ours");
+        saveAs("testLR_ours_" +ntrain+ "_" +nsamps+ "_" +temperature+ ".mat", 
+                    samples,       "samples_ours", 
+                    cum_size,      "cum_size_ours",
+                    DMat(mb_size), "mb_size_ours",
+                    ll_test,       "ll_test_ours", 
+                    accuracy,      "accuracy_ours")
     }
+
     // TEST #2: KORATTIKARA ("kora")
-    else if (exp_type == "kora") {
-        val (samples, mb_size, ll_train) = cutMHTest_dosimm(mod=nn, test=cutMHtest, size=batchsize, nsamps=nsamps, acc=0.05);
+    else if (exp == "kora") {
+        // NEW! We will now be running some grid search first.
+        // CAREFUL! Files may change.
+        if (conservative) {
+            println("default epsilon for cutmh is = " + cutMHtest.eps)
+            val (ep,mb) = get_conservative_mb_eps(mod=nn,
+                test=cutMHtest,
+                path="../yutian_chen/MATLAB_files/mu_std_K10_D1_mnist.mat",
+                deltaStar=deltaStar) 
+            cutMHtest.eps = ep
+            batchsize = mb
+            println("chosen epsilon = " + cutMHtest.eps)
+            println("chosen size = " + batchsize)
+        } else {
+            println("running non-conservative austereMH (i.e. cut-MH) test")
+        }
+        val (samples, mb_size, ll_train, thisSeed) = cutMHTest_dosimm(mod=nn, 
+                    test=cutMHtest, 
+                    nsamps=nsamps, 
+                    size=batchsize,
+                    acc=0.05,
+                    path="../yutian_chen/MATLAB_files/mu_std_K10_D4001_mnist.mat",
+                    deltaStar=deltaStar,
+                    conservative=conservative)
+        val testdata = loadFMat(test_data_dir)
+        val X = testdata(0 until testdata.dims(0)-1, ?)
+        var Y = testdata(testdata.dims(0)-1, ?)
+        val (accuracy, ll_test) = eval_cost(X, Y, samples)
+        val cum_size = cumsum(DMat(mb_size))
 
-        val testdata = loadFMat(test_data_dir);
-        val X = testdata(0 until testdata.dims(0)-1, ?);
-        var Y = testdata(testdata.dims(0)-1, ?);
-
-        val (accuracy, ll_test) = eval_cost(X, Y, samples);
-        val cum_size = cumsum(DMat(mb_size));
-
-        saveAs("logistic_results_" +exp_type+ "_" +k+ ".mat", samples,       "samples_kora", 
-                                                              cum_size,      "cum_size_kora",
-                                                              DMat(mb_size), "mb_size_kora",
-                                                              ll_train,      "ll_train_kora", 
-                                                              ll_test,       "ll_test_kora", 
-                                                              accuracy,      "accuracy_kora");
+        saveAs("lr_mnist_kora_" +ntrain+ "_" +nsamps+ "_" +temperature.toInt+ "_" +thisSeed+ ".mat", 
+                    samples,       "samples_kora", 
+                    cum_size,      "cum_size_kora",
+                    DMat(mb_size), "mb_size_kora",
+                    ll_test,       "ll_test_kora", 
+                    accuracy,      "accuracy_kora")
     }
+
     // TEST #3: BARDENET ("bard")
-    else if (exp_type == "bard") {
-        val (samples, mb_size, ll_train, bc1c2_list) = adaptiveMH_dosimm(mod=nn, test=adaptiveMHtest, size=batchsize, nsamps=nsamps, acc=0.05);
+    else if (exp == "bard") {
+        val (samples, mb_size, ll_train) = adaptiveMH_dosimm(mod=nn, 
+                 test=adaptiveMHtest, 
+                 size=batchsize, 
+                 nsamps=nsamps, 
+                 acc=0.05)
+        val testdata = loadFMat(test_data_dir)
+        val X = testdata(0 until testdata.dims(0)-1, ?)
+        var Y = testdata(testdata.dims(0)-1, ?)
+        val (accuracy, ll_test) = eval_cost(X, Y, samples)
+        val cum_size = cumsum(DMat(mb_size))
 
-        val testdata = loadFMat(test_data_dir);
-        val X = testdata(0 until testdata.dims(0)-1, ?);
-        var Y = testdata(testdata.dims(0)-1, ?);
-
-        val (accuracy, ll_test) = eval_cost(X, Y, samples);
-        val cum_size = cumsum(DMat(mb_size));
-
-        saveAs("logistic_results_" +exp_type+ "_" +k+ ".mat", samples,       "samples_bard", 
-                                                              cum_size,      "cum_size_bard",
-                                                              DMat(mb_size), "mb_size_bard",
-                                                              ll_train,      "ll_train_bard", 
-                                                              ll_test,       "ll_test_bard", 
-                                                              accuracy,      "accuracy_bard");
+        saveAs("lr_mnist_bard_" +ntrain+ "_" +nsamps+ "_" +temperature.toInt+ ".mat", 
+                 samples,       "samples_bard", 
+                 cum_size,      "cum_size_bard",
+                 DMat(mb_size), "mb_size_bard",
+                 ll_test,       "ll_test_bard", 
+                 accuracy,      "accuracy_bard")
     }
     else {
-        println("Error, type=" +exp_type+ " not a valid type.")
+        println("Error, type=" +exp+ " not a valid type.")
         sys.exit
     }
 }
 
 
 // Define the Logistic Regression Model (we have to do it here after the class definition).
-val nn = new LogisticRegression(n=n, sigma=sigma, pscale=pscale);
-nn.temp = temperature;
-nn.sigma_proposer = sigma_proposer;
-
+val nn = new LogisticRegression(n=ntrain, sigma=1.0, pscale=1.0)
+nn.temp = temperature
+nn.sigma_proposer = sigma_proposer
 
 // -------------------------- //
 // CHOOSE WHICH METHOD TO RUN //
 // -------------------------- //
-val test_to_use = "ours"
 run_experiment(test_to_use, nn)
-val test_to_use = "kora"
-run_experiment(test_to_use, nn)  
-// val test_to_use = "bard"
-// run_experiment(test_to_use, nn) 

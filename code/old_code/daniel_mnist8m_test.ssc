@@ -1,0 +1,170 @@
+/**
+ * (c) October 2016 by Daniel Seita
+ * A script to help get the MNIST8M data into a format usable for the fast MH test. Due to RAM
+ * constraints, it's not a simple script we run immediately. What I do is:
+ *
+ * I run this from my home directory on bitter: ./bidmach daniel_mnist8m_test.ssc
+ *
+ * But due to RAM constraints, one has to run the script using one command at a time (see the
+ * comments at the bottom of the script for more details).
+ */
+
+// GLOBAL VARIABLES. Modify the "output_dir" if you want, but don't modify "dir".
+val dir = "/data/MNIST8M/parts/"
+val output_dir = "/home/seita/BIDMach/data/MNIST8M_daniel/"
+
+
+/**
+ * This is the FIRST thing I ran once I figured out how John organized the MNIST8M data. There are
+ * 81 files (numbered 0 through 80). I did this loop by first running it with i from 0 to 20, then
+ * 21 to 40, then 41 to 60, etc. I think if you run this all at once you run out of RAM.  After
+ * running this, there should be 162 files in the output directory. The "ones" matrices should be
+ * roughly 4.5MB, the "sevens" should be roughly 5.7MB.
+ */
+def extract_ones_and_sevens(min_i:Int, max_i:Int) {
+
+    for (i <- min_i to max_i) {
+        // Load data one by one and debug for matrix sizes.
+        val cati:IMat = loadIMat(dir + "cat%02d.imat.lz4" format i)
+        val data = loadFMat(dir + "data%02d.fmat.lz4" format i)
+        println("i="+i)
+        println("cati.dims = " + cati.dims) // Should be (1,100000)
+        println("data.dims = " + data.dims) // Should be (784,100000)
+    
+        // Find the indices that correspond to 1s and 7s.
+        val mask_1_inds = find(cati == 1)
+        val mask_7_inds = find(cati == 7)
+    
+        // Now extract 1s and 7s from the data matrices.
+        val data_ones   = data(?,mask_1_inds)
+        val data_sevens = data(?,mask_7_inds)
+        println("num ones = " + mask_1_inds.length + ", num sevens = " + mask_7_inds.length)
+    
+        // Next, save matrices of 1s and 7s separately (combine later).
+        saveFMat(output_dir + "data_ones_%02d.fmat.lz4" format i,   data_ones)
+        saveFMat(output_dir + "data_sevens_%02d.fmat.lz4" format i, data_sevens)
+    }
+}
+
+/**
+ * This is the SECOND part I ran after the first one (see code above). This will concatenate all the
+ * ones and sevens together. ALSO it will add in the last row of 1s and 7s in the appropriate spot,
+ * the last row.  Unfortunately you need to have lots of RAM to run this.
+ */
+def generate_combo_matrix(mat_num_name:Int, min_i:Int, max_i:Int) {
+    val a = loadFMat(output_dir + "data_ones_%02d.fmat.lz4" format min_i)
+    val b = loadFMat(output_dir + "data_sevens_%02d.fmat.lz4" format min_i)
+
+    var output = a on ones(1,a.ncols)
+    output = output \ (b on (7*ones(1,b.ncols)))
+    
+    for (i <- min_i to max_i) {
+        println("i="+i)
+    
+        val c = loadFMat(output_dir + "data_ones_%02d.fmat.lz4" format i)
+        val d = loadFMat(output_dir + "data_sevens_%02d.fmat.lz4" format i)
+    
+        output = output \ (c on ones(1,c.ncols))
+        output = output \ (d on (7*ones(1,d.ncols)))
+    }
+    println("size of final matrix is " + size(output))
+    saveFMat(output_dir + "combo_%02d.fmat.lz4" format mat_num_name, output)
+}
+
+/** Sorry about not making this generalizable, but we know what files we're dealing with. */
+def combine_combos_v0 = {
+    val d0 = loadFMat(output_dir + "combo_00.fmat.lz4")
+    val d1 = loadFMat(output_dir + "combo_01.fmat.lz4")
+    val d2 = loadFMat(output_dir + "combo_02.fmat.lz4")
+    val d3 = loadFMat(output_dir + "combo_03.fmat.lz4")
+    println("Inside combine_combos_v0, now combining...")
+    saveFMat(output_dir + "combo_larger_v0.fmat.lz4", d0 \ d1 \ d2 \ d3)
+}
+
+/** Similar stuff as earlier ... */
+def combine_combos_v1 = {
+    val d4 = loadFMat(output_dir + "combo_04.fmat.lz4")
+    val d5 = loadFMat(output_dir + "combo_05.fmat.lz4")
+    val d6 = loadFMat(output_dir + "combo_06.fmat.lz4")
+    val d7 = loadFMat(output_dir + "combo_07.fmat.lz4")
+    println("Inside combine_combos_v1, now combining...")
+    saveFMat(output_dir + "combo_larger_v1.fmat.lz4", d4 \ d5 \ d6 \ d7)
+}
+
+/** Similar stuff as earlier ... */
+def combine_combos_v2 = {
+    val dat0 = loadFMat(output_dir + "combo_larger_v0.fmat.lz4")
+    val dat1 = loadFMat(output_dir + "combo_larger_v1.fmat.lz4")
+    println("Loaded the two large matrices. Now combining into one matrix.")
+    val result = dat0 \ dat1
+    val final_row = result(784,?)
+    println("Done with the matrix. Size is " + size(result))
+    println("Num ones: " +(final_row==1).nnz+ ", num sevens: " +(final_row==7).nnz)
+    saveFMat(output_dir + "FINAL_UNSHUFFLED_1_7_MNIST8M_DATA.lz4", result)
+}
+
+/** 
+ * This does our final processing on the single data matrix we have. We should shuffle it, split it
+ * in training/testing splits, save the matrices, but *keep* the labels in there. Use that clever
+ * 'sort2' trick from BIDMach to do this. We provide the fraction of data to be for training.
+ * NOTE: We really should not use the full data, i.e., change min_i or (better) max_i.
+ */
+def final_processing(frac_train:Double, max_i_val:Int) = {
+    val full_data = loadFMat(output_dir + "FINAL_UNSHUFFLED_1_7_MNIST8M_DATA.lz4")
+
+    // Figure out what indices to include, and find the cutoff for train/test.
+    val min_i = 0
+    val max_i = max_i_val
+    val threshold = (max_i * frac_train).toInt
+
+    // Nice shuffle trick, uses all columns in case we need them. Then assign indices.
+    val rr = rand(1, full_data.ncols)
+    val (ss, ii) = sort2(rr); 
+
+    val indices_train = ii(min_i->threshold);
+    val indices_test  = ii(threshold->max_i);
+
+    // Remember, we *keep* the final row since the other code Xinlei runs removes it.
+    val train = full_data(?, indices_train)
+    val test  = full_data(?, indices_test)
+    println("size(train)=" +size(train))
+    println("size(test)=" +size(test))
+
+    // Let's make the file names based on the 'max_i' variable.
+    saveFMat(output_dir + "FINAL_MNIST8M_TRAIN_" +max_i+ ".fmat.lz4", train)
+    saveFMat(output_dir + "FINAL_MNIST8M_TEST_" +max_i+ ".fmat.lz4", test)
+}
+
+// -------------------------- //
+// USER MODIFIES THIS SECTION //
+// -------------------------- //
+
+/*
+ * Usage: Have ALL BUT ONE of these commands commented out at a time! Run these in order. For
+ * instance, this means we first run this script with everything below commented out *except* the
+ * 'extract_ones_and_sevens(0,20)' line. Then repeat, but with 'extract_ones_and_sevens(21,40)'
+ * being the only command that is not commented out. Repeat until all the commands have been run.
+ */
+
+//extract_ones_and_sevens(0,20)
+//extract_ones_and_sevens(21,40)
+//extract_ones_and_sevens(41,60)
+//extract_ones_and_sevens(61,80)
+
+//generate_combo_matrix(0, 0, 10)
+//generate_combo_matrix(1, 11, 20)
+//generate_combo_matrix(2, 21, 30)
+//generate_combo_matrix(3, 31, 40)
+//generate_combo_matrix(4, 41, 50)
+//generate_combo_matrix(5, 51, 60)
+//generate_combo_matrix(6, 61, 70)
+//generate_combo_matrix(7, 71, 80)
+
+//combine_combos_v0
+//combine_combos_v1
+//combine_combos_v2
+
+val frac_train = 0.9
+val max_i = 10000
+final_processing(frac_train, max_i)
+

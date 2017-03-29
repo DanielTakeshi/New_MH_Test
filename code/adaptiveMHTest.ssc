@@ -1,4 +1,10 @@
 // This script implements the Bardenet's 2014 ICML Paper
+// Daniel's note: this is really annoying. I had to set the seed OUT HERE in
+// order for things to change ...
+// val seed = 21
+// println("\n\tin adaptivemh sim with seed = " +seed+ ".\n")
+// setseed(seed)
+
 
 def std(A:DMat):Double = {
     val a = (mean(A *@ A) - mean(A) * mean(A)).dv
@@ -6,7 +12,7 @@ def std(A:DMat):Double = {
 }
 
 class adaptiveMHTest {
-	var N = 100000;     
+	var N = 1000000;     
 	var p = 2.0;
 	var delta = 0.01;
 	var gamma = 2.00;  
@@ -56,13 +62,13 @@ def adaptiveMH_dostep(mod:MHmodel, test:adaptiveMHTest, data:Mat, size:Int, here
     var b = size;
     var t = 0.0 ;
     var t_look = 1.0;
+    test.N = data.ncols;
     val psi = 1.0/test.N * ln(rand(1,1)).dv;
 
-    println("inside adaptiveMH_dostep, size=" +size+ ", now starting while loop...")
     while(!done) {
     	val temp_step = b.toInt;
     	step = temp_step;
-        println("calling getbatch with step="+step)
+        //println("calling getbatch with step="+step)
     	val batch = getbatch(mod.data, here, step);
     	ll = mod.evalfn(batch, theta);
 
@@ -92,7 +98,6 @@ def adaptiveMH_dostep(mod:MHmodel, test:adaptiveMHTest, data:Mat, size:Int, here
 		}
 		istep += 1;
    	}
-    println("finished with adaptiveMH_dostep, \'there\'="+there+".")
     (there, ntheta, mean(ll).dv/(test.N * 1.0));
 };
 
@@ -108,7 +113,7 @@ def adaptiveMH_dosimm(mod:MHmodel, test:adaptiveMHTest, size:Int, nsamps:Int, ac
     tic;
     println("")
     while (i < nsamps) {
-    	if (i % 1 == 0){
+    	if (i % 100 == 0){
             val t = toc
     		println("adaptive mh test iteration = %d, elapsed time = %f secs" format(i, t));
     	}
