@@ -605,8 +605,8 @@ where:
 \begin{equation}
     \bar{X} = \frac{1}{n}\sum_{i=1}^nX_i, \quad s_X = \frac{1}{n}\left(\sum_{i=1}^n(X_i-\bar{X})^2\right)^{\frac{1}{2}}.
 \end{equation}
-This means $t=\bar{X}/s_X$ has an approximate Student's $t$ distribution
-which approaches a Gaussian. Then
+Then the t-statistic $t=\bar{X}/s_X$ has a distribution which is approximately normal, with
+error bounded by:
 \begin{equation}\label{eq:clt-bounds}
     \sup_x|{\rm Pr}(t<x) - \Phi(x)| \leq \frac{6.4\mE[|X|^3]+2\mE[|X|]}{\sqrt{n}}.
 \end{equation}
