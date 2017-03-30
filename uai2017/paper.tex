@@ -24,37 +24,19 @@
 
 % Daniel Seita: upon submission, comment out all authors, un-comment the
 % following two lines:
-%\author{} % LEAVE BLANK FOR ORIGINAL SUBMISSION.
-%          % UAI  reviewing is double-blind.
+\author{} % LEAVE BLANK FOR ORIGINAL SUBMISSION.
+          % UAI  reviewing is double-blind.
  
 % The author names and affiliations should appear only in the accepted paper.
-%% \author{ {\bf Daniel Seita\thanks{Footnote for author to give an
-%% alternate address.}} \\
-%% Computer Science Dept. \\
-%% Cranberry University\\
-%% Pittsburgh, PA 15213 \\
-%% \And
-%% {\bf Xinlei Pan}  \\
-%% Affiliation          \\
-%% Address \\
-%% \And
-%% {\bf Haoyu Chen}   \\
-%% Affiliation \\
-%% Address    \\
-%% \And
-%% {\bf John Canny}   \\
-%% Affiliation \\
-%% Address    \\
+%% \author{
+%% Daniel Seita$^1$, 
+%% Xinlei Pan$^1$,
+%% Haoyu Chen$^1$,
+%% John Canny$^{1,2}$ \\
+%% $^1$ University of California, Berkeley, CA \\
+%% $^2$ Google Research, Mountain View, CA\\ 
+%% \texttt{\{seita,xinleipan,haoyuchen,canny\}@berkeley.edu}
 %% }
-\author{
-Daniel Seita$^1$, 
-Xinlei Pan$^1$,
-Haoyu Chen$^1$,
-John Canny$^{1,2}$ \\
-$^1$ University of California, Berkeley, CA \\
-$^2$ Google Research, Mountain View, CA\\ 
-\texttt{\{seita,xinleipan,haoyuchen,canny\}@berkeley.edu}
-}
 
 \begin{document}
 
@@ -623,7 +605,7 @@ where:
 \begin{equation}
     \bar{X} = \frac{1}{n}\sum_{i=1}^nX_i, \quad s_X = \frac{1}{n}\left(\sum_{i=1}^n(X_i-\bar{X})^2\right)^{\frac{1}{2}}.
 \end{equation}
-This means $t=\bar{X}/s_X$ has an approximate Student's distribution
+This means $t=\bar{X}/s_X$ has an approximate Student's $t$ distribution
 which approaches a Gaussian. Then
 \begin{equation}\label{eq:clt-bounds}
     \sup_x|{\rm Pr}(t<x) - \Phi(x)| \leq \frac{6.4\mE[|X|^3]+2\mE[|X|]}{\sqrt{n}}.
