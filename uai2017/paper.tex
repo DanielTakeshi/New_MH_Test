@@ -126,14 +126,14 @@ distribution.  These bounds carry through to the overall accuracy of
 the test.
 
 Our test is applicable when the variance (over data samples) of the
-log probability ratio between proposal and current state is small
+log probability ratio between the proposal and the current state is small
 enough (less than 1). It's not clear at first why this quantity should
 be bounded, but it is natural for well-specified models running
 Metropolis-Hastings sampling with optimal
 proposals~\citep{OptimalScaling01} on a full dataset. If the posterior
 parameter distribution is a unit-variance normal distribution, then
 the posterior for $N$ samples will have variance $1/N$. There is
-simply not enough information in $M << N$ samples to locate and
+simply not enough information in $M \ll N$ samples to locate and
 efficiently sample from this posterior. This is not a property of any
 particular proposal or test, but of the information carried by the
 data. The variance condition succinctly captures the condition that
@@ -162,34 +162,16 @@ where we can exploit small minibatches:
     minibatches.
 \end{enumerate}
 
-We note that 2 above is characteristic of Gibbs samplers applied to
+We note that case two above is characteristic of Gibbs samplers applied to
 large datasets~\citep{dupuy2016}. Such samplers represent a
 model posterior via counts over an entire dataset of $N$ samples. When
 a minibatch of $M$ samples is used to update the model, the counts for
 these samples only are updated. This creates ``steps'' of $O(M/N)$
 in the model parameters, and correlated samples from the model
 posterior. Correlated samples are still very useful in high-dimensional
-ML problems with multi-model posteriors since they correspond to a finer-scale
-random walk through the posterior landscape. 
-\begin{comment}
-It is worth discussing at this point the typical goals of M-H sampling on large
-datasets. By the Bernstein-von Mises Theorem, the posterior distribution for a
-Bayesian inference task has variance that scales inversely with $N$. Simply
-sampling from it is one application, but an efficient
-proposal~\citep{OptimalScaling01} has similar variance to the target and will
-diffuse to it extremely slowly. For applications to neural networks or models
-where the posterior is multimodal~\citep{choromanska2014loss}, samplers will
-likely get trapped in one of the modes. A common solution is to anneal the
-sampler, running first at high temperatures to flatten the likelihood landscape.
-This in turn reduces the variance of the log acceptance probability and allows
-our test to be applied. These samples can cover the search space densely with
-small steps rather than taking a few sparse steps towards an optimum. In this
-mode, M-H tests can be used in similar fashion to Stochastic Gradient Descent.
-The goal in SGD is to make gradual progress to a posterior mode with each step,
-taking small steps so that the cumulative displacement has progressively lower
-variance.
-\end{comment}
-The contributions of this paper are as follows:
+ML problems with multi-modal posteriors since they correspond to a finer-scale
+random walk through the posterior landscape.  The contributions of this paper
+are as follows:
 
 \begin{itemize}[noitemsep]
     \item We develop a new, more efficient (in samples per test) minibatch
@@ -199,7 +181,7 @@ The contributions of this paper are as follows:
 
     \item We compare our new test and prior approaches on several
       datasets. We demonstrate several order-of-magnitude improvements in sample efficiency,
-      and that batch size distribution is short-tailed. 
+      and that the batch size distribution is short-tailed. 
 \end{itemize}
 
 
@@ -1523,6 +1505,7 @@ also present for both {\sc AustereMH} variants and {\sc MHSubLhd}.
 Table~\ref{tab:logistic_settings} indicates the relevant parameter settings for
 the logistic regression experiments. Unless otherwise stated, values apply to
 all methods tested. For values from~\citep{cutting_mh_2014}
-or~\cite{icml2014c1_bardenet14}, we use their notation to be consistent.
+or~\cite{icml2014c1_bardenet14}, we use their notation ($\Delta^*, m, \epsilon,
+\gamma, p$, and $\delta$) to be consistent.
 
 \end{document}
