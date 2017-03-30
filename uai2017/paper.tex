@@ -220,10 +220,9 @@ respectively, as {\sc AustereMH} and {\sc MHSubLhd}. While both show
 useful reductions in the number of samples required, they suffer from
 two drawbacks: (i) They are approximate, and always yield a decision
 with a finite error, (ii) They both require exact, dataset-wide bounds
-that depend on $\theta$.
-\footnote{We obtained the authors code for both and found that they scanned the entire
-dataset at each step to obtain these estimates.} (see
-Section~\ref{sec:analysis}). We discuss a
+that depend on $\theta$ (see Section~\ref{sec:analysis}).\footnote{We obtained
+the authors code for both and found that they scanned the entire dataset at each
+step to obtain these estimates.} We discuss a
 worst-case scenario in Section~\ref{ssec:gaussian_example}.
 
 
@@ -1368,7 +1367,7 @@ from~\citep{cutting_mh_2014}, which avoids the need for recomputing log
 likelihoods of each data point each iteration by choosing baseline minibatch
 sizes $m$ and per-test thresholds $\epsilon$ beforehand, and then using those
 values for the entirety of the trials. We experimented with the following
-values:
+values, which are similar to the values reported in~\citep{cutting_mh_2014}:
 \begin{itemize}[noitemsep]
 \item $\epsilon \in \{0.001, 0.005, 0.01, 0.05, 0.1, 0.2\}$
 \item $m \in \{50, 100, 150, 200, 250, 300, 350, 400, 450, 500\}$
@@ -1465,8 +1464,8 @@ Step size $\sigma$ for random walk proposer with covariance $\sigma I$ & 0.05 & 
 \end{table}
 
 Figure~\ref{fig:logistic_histograms_mnist} shows the histograms for the four
-methods on one representative trial of MNIST-13k, which shows similar relative
-performance of the four methods as shown in
+methods on one representative trial of MNIST-13k, indicating similar relative
+performance of the four methods as in
 Figure~\ref{fig:logistic_histograms_mnist8m} (which uses MNIST-100k). In
 particular, {\sc MHminibatch} exhibits a shorter-tailed distribution and
 consumes nearly an order of magnitude fewer data points compared to {\sc
@@ -1493,7 +1492,7 @@ also present for both {\sc AustereMH} variants and {\sc MHSubLhd}.
 Table~\ref{tab:logistic_settings} indicates the relevant parameter settings for
 the logistic regression experiments. Unless otherwise stated, values apply to
 all methods tested. For values from~\citep{cutting_mh_2014}
-or~\cite{icml2014c1_bardenet14}, we use their notation ($\Delta^*, m, \epsilon,
+or~\citep{icml2014c1_bardenet14}, we use their notation ($\Delta^*, m, \epsilon,
 \gamma, p$, and $\delta$) to be consistent.
 
 \end{document}
