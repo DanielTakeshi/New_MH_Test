@@ -94,14 +94,14 @@ distributions can be corrected with an additive random variable. This leads to a
 test which is fast, and whose error can be made arbitrarily small.
 
 We note that this approach is fundamentally different from prior
-work. It makes no assumptions and requires no global bounds on the
-posterior parameter distribution in order to work. It is exact in the
+work. It makes no assumptions about the form of, and requires no global bounds on the
+posterior parameter distribution. It is exact in the
 limit as batch size increases by the Central Limit Theorem. This is
 not true of ~\citep{cutting_mh_2014} and~\citep{icml2014c1_bardenet14}
 which use tail bounds and provide only approximate tests even with
 arbitratily large batches of data. Our test is also exact under the
-assumptions of \citep{cutting_mh_2014} that per-sample parameter
-posteriors are normally distributed about the population mean.  Rather
+assumptions of \citep{cutting_mh_2014} that the log probability ratios
+of batches are normally distributed about their mean.  Rather
 than tail bounds, our approach uses moment estimates from the data to
 determine how far the minibatch posteriors deviate from a normal
 distribution.  These bounds carry through to the overall accuracy of
@@ -137,7 +137,7 @@ where we can exploit small minibatches:
 
   \item Utilize Hamiltonian Dynamics for proposals and tests. Here the
     dynamics itself provide shaping to the posterior distribution, and
-    the M-H is only needed to correct for quantization error. In terms
+    the M-H test is only needed to correct quantization error. In terms
     of the information carried by the samples, this approach is not
     limited by the data in a particular minibatch since momentum is
     carried over time and ``remembered'' across multiple
@@ -205,20 +205,25 @@ acceptance probability is now:
 where $p_0(\theta)$ is the prior. Computing samples this way requires all $N$
 data points, but this is very expensive for large datasets.
 
-To address this challenge,~\citep{cutting_mh_2014,icml2014c1_bardenet14} perform
-approximate Metropolis-Hasting tests using sequential hypothesis testing. Each
-iteration, they start with a small minibatch and test whether $\theta'$ should
-be accepted based on approximating $u<\alpha(\theta,\theta')$. If the
-approximate test cannot decide with sufficient confidence, the minibatch grows
-and the test repeats. This process continues until a decision. The bounds depend
-on either an asymptotic Central Limit Theorem~\citep{cutting_mh_2014} or a
-concentration bound~\citep{icml2014c1_bardenet14}. We refer to these algorithms,
-respectively, as {\sc AustereMH} and {\sc MHSubLhd}. While both show useful
-reductions in the number of samples required, they suffer from two drawbacks:
-having to compute all log likelihood tokens each iteration to compute certain
-statistics,\footnote{Thus, these are not technically minibatch methods.} (see
-Section~\ref{sec:analysis}), and resolving small log likelihood ratio
-differences between the minibatch and full batch versions. We discuss a
+To address this
+challenge,~\citep{cutting_mh_2014,icml2014c1_bardenet14} perform
+approximate Metropolis-Hasting tests using sequential hypothesis
+testing. At each iteration, a subset of data is sampled and used to
+test whether to accept $\theta'$ using an approximation to
+$\alpha(\theta,\theta')$. If the approximate test does not yield a
+decision, the minibatch size is increased and the test repeated. This
+process continues until a decision. These methods either invoke the
+asymptotic CLT and assume that finite  batch errors are normally
+distributed~\citep{cutting_mh_2014} or use a concentration
+bound~\citep{icml2014c1_bardenet14}. We refer to these algorithms,
+respectively, as {\sc AustereMH} and {\sc MHSubLhd}. While both show
+useful reductions in the number of samples required, they suffer from
+two drawbacks: (i) They are approximate, and always yield a decision
+with a finite error, (ii) They both require exact, dataset-wide bounds
+that depend on $\theta$.
+\footnote{We obtained the authors code for both and found that they scanned the entire
+dataset at each step to obtain these estimates.} (see
+Section~\ref{sec:analysis}). We discuss a
 worst-case scenario in Section~\ref{ssec:gaussian_example}.
 
 
@@ -486,7 +491,7 @@ acceptable $L_{\infty}$ norm.
 
 % Daniel: use this algorithm style instead
 \begin{algorithm}[tb]
-\caption{Our acceptance test, {\sc MHminibatch}.}
+\caption{{\sc MHminibatch} acceptance test.}
 \label{alg:our_algorithm}
 \begin{algorithmic}
     \STATE {\bfseries Input:} number of samples $T$, minibatch size $m$, error
@@ -559,34 +564,7 @@ MHminibatch}. A few points:
 \section{ANALYSIS}\label{sec:analysis}
 
 We now derive error bounds for our M-H test and the target distribution it
-generates. In the most similar prior works,~\citep{cutting_mh_2014}, CLT
-asymptotic arguments are used to show that their approximate acceptance test
-error (with respect to full-batch M-H) tends to zero as batch size increases,
-but no quantitative bounds are given. In addition, to design a test that
-minimizes data usage given an error bound, they rely on computing a standardized
-mean $\mu_{\rm std}$ each iteration. As the value of $\mu_{\rm std}$ depends on
-all $\log p(x_i|\theta)$ and $\log p(x_i| \theta')$ terms, the test is
-technically not a minibatch test; \citep{cutting_mh_2014} propose a conservative
-variant which assumes $\mu_{\rm std}=0$ and avoids the need to evaluate all
-likelihood terms. We refer to this as {\sc AustereMH(c)} and the default,
-non-conservative variant as {\sc AustereMH(nc)}.
-
-For {\sc MHSubLhd}, the test requires direct bounds on the log likelihood ratio,
-which for general distributions requires knowing $p(x_i | \theta)$ and $p(x_i |
-\theta')$ for all $N$ samples. In~\citep{icml2014c1_bardenet14}, explicit bounds
-are given and depend on
-\begin{equation}\label{eq:bad_bound}
-    C_{\theta, \theta'} = \max_{1\leq i\leq N}|\log p(x_i | \theta') - \log p(x_i | \theta)|.
-\end{equation}
-It is possible to analytically determine $C_{\theta,\theta'}$ for logistic
-regression and other simple models, but it is difficult to do so for more
-complicated models, so one generally needs to use all $p(x_i | \theta')$
-terms\footnote{The sample code provided by~\citep{icml2014c1_bardenet14}
-computes $C_{\theta,\theta'}$ by traversing the entire data, thus providing no
-performance advantage over the complete test.} to get $C_{\theta,\theta'}$, like
-the {\sc AustereMH(nc)} test.  In contrast, we use quantitative forms of the CLT
-which rely on measurable statistics from a \emph{single} minibatch.
-
+generates. 
 In Section~\ref{ssec:delta_star_distribution}, we present bounds on the absolute
 and relative error (in terms of the CDFs) of the distribution of $\Delta^*$
 versus a Gaussian. We then show in Section~\ref{ssec:preserve_bounds} that these
@@ -721,6 +699,36 @@ where $\epsilon$ is the bound on the error in the acceptance test.
 
 
 \section{EXPERIMENTS}\label{sec:experiments}
+In one of the most closely-related prior
+works,~\citep{cutting_mh_2014}, asymptotic CLT arguments are used to
+argue that a modified standard M-H test can be used on subsets of data
+with modest error. This assumes knowledge of dataset-wide mean
+$\mu_{\rm std}$ each iteration (it depends on $\theta$). Determining
+$\mu_{\rm std}$ exactly requires a scan over the entire dataset (so
+the method in practice provides no data reduction), or some
+model-specific bounds must be derived.  \citep{cutting_mh_2014} also
+propose a conservative variant which assumes $\mu_{\rm std}=0$ and
+avoids the scan.  We refer to the conservative version as {\sc
+  AustereMH(c)} and the non-conservative variant as {\sc
+  AustereMH(nc)}. We analyze both in the sequel.
+
+In another related work~\citep{icml2014c1_bardenet14} use concentration bounds
+and a similar modification to the standard M-H test ({\sc MHSubLhd} method). 
+For {\sc MHSubLhd}, the test requires direct bounds on the log likelihood ratio,
+which for general distributions requires knowing $p(x_i | \theta)$ and $p(x_i |
+\theta')$ for all $N$ samples. In~\citep{icml2014c1_bardenet14}, explicit bounds
+are given and depend on
+\begin{equation}\label{eq:bad_bound}
+    C_{\theta, \theta'} = \max_{1\leq i\leq N}|\log p(x_i | \theta') - \log p(x_i | \theta)|.
+\end{equation}
+It is possible to analytically determine $C_{\theta,\theta'}$ for logistic
+regression and other simple models, but it is difficult to do so for more
+complicated models, so one generally needs to use all $p(x_i | \theta')$
+terms\footnote{The sample code provided by~\citep{icml2014c1_bardenet14}
+computes $C_{\theta,\theta'}$ by traversing the entire data, thus providing no
+performance advantage over the complete test.} to get $C_{\theta,\theta'}$, like
+the {\sc AustereMH(nc)} test.  In contrast, we use quantitative forms of the CLT
+which rely on measurable statistics from a \emph{single} minibatch.
 
 % Daniel: moving this here so figures don't overflow to next pages. We can tune
 % the positioning if needed.
