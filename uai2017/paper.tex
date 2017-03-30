@@ -699,36 +699,34 @@ where $\epsilon$ is the bound on the error in the acceptance test.
 
 
 \section{EXPERIMENTS}\label{sec:experiments}
-In one of the most closely-related prior
-works,~\citep{cutting_mh_2014}, asymptotic CLT arguments are used to
-argue that a modified standard M-H test can be used on subsets of data
-with modest error. This assumes knowledge of dataset-wide mean
-$\mu_{\rm std}$ each iteration (it depends on $\theta$). Determining
-$\mu_{\rm std}$ exactly requires a scan over the entire dataset (so
-the method in practice provides no data reduction), or some
-model-specific bounds must be derived.  \citep{cutting_mh_2014} also
-propose a conservative variant which assumes $\mu_{\rm std}=0$ and
-avoids the scan.  We refer to the conservative version as {\sc
-  AustereMH(c)} and the non-conservative variant as {\sc
-  AustereMH(nc)}. We analyze both in the sequel.
+Here we compare with the most similar prior works
+~\citep{cutting_mh_2014} and~\cite{icml2014c1_bardenet14}.
+In~\citep{cutting_mh_2014}, an asymptotic CLT is used to argue that a
+modified standard M-H test can be used on subsets of the data. This
+assumes knowledge of dataset-wide mean $\mu_{\rm std}$ each iteration
+(it depends on $\theta$). Determining $\mu_{\rm std}$ exactly requires
+a scan over the entire dataset, or some model-specific bounds.
+\citep{cutting_mh_2014} also propose a conservative variant which
+assumes $\mu_{\rm std}=0$ and avoids the scan.  We refer to the
+conservative version as {\sc AustereMH(c)} and the non-conservative
+variant as {\sc AustereMH(nc)}. We analyze both in this section.
 
-In another related work~\citep{icml2014c1_bardenet14} use concentration bounds
-and a similar modification to the standard M-H test ({\sc MHSubLhd} method). 
-For {\sc MHSubLhd}, the test requires direct bounds on the log likelihood ratio,
-which for general distributions requires knowing $p(x_i | \theta)$ and $p(x_i |
-\theta')$ for all $N$ samples. In~\citep{icml2014c1_bardenet14}, explicit bounds
-are given and depend on
-\begin{equation}\label{eq:bad_bound}
-    C_{\theta, \theta'} = \max_{1\leq i\leq N}|\log p(x_i | \theta') - \log p(x_i | \theta)|.
-\end{equation}
-It is possible to analytically determine $C_{\theta,\theta'}$ for logistic
-regression and other simple models, but it is difficult to do so for more
-complicated models, so one generally needs to use all $p(x_i | \theta')$
-terms\footnote{The sample code provided by~\citep{icml2014c1_bardenet14}
-computes $C_{\theta,\theta'}$ by traversing the entire data, thus providing no
-performance advantage over the complete test.} to get $C_{\theta,\theta'}$, like
-the {\sc AustereMH(nc)} test.  In contrast, we use quantitative forms of the CLT
+In~\citep{icml2014c1_bardenet14}
+concentration bounds are used with a similar modification to the standard M-H
+test ({\sc MHSubLhd} method).  For {\sc MHSubLhd}, the required global
+bound is denoted $C_{\theta, \theta'}$ which once again depends on
+$\theta$ and so must be recomputed at each step, or estimated in a
+model-specific way.   We obtained
+sample code for both methods from the authors, and found that both
+{\sc AustereMN(nc)} and {\sc MHSubLhd} scanned the entire dataset at
+each iteration to derive these bounds. We do not include the cost of
+doing this in our experiments, since otherwise there would be no
+improvement over testing the full dataset. However, it should be kept
+in mind that such bounds must be provided to these methods.
+Our test by contrast uses a quantitative form of the CLT
 which rely on measurable statistics from a \emph{single} minibatch.
+It therefore requires no dataset-wide scans, and can be used, e.g. on
+streams of data. 
 
 % Daniel: moving this here so figures don't overflow to next pages. We can tune
 % the positioning if needed.
@@ -757,8 +755,8 @@ which rely on measurable statistics from a \emph{single} minibatch.
 % Daniel: NOTE, I'm calling temperature "K" so that "T" stays reserved for
 % "number of samples of \theta we draw".
 In Sections~\ref{ssec:gaussians} and~\ref{ssec:logistic}, we benchmark {\sc
-MHminibatch} against the tests from~\citep{icml2014c1_bardenet14}
-and~\citep{cutting_mh_2014}, with the latter using a grid-search over minibatch
+MHminibatch} against {\sc MHSubLhd}, {\sc AustereMH(c)} and {\sc AustereMH(nc)}.
+Hyperparameters for the latter were optimized using a grid-search over minibatch
 sizes $m$ and per-test thresholds $\epsilon$ described in
 Appendix~\ref{sssec:grid_search}. Throughout our descriptions, we refer to a
 \emph{trial} as the period when an algorithm collects all its desired samples
