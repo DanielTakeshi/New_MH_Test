@@ -97,10 +97,10 @@ We note that this approach is fundamentally different from prior
 work. It makes no assumptions about the form of, and requires no global bounds on the
 posterior parameter distribution. It is exact in the
 limit as batch size increases by the Central Limit Theorem. This is
-not true of ~\citep{cutting_mh_2014} and~\citep{icml2014c1_bardenet14}
+not true of~\citep{cutting_mh_2014} and~\citep{icml2014c1_bardenet14}
 which use tail bounds and provide only approximate tests even with
-arbitratily large batches of data. Our test is also exact under the
-assumptions of \citep{cutting_mh_2014} that the log probability ratios
+arbitrarily large batches of data. Our test is also exact under the
+assumptions of~\citet{cutting_mh_2014} that the log probability ratios
 of batches are normally distributed about their mean.  Rather
 than tail bounds, our approach uses moment estimates from the data to
 determine how far the minibatch posteriors deviate from a normal
@@ -380,7 +380,7 @@ that it satisfies the condition in Lemma~\ref{lem:detailed_balance}.
 It is slightly less efficient than the Metropolis test, since its
 acceptance rate for vanishing likelihood difference is 0.5. However we
 will see that its overall sample efficiency is much higher than the
-earlier methods.
+earlier methods. See Appendix~\ref{app:why_barker} for details.
 
 Assume we begin with the current sample $\theta$ and a candidate sample
 $\theta'$, and that $V \sim \mathcal{U}(0,1)$ is a uniform random variable. We
@@ -976,11 +976,13 @@ of~\citep{sgmcmc_2015}.
 {\Large Appendix}
 \end{center}
 
-This appendix is divided into two main parts. Appendix~\ref{app:proofs} provides
+This appendix is divided into three major sections. Appendix~\ref{app:proofs} provides
 the proofs that we omitted from the main text due to space constraints.
-Appendix~\ref{app:experiments} provides further details on the correction
-distribution derivation and on our three main experiments to assist
-understanding and reproducibility. 
+Appendix~\ref{app:why_barker} elaborates on our choice of the Barker logistic
+function. Finally, Appendix~\ref{app:experiments} presents further details on the correction
+distribution numerical derivation and on our three main experiments to assist
+understanding and reproducibility.  
+
 % Daniel: TODO can decide whether to include this here or not. It might actually
 % be better to do this in the logistic regression section.
 % Our code is open-source on
@@ -1179,6 +1181,31 @@ can comfortably be stored in memory.  However, if $g(x,y)$ is moderately smooth
 in $y$, it should be possible to achieve similar accuracy with a much smaller
 table. We leave further analysis and experiments with $g(x,y)$ as future work.
 
+
+
+
+\section{WHY THE BARKER LOGISTIC FUNCTION?}\label{app:why_barker}
+% Daniel: adding this one due to reviewer concerns
+
+Regarding our choice of the Logistic function, a test function $f(x)$ for
+Metropolis-Hastings must satisfy Lemma~\ref{lem:detailed_balance}. In addition,
+it must be monotone, bounded by $[0,1]$ and be such that $\lim_{x \to
+-\infty}f(x) = 0$ and $\lim_{x \to \infty}f(x) = 1$. While many functions
+satisfy this, including the classical test $f(x) = \min\{\exp(x), 1\}$, the
+Logistic function is the \emph{unique} function in this class which is
+anti-symmetric about 0.5, so it represents the (unique) CDF of a symmetric
+random variable. Our method requires approximating this with the sum of a
+Gaussian random variable (which is symmetric) and a correction. The Logistic CDF
+$L$ and Gaussian CDF $\Phi$ are extremely close even without correction; more
+precisely, the CDF error from the closest Gaussian CDF numerically satisfies
+$\sup_x |L(x) - \Phi(x/1.7)| < 0.01$, i.e. the sup error between Logistic and
+Gaussian CDFs is less than 1\%. With our correction we can make this error
+orders of magnitude smaller. 
+
+While not a proof of optimality, it is unlikely that a non-symmetric test
+function $f(x)$ --- representing a skewed variable --- would do better. It would
+require a highly-skewed correction variable, and likely require a much narrower
+normal distribution (and hence more samples).
 
 
 
