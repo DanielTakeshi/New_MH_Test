@@ -380,7 +380,7 @@ that it satisfies the condition in Lemma~\ref{lem:detailed_balance}.
 It is slightly less efficient than the Metropolis test, since its
 acceptance rate for vanishing likelihood difference is 0.5. However we
 will see that its overall sample efficiency is much higher than the
-earlier methods. See Appendix~\ref{app:why_barker} for details.
+earlier methods. See Appendix~\ref{app:why_barker} for additional discussion.
 
 Assume we begin with the current sample $\theta$ and a candidate sample
 $\theta'$, and that $V \sim \mathcal{U}(0,1)$ is a uniform random variable. We
@@ -1197,9 +1197,10 @@ anti-symmetric about 0.5, so it represents the (unique) CDF of a symmetric
 random variable. Our method requires approximating this with the sum of a
 Gaussian random variable (which is symmetric) and a correction. The Logistic CDF
 $L$ and Gaussian CDF $\Phi$ are extremely close even without correction; more
-precisely, the CDF error from the closest Gaussian CDF numerically satisfies
-$\sup_x |L(x) - \Phi(x/1.7)| < 0.01$, i.e. the sup error between Logistic and
-Gaussian CDFs is less than 1\%. With our correction we can make this error
+precisely, the CDF error from the closest Gaussian CDF --- which we numerically
+determined to have standard deviation approximately 1.7 --- satisfies $\sup_x
+|L(x) - \Phi(x/1.7)| < 0.01$. Said another way, the error between the Logistic
+and Gaussian CDFs is less than 1\%. With our correction we can make this error
 orders of magnitude smaller. 
 
 While not a proof of optimality, it is unlikely that a non-symmetric test
